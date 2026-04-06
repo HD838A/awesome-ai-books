@@ -6,6 +6,9 @@
 
 ## 书籍列表
 
+### [open-multi-agent](./open-multi-agent/)
+解读 `open-multi-agent` — 12 章，配套 HTML 版本。
+
 ### [openclaw](./openclaw/)
 解读 `openclaw` — 12 章，配套 HTML 版本。
 

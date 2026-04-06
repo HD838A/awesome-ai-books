@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 3 章 核心概念 — Open Multi-Agent 实战</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+#layout { display: flex; min-height: 100vh; }
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a:hover { background: #E8E2D8; text-decoration: none; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a:hover { color: #C7553A; border-left-color: #C7553A; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.index-intro { max-width: 640px; margin: 0 auto 48px; }
+.index-intro p { margin: 0.8em 0; font-size: 1.02em; line-height: 1.9; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; text-decoration: none; }
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Open Multi-Agent 实战</div>
+      <div class="sidebar-subtitle">用 TypeScript 构建你的第一个多智能体系统</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第 1 章 认识多智能体系统</a>
+<a href="ch02.html">第 2 章 快速上手</a>
+<a href="ch03.html" class="active">第 3 章 核心概念</a>
+<a href="ch04.html">第 4 章 任务调度与依赖管理</a>
+<a href="ch05.html">第 5 章 工具系统</a>
+<a href="ch06.html">第 6 章 多模型支持</a>
+<a href="ch07.html">第 7 章 共享内存与通信</a>
+<a href="ch08.html">第 8 章 结构化输出与重试</a>
+<a href="ch09.html">第 9 章 高级特性</a>
+<a href="ch10.html">第 10 章 可观测性</a>
+<a href="ch11.html">第 11 章 实战案例</a>
+<a href="ch12.html">第 12 章 扩展开发</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-3-章-核心概念">第 3 章：核心概念</h1>
+
+<h2 id="认识四大支柱">认识四大支柱</h2>
+
+<p>上一章我们快速上手了框架，跑通了一个多 Agent 协作的例子。现在，让我们深入理解这个框架的四大核心概念：</p>
+
+<ul>
+<li><strong>Agent</strong> — AI 员工</li>
+<li><strong>Task</strong> — 工作指令卡</li>
+<li><strong>Team</strong> — 项目组</li>
+<li><strong>Orchestrator</strong> — 总指挥</li>
+</ul>
+
+<blockquote><p>💡 <strong>比喻提醒</strong></p></blockquote>
+<blockquote><p>想象你在管理一个软件项目团队：Team 就是项目组，Agent 是团队成员，Task 是工作卡，Orchestrator 是分配任务、协调进度的项目经理。</p></blockquote>
+
+<h2 id="3-1-agent-ai-员工">3.1 Agent：AI 员工</h2>
+
+<h3 id="3-1-1-agent-是什么">3.1.1 Agent 是什么？</h3>
+
+<p>在 Open Multi-Agent 框架中，<strong>Agent</strong> 是一个封装了"角色 + 模型 + 工具"的执行单元。</p>
+
+<pre><code class="language-typescript">const agent: AgentConfig = {
+  name: 'researcher',                    // 员工编号
+  model: 'claude-sonnet-4-6',           // 使用什么 AI 模型
+  systemPrompt: '你是一个专业研究员...', // 员工的"性格"和"能力"
+  tools: ['bash', 'file_read'],         // 员工能用的工具
+}
+</code></pre>
+
+<p>就像一个真实的员工：</p>
+<ul>
+<li>有自己的专业领域（<code>systemPrompt</code>）</li>
+<li>会使用工具完成任务（<code>tools</code>）</li>
+<li>需要明确的目标（<code>prompt</code>）</li>
+<li>会消耗资源（Token）</li>
+</ul>
+
+<h3 id="3-1-2-agent-的三层抽象">3.1.2 Agent 的三层抽象</h3>
+
+<p>框架对 Agent 实现了三层抽象：</p>
+
+<div class="mermaid">graph TB
+    subgraph "第三层: 高级 API"
+        A1["run()"]
+        A2["prompt()"]
+        A3["stream()"]
+    end
+
+    subgraph "第二层: AgentRunner"
+        R["AgentRunner<br/>对话循环 + 工具调用"]
+    end
+
+    subgraph "第一层: LLMAdapter"
+        L["LLMAdapter<br/>API 通信"]
+    end
+
+    A1 --> R
+    A2 --> R
+    A3 --> R
+    R --> L</div>
+
+<div class="table-wrap"><table>
+<tr><th>层级</th><th>说明</th><th>用户接触</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td>高级 API</td><td><code>run()</code>、<code>prompt()</code>、<code>stream()</code></td><td>✅ 直接使用</td></tr>
+<tr><td>AgentRunner</td><td>对话循环、工具调用编排</td><td>❌ 内部使用</td></tr>
+<tr><td>LLMAdapter</td><td>与 LLM API 通信</td><td>❌ 内部使用</td></tr>
+</table></div>
+
+<h3 id="3-1-3-三种执行方式">3.1.3 三种执行方式</h3>
+
+<p><strong>方式 1：<code>run()</code> — 一次性任务</strong></p>
+
+<pre><code class="language-typescript">const result = await agent.run('写一个快速排序算法')
+
+// 特点：每次都是新对话，历史不保留
+// 适用：独立的一次性任务
+</code></pre>
+
+<p><strong>方式 2：<code>prompt()</code> — 多轮对话</strong></p>
+
+<pre><code class="language-typescript">const result1 = await agent.prompt('解释什么是闭包')
+const result2 = await agent.prompt('能举个代码例子吗')  // 上下文包含上一轮
+
+// 特点：累积对话历史
+// 适用：需要上下文的交互场景
+</code></pre>
+
+<p><strong>方式 3：<code>stream()</code> — 流式输出</strong></p>
+
+<pre><code class="language-typescript">for await (const event of agent.stream('给我讲个故事')) {
+  if (event.type === 'text') {
+    process.stdout.write(event.data)
+  }
+}
+
+// 特点：实时看到输出，无需等待完成
+// 适用：长文本生成、实时展示
+</code></pre>
+
+<h3 id="3-1-4-agent-的状态">3.1.4 Agent 的状态</h3>
+
+<p>Agent 内部维护自己的状态：</p>
+
+<div class="mermaid">stateDiagram-v2
+    [*] --> idle
+    idle --> running: run() / prompt()
+    running --> completed: 成功完成
+    running --> error: 执行出错
+    completed --> idle: reset()
+    error --> idle: reset()</div>
+
+<pre><code class="language-typescript">interface AgentState {
+  status: 'idle' | 'running' | 'completed' | 'error'
+  messages: LLMMessage[]    // 对话历史
+  tokenUsage: TokenUsage    // 资源消耗
+}
+</code></pre>
+
+<h3 id="3-1-5-关键配置项">3.1.5 关键配置项</h3>
+
+<pre><code class="language-typescript">const config: AgentConfig = {
+  name: 'my-agent',              // 唯一标识符
+  model: 'claude-sonnet-4-6',   // LLM 模型
+  provider: 'anthropic',         // 提供商（可省略，自动推断）
+  systemPrompt: '...',          // 角色定义（关键！）
+  tools: ['bash', 'file_write'], // 可用工具
+  maxTurns: 10,                  // 最大对话轮次
+  temperature: 0.3,              // 输出随机性
+  maxTokens: 4096,              // 最大输出 token
+  apiKey: '...',                // 可覆盖默认 API Key
+  baseURL: '...',               // 自定义 API 地址
+}
+</code></pre>
+
+<blockquote><p>💡 <strong>systemPrompt 编写技巧</strong></p></blockquote>
+<blockquote><p><code>systemPrompt</code> 决定了 Agent 的"性格"。好的 prompt 应该：</p></blockquote>
+<blockquote><p>1. 明确角色：告诉 Agent"你是什么"</p></blockquote>
+<blockquote><p>2. 定义能力：告诉它"你能做什么"</p></blockquote>
+<blockquote><p>3. 设定风格：告诉它"你怎么做"</p></blockquote>
+<blockquote><p></p></blockquote>
+<blockquote><p>```typescript</p></blockquote>
+<blockquote><p>systemPrompt: `你是一个资深的 TypeScript 开发者。</p></blockquote>
+<blockquote><p>你擅长编写简洁、高效、类型安全的代码。</p></blockquote>
+<blockquote><p>当需要实现功能时，你会先分析需求，再写代码。</p></blockquote>
+<blockquote><p>代码风格遵循 Airbnb TypeScript 规范。`</p></blockquote>
+<blockquote><p>```</p></blockquote>
+
+<h2 id="3-2-task-工作指令卡">3.2 Task：工作指令卡</h2>
+
+<h3 id="3-2-1-task-是什么">3.2.1 Task 是什么？</h3>
+
+<p>如果说 Agent 是"人"，那 <strong>Task</strong> 就是"工作指令卡"。它描述了一项具体工作：</p>
+
+<pre><code class="language-typescript">interface Task {
+  id: string                     // 唯一标识（UUID）
+  title: string                  // 任务名称
+  description: string            // 详细描述
+  status: TaskStatus            // 状态
+  assignee?: string              // 负责人（Agent 名）
+  dependsOn?: string[]          // 依赖哪些任务
+  result?: AgentRunResult       // 执行结果
+}
+</code></pre>
+
+<h3 id="3-2-2-task-的生命周期">3.2.2 Task 的生命周期</h3>
+
+<pre><code>┌─────────┐     assign      ┌─────────┐     finish      ┌───────────┐
+│ pending │ ──────────────► │ running │ ──────────────► │ completed │
+└─────────┘                 └─────────┘                 └───────────┘
+     │                            │                            ▲
+     │                            │ error                      │
+     │                            ▼                            │
+     │                      ┌─────────┐                        │
+     └──────────────────────►│ failed  │────────────────────────┘
+                             └─────────┘      retry / dependsOn
+</code></pre>
+
+<h3 id="3-2-3-创建-task">3.2.3 创建 Task</h3>
+
+<pre><code class="language-typescript">import { createTask } from '@jackchen_me/open-multi-agent'
+
+const task = createTask({
+  title: '设计数据库',
+  description: '为用户系统设计数据库结构，包括 users 表和权限表',
+  assignee: 'architect',
+  dependsOn: [],           // 没有依赖，最先执行
+})
+
+const task2 = createTask({
+  title: '实现 API',
+  description: '根据设计实现 REST API 接口',
+  assignee: 'developer',
+  dependsOn: [task.id],   // 依赖"设计数据库"
+})
+</code></pre>
+
+<h3 id="3-2-4-依赖检查">3.2.4 依赖检查</h3>
+
+<p>框架提供了 <code>isTaskReady()</code> 函数来判断任务是否可以开始：</p>
+
+<pre><code class="language-typescript">import { isTaskReady } from '@jackchen_me/open-multi-agent'
+
+// 任务就绪条件：
+// 1. 状态是 'pending'
+// 2. 所有依赖任务都已 'completed'
+
+if (isTaskReady(task2, allTasks)) {
+  console.log('可以开始执行任务2了！')
+}
+</code></pre>
+
+<h3 id="3-2-5-拓扑排序">3.2.5 拓扑排序</h3>
+
+<p>当有多个任务时，框架自动计算执行顺序：</p>
+
+<pre><code class="language-typescript">import { getTaskDependencyOrder } from '@jackchen_me/open-multi-agent'
+
+const tasks = [task1, task2, task3, task4]
+const ordered = getTaskDependencyOrder(tasks)
+
+// 返回顺序保证：
+// - 依赖任务排在前面
+// - 独立任务并行执行
+</code></pre>
+
+<div class="mermaid">graph LR
+    subgraph "原始任务"
+        A["task1"] --> B["task2"]
+        A --> C["task3"]
+        B --> D["task4"]
+        C --> D
+    end
+
+    subgraph "执行顺序"
+        E["task1"] --> F["task2, task3 (并行)"]
+        F --> G["task4"]
+    end</div>
+
+<h2 id="3-3-team-项目组">3.3 Team：项目组</h2>
+
+<h3 id="3-3-1-team-是什么">3.3.1 Team 是什么？</h3>
+
+<p><strong>Team</strong> 是 Agent 的容器，提供了：</p>
+
+<ul>
+<li><strong>Agent 注册</strong>：团队有哪些成员</li>
+<li><strong>共享内存</strong>：成员之间共享数据</li>
+<li><strong>消息总线</strong>：成员之间传递消息</li>
+<li><strong>任务队列</strong>：管理待执行任务</li>
+<li><strong>事件系统</strong>：监听团队状态变化</li>
+</ul>
+
+<h3 id="3-3-2-创建-team">3.3.2 创建 Team</h3>
+
+<pre><code class="language-typescript">const team = orchestrator.createTeam('dev-team', {
+  name: 'dev-team',
+  agents: [architect, developer, reviewer],
+  sharedMemory: true,           // 启用共享内存
+  maxConcurrency: 3,            // 最大并发数
+})
+</code></pre>
+
+<h3 id="3-3-3-team-的组件">3.3.3 Team 的组件</h3>
+
+<pre><code>┌─────────────────────────────────────────────┐
+│                    Team                      │
+├─────────────────────────────────────────────┤
+│                                             │
+│  ┌─────────────┐  ┌─────────────┐          │
+│  │  AgentMap   │  │ MessageBus  │          │
+│  │  (成员列表) │  │  (内部通信) │          │
+│  └─────────────┘  └─────────────┘          │
+│                                             │
+│  ┌─────────────┐  ┌─────────────┐          │
+│  │SharedMemory │  │  TaskQueue  │          │
+│  │  (共享白板) │  │   (看板)    │          │
+│  └─────────────┘  └─────────────┘          │
+│                                             │
+│  ┌─────────────┐                           │
+│  │ EventBus    │                           │
+│  │  (事件监听) │                           │
+│  └─────────────┘                           │
+│                                             │
+└─────────────────────────────────────────────┘
+</code></pre>
+
+<h3 id="3-3-4-监听团队事件">3.3.4 监听团队事件</h3>
+
+<pre><code class="language-typescript">team.on('task:complete', (data) =&gt; {
+  const event = data as OrchestratorEvent
+  console.log(`任务完成: ${event.task}`)
+})
+
+team.on('task:failed', (data) =&gt; {
+  const event = data as OrchestratorEvent
+  console.error(`任务失败: ${event.task}`)
+})
+
+team.on('agent:start', (data) =&gt; {
+  const event = data as OrchestratorEvent
+  console.log(`Agent 启动: ${event.agent}`)
+})
+</code></pre>
+
+<h2 id="3-4-orchestrator-总指挥">3.4 Orchestrator：总指挥</h2>
+
+<h3 id="3-4-1-orchestrator-是什么">3.4.1 Orchestrator 是什么？</h3>
+
+<p><strong>Orchestrator</strong> 是整个框架的核心，它：</p>
+
+<ol>
+<li><strong>管理 Team</strong>：创建、销毁团队</li>
+<li><strong>协调 Agent</strong>：分配任务、收集结果</li>
+<li><strong>调度 Task</strong>：根据依赖关系安排执行</li>
+<li><strong>处理异常</strong>：优雅失败、重试机制</li>
+<li><strong>汇总输出</strong>：将多个 Agent 的结果整合</li>
+</ol>
+
+<h3 id="3-4-2-orchestrator-的核心方法">3.4.2 Orchestrator 的核心方法</h3>
+
+<pre><code class="language-typescript">// 创建团队
+const team = orchestrator.createTeam('team-name', teamConfig)
+
+// 运行单个 Agent
+const result = await orchestrator.runAgent(agentConfig, prompt)
+
+// 运行团队
+const result = await orchestrator.runTeam(team, goal)
+
+// 运行任务队列
+const result = await orchestrator.runTasks(tasks, agents)
+</code></pre>
+
+<h3 id="3-4-3-核心配置">3.4.3 核心配置</h3>
+
+<pre><code class="language-typescript">const orchestrator = new OpenMultiAgent({
+  defaultModel: 'claude-sonnet-4-6',  // 默认模型
+  maxConcurrency: 5,                   // 最大并发
+  onProgress: (event) =&gt; {},           // 进度回调
+  onTrace: (trace) =&gt; {},              // 追踪回调
+})
+</code></pre>
+
+<h2 id="3-5-概念之间的关系">3.5 概念之间的关系</h2>
+
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                     OpenMultiAgent (Orchestrator)                │
+│                         总指挥                                   │
+│                                                                  │
+│   createTeam() ──► ┌─────────────────────────────────────┐     │
+│                    │              Team                     │     │
+│                    │             项目组                    │     │
+│                    │                                        │     │
+│                    │  agents: Agent[]  ←── Agent 配置      │     │
+│                    │  sharedMemory: SharedMemory          │     │
+│                    │  messageBus: MessageBus              │     │
+│                    │  taskQueue: TaskQueue                │     │
+│                    │                                        │     │
+│                    │  ┌──────────────────────────────────┐ │     │
+│                    │  │           Task                    │ │     │
+│                    │  │          工作卡                   │ │     │
+│                    │  │  title, description, dependsOn   │ │     │
+│                    │  └──────────────────────────────────┘ │     │
+│                    └─────────────────────────────────────┘     │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+
+<h2 id="3-6-从一个例子看协作">3.6 从一个例子看协作</h2>
+
+<pre><code class="language-typescript">const orchestrator = new OpenMultiAgent()
+
+// 创建团队
+const team = orchestrator.createTeam('dev', {
+  name: 'dev',
+  agents: [
+    { name: 'architect', systemPrompt: '你负责设计...', tools: [...] },
+    { name: 'developer', systemPrompt: '你负责写代码...', tools: [...] },
+  ],
+  sharedMemory: true,
+})
+
+// 运行团队，描述目标
+const result = await orchestrator.runTeam(team, '创建一个 TODO 应用')
+
+// 框架内部发生了什么：
+// 1. Orchestrator 创建临时 Coordinator
+// 2. Coordinator 分析目标，分解成 Task DAG
+// 3. Scheduler 根据依赖调度 Task
+// 4. AgentPool 并行运行 Agent
+// 5. 结果汇总到 Coordinator
+// 6. 返回最终结果
+</code></pre>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>Agent</strong> 是执行单元，封装了模型、角色和工具，提供 <code>run()</code>、<code>prompt()</code>、<code>stream()</code> 三种执行方式。</li>
+</ol>
+
+<ol>
+<li><strong>Task</strong> 是工作指令卡，有状态（pending→running→completed/failed）和依赖关系（dependsOn）。</li>
+</ol>
+
+<ol>
+<li><strong>Team</strong> 是 Agent 的容器，提供共享内存、消息总线、任务队列等协作基础设施。</li>
+</ol>
+
+<ol>
+<li><strong>Orchestrator</strong> 是总指挥，协调 Team、Agent、Task 的一切运作。</li>
+</ol>
+
+<ol>
+<li>四者关系：Orchestrator 管理 Team，Team 包含 Agent，Agent 执行 Task。</li>
+</ol>
+
+<h2 id="思考题">思考题</h2>
+
+<ol>
+<li>为什么 <code>prompt()</code> 会累积对话历史，而 <code>run()</code> 不会？各自适合什么场景？</li>
+</ol>
+
+<ol>
+<li>如果一个 Task 的所有依赖都失败了，这个 Task 应该怎么处理？被标记为什么状态？</li>
+</ol>
+
+<ol>
+<li>Team 中的 <code>sharedMemory</code> 和 <code>messageBus</code> 有什么区别？什么时候用哪个？</li>
+</ol>
+
+<h2 id="下章预告">下章预告</h2>
+
+<p>第 4 章我们将深入讲解<strong>任务调度与依赖管理</strong>。你会理解 Task DAG 是如何构建的，拓扑排序算法是怎么工作的，以及框架如何实现并行执行。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch02.html">◀ 第 2 章 快速上手</a>
+  <a href="ch04.html">第 4 章 任务调度与依赖管理 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#认识四大支柱">认识四大支柱</a></li><li><a href="#3-1-agent-ai-员工">3.1 Agent：AI 员工</a></li><li><a href="#3-2-task-工作指令卡">3.2 Task：工作指令卡</a></li><li><a href="#3-3-team-项目组">3.3 Team：项目组</a></li><li><a href="#3-4-orchestrator-总指挥">3.4 Orchestrator：总指挥</a></li><li><a href="#3-5-概念之间的关系">3.5 概念之间的关系</a></li><li><a href="#3-6-从一个例子看协作">3.6 从一个例子看协作</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#思考题">思考题</a></li><li><a href="#下章预告">下章预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var links = document.querySelectorAll('.toc-list a');
+  if (links.length) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, fromTop = s.scrollTop + 100;
+      links.forEach(function(link) {
+        var sec = document.getElementById(link.getAttribute('href').slice(1));
+        if (sec && sec.offsetTop <= fromTop) {
+          document.querySelectorAll('.toc-list a').forEach(function(l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    });
+  }
+})();</script>
+</body>
+</html>

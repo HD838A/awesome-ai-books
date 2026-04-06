@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 2 章 快速上手 — Open Multi-Agent 实战</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+#layout { display: flex; min-height: 100vh; }
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a:hover { background: #E8E2D8; text-decoration: none; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a:hover { color: #C7553A; border-left-color: #C7553A; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.index-intro { max-width: 640px; margin: 0 auto 48px; }
+.index-intro p { margin: 0.8em 0; font-size: 1.02em; line-height: 1.9; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; text-decoration: none; }
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Open Multi-Agent 实战</div>
+      <div class="sidebar-subtitle">用 TypeScript 构建你的第一个多智能体系统</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第 1 章 认识多智能体系统</a>
+<a href="ch02.html" class="active">第 2 章 快速上手</a>
+<a href="ch03.html">第 3 章 核心概念</a>
+<a href="ch04.html">第 4 章 任务调度与依赖管理</a>
+<a href="ch05.html">第 5 章 工具系统</a>
+<a href="ch06.html">第 6 章 多模型支持</a>
+<a href="ch07.html">第 7 章 共享内存与通信</a>
+<a href="ch08.html">第 8 章 结构化输出与重试</a>
+<a href="ch09.html">第 9 章 高级特性</a>
+<a href="ch10.html">第 10 章 可观测性</a>
+<a href="ch11.html">第 11 章 实战案例</a>
+<a href="ch12.html">第 12 章 扩展开发</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-2-章-快速上手">第 2 章：快速上手</h1>
+
+<h2 id="从-hello-world-到真实项目">从"Hello World"到真实项目</h2>
+
+<p>上一章我们了解了 Open Multi-Agent 的设计理念。现在，让我们真正用它做点事情。</p>
+
+<p>本章的目标很简单：<strong>用 5 分钟，运行你的第一个多 Agent 协作任务。</strong></p>
+
+<h2 id="2-1-环境准备">2.1 环境准备</h2>
+
+<h3 id="2-1-1-安装-node-js">2.1.1 安装 Node.js</h3>
+
+<p>框架运行在 Node.js 之上。确保你的环境满足要求：</p>
+
+<pre><code class="language-bash"># 检查 Node.js 版本（需要 &gt;= 18）
+node --version
+# v20.x.x 或更高版本都 OK
+
+# 如果显示 command not found 或版本 &lt; 18
+# 请访问 https://nodejs.org 下载安装
+</code></pre>
+
+<h3 id="2-1-2-创建项目">2.1.2 创建项目</h3>
+
+<pre><code class="language-bash"># 创建新项目
+mkdir my-agent-project
+cd my-agent-project
+npm init -y
+
+# 安装框架
+npm install @jackchen_me/open-multi-agent
+
+# 安装 TypeScript 和运行工具（可选但推荐）
+npm install -D typescript @types/node tsx
+npx tsc --init
+</code></pre>
+
+<h3 id="2-1-3-设置-api-key">2.1.3 设置 API Key</h3>
+
+<p>框架需要调用 LLM API，需要设置认证密钥：</p>
+
+<pre><code class="language-bash"># 方式 1：环境变量（推荐）
+export ANTHROPIC_API_KEY=sk-ant-xxxxx
+
+# 方式 2：.env 文件 + dotenv（后续章节介绍）
+</code></pre>
+
+<blockquote><p>⚠️ <strong>API Key 安全提醒</strong></p></blockquote>
+<blockquote><p>不要把 API Key 提交到代码仓库！生产环境建议使用 <code>.env</code> 文件管理。</p></blockquote>
+
+<h3 id="2-1-4-创建入口文件">2.1.4 创建入口文件</h3>
+
+<pre><code class="language-typescript">// src/index.ts
+import { OpenMultiAgent } from '@jackchen_me/open-multi-agent'
+
+const orchestrator = new OpenMultiAgent({
+  defaultModel: 'claude-sonnet-4-6',
+})
+
+console.log('环境检查通过！')
+</code></pre>
+
+<p>运行测试：</p>
+
+<pre><code class="language-bash">npx tsx src/index.ts
+# 输出: 环境检查通过！
+</code></pre>
+
+<p>如果看到输出，恭喜你！环境已经准备好了。</p>
+
+<h2 id="2-2-第一个示例-单个-agent">2.2 第一个示例：单个 Agent</h2>
+
+<p>让我们从最简单的场景开始：<strong>让一个 Agent 帮你写代码</strong>。</p>
+
+<h3 id="2-2-1-代码">2.2.1 代码</h3>
+
+<pre><code class="language-typescript">// src/01-hello-agent.ts
+import { OpenMultiAgent } from '@jackchen_me/open-multi-agent'
+
+const orchestrator = new OpenMultiAgent({
+  defaultModel: 'claude-sonnet-4-6',
+})
+
+async function main() {
+  console.log('启动 Agent...\n')
+
+  const result = await orchestrator.runAgent(
+    {
+      name: 'coder',
+      model: 'claude-sonnet-4-6',
+      systemPrompt: `You are a TypeScript developer.
+Write clean, minimal code with no extra commentary.
+Use the bash tool to run commands and file tools to read/write files.`,
+      tools: ['bash', 'file_write'],
+      maxTurns: 8,
+    },
+    `Create a TypeScript file /tmp/demo.ts that:
+  1. Exports a function named greet(name: string): string
+  2. Returns "Hello, &lt;name&gt;!"
+  3. Include a usage example at the bottom
+  Then run the file with: npx tsx /tmp/demo.ts`,
+  )
+
+  if (result.success) {
+    console.log('\n✅ Agent 任务完成！')
+    console.log('\n输出内容:')
+    console.log('─'.repeat(50))
+    console.log(result.output)
+    console.log('─'.repeat(50))
+    console.log(`\n📊 Token 消耗: 输入 ${result.tokenUsage.input_tokens}, 输出 ${result.tokenUsage.output_tokens}`)
+    console.log(`🔧 工具调用次数: ${result.toolCalls.length}`)
+  } else {
+    console.error('❌ Agent 任务失败:', result.output)
+  }
+}
+
+main()
+</code></pre>
+
+<h3 id="2-2-2-运行">2.2.2 运行</h3>
+
+<pre><code class="language-bash">npx tsx src/01-hello-agent.ts
+</code></pre>
+
+<h3 id="2-2-3-输出示例">2.2.3 输出示例</h3>
+
+<pre><code>启动 Agent...
+
+✅ Agent 任务完成！
+
+输出内容:
+──────────────────────────────────────────────────
+文件已创建: /tmp/demo.ts
+
+</code></pre>
+<p>// demo.ts</p>
+<p>export function greet(name: string): string {</p>
+<p>  return <code>Hello, ${name}!</code></p>
+<p>}</p>
+
+<p>// Usage</p>
+<p>console.log(greet('World'))        // Hello, World!</p>
+<p>console.log(greet('Open Multi-Agent'))  // Hello, Open Multi-Agent!</p>
+<pre><code>──────────────────────────────────────────────────
+
+📊 Token 消耗: 输入 342, 输出 156
+🔧 工具调用次数: 3
+</code></pre>
+
+<h3 id="2-2-4-代码解读">2.2.4 代码解读</h3>
+
+<p>让我们拆解这段代码：</p>
+
+<div class="table-wrap"><table>
+<tr><th>部分</th><th>说明</th></tr>
+<tr><td>------</td><td>------</td></tr>
+<tr><td><code>OpenMultiAgent</code></td><td>框架的入口类，负责管理所有 Agent 和团队</td></tr>
+<tr><td><code>defaultModel</code></td><td>默认使用的 LLM 模型，这里是 Claude</td></tr>
+<tr><td><code>runAgent()</code></td><td>运行单个 Agent 的方法</td></tr>
+<tr><td><code>AgentConfig</code></td><td>Agent 的配置对象，定义它的角色和工具</td></tr>
+<tr><td><code>systemPrompt</code></td><td>给 Agent 的"指令"，定义它的角色和行为</td></tr>
+<tr><td><code>tools</code></td><td>Agent 可以使用的工具，这里允许它执行命令和写文件</td></tr>
+<tr><td><code>result.success</code></td><td>任务是否成功完成</td></tr>
+</table></div>
+
+<h2 id="2-3-第二个示例-多-agent-团队">2.3 第二个示例：多 Agent 团队</h2>
+
+<p>单个 Agent 能做很多事，但真正的威力在于<strong>多个 Agent 协作</strong>。</p>
+
+<h3 id="2-3-1-场景">2.3.1 场景</h3>
+
+<p>我们让一个团队来完成一个真实任务：</p>
+
+<ul>
+<li><strong>架构师（Architect）</strong>：设计 API 结构</li>
+<li><strong>开发者（Developer）</strong>：根据设计写代码</li>
+<li><strong>审核员（Reviewer）</strong>：检查代码质量</li>
+</ul>
+
+<h3 id="2-3-2-代码">2.3.2 代码</h3>
+
+<pre><code class="language-typescript">// src/02-team-demo.ts
+import { OpenMultiAgent } from '@jackchen_me/open-multi-agent'
+import type { AgentConfig, OrchestratorEvent } from '@jackchen_me/open-multi-agent'
+
+// 定义架构师 Agent
+const architect: AgentConfig = {
+  name: 'architect',
+  model: 'claude-sonnet-4-6',
+  systemPrompt: `You are a software architect.
+Design clear, production-quality API contracts.
+Output concise plans in markdown — no prose.`,
+  tools: ['bash', 'file_write'],
+  maxTurns: 5,
+  temperature: 0.2,
+}
+
+// 定义开发者 Agent
+const developer: AgentConfig = {
+  name: 'developer',
+  model: 'claude-sonnet-4-6',
+  systemPrompt: `You are a TypeScript developer.
+Write clean, runnable code with proper error handling.
+Use the tools to write files and run tests.`,
+  tools: ['bash', 'file_read', 'file_write', 'file_edit'],
+  maxTurns: 12,
+  temperature: 0.1,
+}
+
+// 定义审核员 Agent
+const reviewer: AgentConfig = {
+  name: 'reviewer',
+  model: 'claude-sonnet-4-6',
+  systemPrompt: `You are a senior code reviewer.
+Review code for correctness, security, and clarity.
+Provide a structured review with LGTM, suggestions, and blocking issues.`,
+  tools: ['bash', 'file_read', 'grep'],
+  maxTurns: 5,
+  temperature: 0.3,
+}
+
+// 进度追踪函数
+function handleProgress(event: OrchestratorEvent): void {
+  const ts = new Date().toISOString().slice(11, 23)
+
+  switch (event.type) {
+    case 'agent_start':
+      console.log(`[${ts}] 🤖 开始 → ${event.agent}`)
+      break
+    case 'agent_complete':
+      console.log(`[${ts}] ✅ 完成 ← ${event.agent}`)
+      break
+    case 'task_start':
+      console.log(`[${ts}] 📋 任务 ↓ ${event.task}`)
+      break
+    case 'task_complete':
+      console.log(`[${ts}] 📋 完成 ↑ ${event.task}`)
+      break
+    case 'error':
+      console.error(`[${ts}] ❌ 错误: ${event.agent}`)
+  }
+}
+
+// 主函数
+async function main() {
+  const orchestrator = new OpenMultiAgent({
+    defaultModel: 'claude-sonnet-4-6',
+    onProgress: handleProgress,
+  })
+
+  // 创建团队
+  const team = orchestrator.createTeam('api-team', {
+    name: 'api-team',
+    agents: [architect, developer, reviewer],
+    sharedMemory: true,
+  })
+
+  console.log(`团队 "${team.name}" 已创建，成员: architect, developer, reviewer\n`)
+
+  // 描述你的目标 —— 框架会自动分解任务
+  const goal = `Create a REST API in /tmp/api/ with:
+- GET /health → returns { status: "ok" }
+- GET /users → returns hardcoded user list
+- POST /users → accepts { name, email }, returns 201
+- Include package.json with express dependency`
+
+  console.log('开始执行...\n')
+  console.log('='.repeat(50))
+
+  const result = await orchestrator.runTeam(team, goal)
+
+  console.log('='.repeat(50))
+  console.log(`\n🎯 执行完成！成功率: ${result.success}`)
+
+  // 查看每个 Agent 的结果
+  console.log('\n📊 各 Agent 结果:')
+  for (const [name, agentResult] of result.agentResults) {
+    const status = agentResult.success ? '✅' : '❌'
+    console.log(`  ${status} ${name}: 工具调用 ${agentResult.toolCalls.length} 次`)
+  }
+}
+
+main()
+</code></pre>
+
+<h3 id="2-3-3-运行">2.3.3 运行</h3>
+
+<pre><code class="language-bash">npx tsx src/02-team-demo.ts
+</code></pre>
+
+<h3 id="2-3-4-输出示例">2.3.4 输出示例</h3>
+
+<pre><code>团队 "api-team" 已创建，成员: architect, developer, reviewer
+
+开始执行...
+==================================================
+[14:32:01.123] 🤖 开始 → coordinator
+[14:32:01.456] 📋 任务 ↓ 设计 API 结构
+[14:32:05.789] 📋 完成 ↑ 设计 API 结构
+[14:32:05.890] 📋 任务 ↓ 实现 REST API
+[14:32:06.123] 🤖 开始 → architect
+[14:32:10.456] 🤖 完成 ← architect
+[14:32:10.789] 🤖 开始 → developer
+[14:32:15.123] 🤖 开始 → reviewer
+[14:32:20.456] 🤖 完成 ← developer
+[14:32:20.789] 🤖 完成 ← reviewer
+[14:32:20.890] 📋 完成 ↑ 实现 REST API
+[14:32:21.123] 🤖 完成 ← coordinator
+==================================================
+
+🎯 执行完成！成功率: true
+
+📊 各 Agent 结果:
+  ✅ coordinator: 工具调用 2 次
+  ✅ architect: 工具调用 1 次
+  ✅ developer: 工具调用 4 次
+  ✅ reviewer: 工具调用 2 次
+</code></pre>
+
+<h3 id="2-3-5-发生了什么">2.3.5 发生了什么？</h3>
+
+<p>当你运行 <code>runTeam()</code> 时，背后发生的事情：</p>
+
+<div class="mermaid">sequenceDiagram
+    participant User as 你
+    participant Coord as Coordinator
+    participant Team as 团队 Agent
+
+    User->>Coord: runTeam("创建 REST API")
+    Coord->>Coord: 分析目标
+    Coord->>Team: 分解任务：设计 → 开发 → 审核
+    Team->>Coord: 任务1完成
+    Team->>Coord: 任务2完成（并行）
+    Team->>Coord: 任务3完成
+    Coord->>User: 返回最终结果</div>
+
+<h2 id="2-4-理解核心-api">2.4 理解核心 API</h2>
+
+<h3 id="2-4-1-openmultiagent-类">2.4.1 <code>OpenMultiAgent</code> 类</h3>
+
+<pre><code class="language-typescript">const orchestrator = new OpenMultiAgent({
+  defaultModel: 'claude-sonnet-4-6',  // 默认模型
+  maxConcurrency: 5,                     // 最大并发数
+  onProgress: (event) =&gt; {},            // 进度回调
+  onTrace: (trace) =&gt; {},               // 追踪回调
+})
+</code></pre>
+
+<div class="table-wrap"><table>
+<tr><th>配置项</th><th>说明</th><th>默认值</th></tr>
+<tr><td>--------</td><td>------</td><td>--------</td></tr>
+<tr><td><code>defaultModel</code></td><td>默认使用的 LLM 模型</td><td><code>'claude-opus-4-6'</code></td></tr>
+<tr><td><code>maxConcurrency</code></td><td>同时运行的 Agent 数量</td><td><code>5</code></td></tr>
+<tr><td><code>onProgress</code></td><td>任务状态变化回调</td><td>无</td></tr>
+<tr><td><code>onTrace</code></td><td>详细追踪数据回调</td><td>无</td></tr>
+</table></div>
+
+<h3 id="2-4-2-agentconfig-对象">2.4.2 <code>AgentConfig</code> 对象</h3>
+
+<pre><code class="language-typescript">const agent: AgentConfig = {
+  name: 'my-agent',        // 唯一标识符
+  model: 'claude-sonnet-4-6',
+  provider: 'anthropic',   // 可选，默认从 model 推断
+  systemPrompt: '...',     // 角色定义（重要！）
+  tools: ['bash', 'file_write'],  // 可用工具
+  maxTurns: 10,            // 最大对话轮次
+  temperature: 0.3,        // 输出随机性
+}
+</code></pre>
+
+<blockquote><p>💡 <strong>systemPrompt 技巧</strong></p></blockquote>
+<blockquote><p><code>systemPrompt</code> 决定了 Agent 的"性格"。仔细设计它，就像写职位描述一样重要。</p></blockquote>
+
+<h3 id="2-4-3-teamrunresult-结果对象">2.4.3 <code>TeamRunResult</code> 结果对象</h3>
+
+<pre><code class="language-typescript">const result = await orchestrator.runTeam(team, goal)
+
+// result 结构：
+{
+  success: true,                    // 是否整体成功
+  totalTokenUsage: {                 // Token 总消耗
+    input_tokens: 1234,
+    output_tokens: 567
+  },
+  agentResults: new Map([           // 每个 Agent 的结果
+    ['architect', { success: true, output: '...', ... }],
+    ['developer', { success: true, output: '...', ... }],
+    ['reviewer', { success: true, output: '...', ... }],
+  ])
+}
+</code></pre>
+
+<h2 id="2-5-常见问题">2.5 常见问题</h2>
+
+<h3 id="q1-报错-anthropic_api_key-is-not-set">Q1: 报错 <code>ANTHROPIC_API_KEY is not set</code></h3>
+
+<p>你没有设置 API Key。在终端运行：</p>
+
+<pre><code class="language-bash">export ANTHROPIC_API_KEY=sk-ant-xxxxx
+</code></pre>
+
+<h3 id="q2-报错-model-not-found">Q2: 报错 <code>Model not found</code></h3>
+
+<p>模型名称不对。常用模型：</p>
+
+<ul>
+<li><code>'claude-opus-4-6'</code> — 最强 Claude</li>
+<li><code>'claude-sonnet-4-6'</code> — 平衡型（推荐，速度快）</li>
+<li><code>'claude-haiku-3-5'</code> — 最快 Claude</li>
+</ul>
+
+<h3 id="q3-agent-不按预期工作">Q3: Agent 不按预期工作</h3>
+
+<p>检查 <code>systemPrompt</code> 是否清晰。像给新员工写入职指南一样写它。</p>
+
+<h3 id="q4-任务超时">Q4: 任务超时</h3>
+
+<p>增加 <code>maxTurns</code> 或检查 <code>systemPrompt</code> 是否过于复杂。</p>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>环境准备</strong>只需 Node.js &gt;= 18 和一个 API Key。</li>
+</ol>
+
+<ol>
+<li><strong><code>runAgent()</code></strong> 是最简单的入口，适合单一任务。</li>
+</ol>
+
+<ol>
+<li><strong><code>runTeam()</code></strong> 开启多 Agent 协作，只需描述目标，框架自动分解任务。</li>
+</ol>
+
+<ol>
+<li><strong><code>AgentConfig</code></strong> 定义 Agent 的角色、工具和行为，<code>systemPrompt</code> 是关键。</li>
+</ol>
+
+<ol>
+<li><strong><code>onProgress</code></strong> 回调让你实时了解执行进度。</li>
+</ol>
+
+<h2 id="思考题">思考题</h2>
+
+<ol>
+<li>如果让三个 Agent 并行工作（去掉依赖），效率会提升多少？有什么风险？</li>
+</ol>
+
+<ol>
+<li><code>systemPrompt</code> 中，架构师用 <code>temperature: 0.2</code>，审核员用 <code>0.3</code>。为什么不同角色用不同的温度？</li>
+</ol>
+
+<ol>
+<li>你能想到哪些 <code>runTeam()</code> 的实际应用场景？</li>
+</ol>
+
+<h2 id="下章预告">下章预告</h2>
+
+<p>第 3 章我们将深入讲解框架的四大核心概念：<strong>Agent、Task、Team、Orchestrator</strong>。你会理解为什么这个框架这样设计，以及如何更好地使用它。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch01.html">◀ 第 1 章 认识多智能体系统</a>
+  <a href="ch03.html">第 3 章 核心概念 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#从-hello-world-到真实项目">从"Hello World"到真实项目</a></li><li><a href="#2-1-环境准备">2.1 环境准备</a></li><li><a href="#2-2-第一个示例-单个-agent">2.2 第一个示例：单个 Agent</a></li><li><a href="#2-3-第二个示例-多-agent-团队">2.3 第二个示例：多 Agent 团队</a></li><li><a href="#2-4-理解核心-api">2.4 理解核心 API</a></li><li><a href="#2-5-常见问题">2.5 常见问题</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#思考题">思考题</a></li><li><a href="#下章预告">下章预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var links = document.querySelectorAll('.toc-list a');
+  if (links.length) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, fromTop = s.scrollTop + 100;
+      links.forEach(function(link) {
+        var sec = document.getElementById(link.getAttribute('href').slice(1));
+        if (sec && sec.offsetTop <= fromTop) {
+          document.querySelectorAll('.toc-list a').forEach(function(l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    });
+  }
+})();</script>
+</body>
+</html>

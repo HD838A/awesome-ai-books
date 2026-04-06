@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 1 章 认识多智能体系统 — Open Multi-Agent 实战</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+#layout { display: flex; min-height: 100vh; }
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a:hover { background: #E8E2D8; text-decoration: none; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a:hover { color: #C7553A; border-left-color: #C7553A; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.index-intro { max-width: 640px; margin: 0 auto 48px; }
+.index-intro p { margin: 0.8em 0; font-size: 1.02em; line-height: 1.9; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; text-decoration: none; }
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Open Multi-Agent 实战</div>
+      <div class="sidebar-subtitle">用 TypeScript 构建你的第一个多智能体系统</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html" class="active">第 1 章 认识多智能体系统</a>
+<a href="ch02.html">第 2 章 快速上手</a>
+<a href="ch03.html">第 3 章 核心概念</a>
+<a href="ch04.html">第 4 章 任务调度与依赖管理</a>
+<a href="ch05.html">第 5 章 工具系统</a>
+<a href="ch06.html">第 6 章 多模型支持</a>
+<a href="ch07.html">第 7 章 共享内存与通信</a>
+<a href="ch08.html">第 8 章 结构化输出与重试</a>
+<a href="ch09.html">第 9 章 高级特性</a>
+<a href="ch10.html">第 10 章 可观测性</a>
+<a href="ch11.html">第 11 章 实战案例</a>
+<a href="ch12.html">第 12 章 扩展开发</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-1-章-认识多智能体系统">第 1 章：认识多智能体系统</h1>
+
+<h2 id="从一个故事开始">从一个故事开始</h2>
+
+<p>想象你是一家软件公司的项目经理。今天早上，老板把你叫到办公室，说："我们需要一个用户登录系统，下班前给我。"</p>
+
+<p>如果是传统方式，你会：</p>
+<ol>
+<li>坐下来，花 1 小时写详细的任务分解文档</li>
+<li>分配给张三做数据库设计，李四做后端接口，王五做前端页面</li>
+<li>追着每个人问进度，处理各种依赖关系和阻塞问题</li>
+<li>最后把所有人的成果拼在一起</li>
+</ol>
+
+<p>但如果你是老板呢？你会怎么做？</p>
+
+<p>你会说："小王啊，我需要一个用户登录系统。"然后继续喝你的咖啡。</p>
+
+<p><strong>Open Multi-Agent 就是这样一个"AI 项目经理"。</strong> 你只需要告诉它要什么，它会自动分解任务、分配给合适的 AI 员工、监督进度、处理问题，最后把完整的代码交到你手上。</p>
+
+<p>这就是本章要介绍的核心框架：<strong>Open Multi-Agent</strong>——一个 TypeScript 原生的多智能体编排框架。</p>
+
+<h2 id="1-1-什么是多智能体系统">1.1 什么是多智能体系统？</h2>
+
+<p>在深入框架之前，我们先理解一个概念：<strong>多智能体系统（Multi-Agent System）</strong>。</p>
+
+<blockquote><p>💡 <strong>多智能体系统</strong></p></blockquote>
+<blockquote><p>顾名思义，就是多个 AI Agent（智能体）协同工作的系统。每个 Agent 就像一个专业的员工，有自己的角色定位、擅长的技能、能使用的工作工具。他们组合在一起，形成一个团队，共同完成复杂任务。</p></blockquote>
+
+<p>你可能会问：<strong>为什么不只用一个 Agent？</strong></p>
+
+<p>答案是：<strong>分工产生效率，专业产生质量</strong>。</p>
+
+<p>就像一个建筑团队不会让电工去刷墙、让水管工去铺电线，多智能体系统让每个 Agent 专注于自己擅长的领域：</p>
+<ul>
+<li><strong>研究员 Agent</strong> 负责搜集资料、分析需求</li>
+<li><strong>开发者 Agent</strong> 负责写代码、实现功能</li>
+<li><strong>审核员 Agent</strong> 负责检查代码质量、发现潜在问题</li>
+</ul>
+
+<p>当他们协作时，整体产出质量远超单个 Agent 独自工作的结果。</p>
+
+<h2 id="1-2-为什么需要-agent-编排框架">1.2 为什么需要 Agent 编排框架？</h2>
+
+<p>有了多个 Agent，自然需要一套"管理办法"。</p>
+
+<p>想象没有框架的情况：你要自己管理 Agent 的生命周期、任务分配、依赖关系、结果汇总、错误处理……光是想想就头疼。</p>
+
+<p><strong>Agent 编排框架（Orchestration Framework）</strong> 就是来解决这个问题的。它提供：</p>
+
+<div class="table-wrap"><table>
+<tr><th>能力</th><th>说明</th></tr>
+<tr><td>------</td><td>------</td></tr>
+<tr><td>任务分解</td><td>把大目标拆成小任务</td></tr>
+<tr><td>智能调度</td><td>根据依赖关系和资源情况安排执行顺序</td></tr>
+<tr><td>结果汇总</td><td>把多个 Agent 的输出整合成最终结果</td></tr>
+<tr><td>错误处理</td><td>单个任务失败不影响整体流程</td></tr>
+</table></div>
+
+<h2 id="1-3-open-multi-agent-的设计哲学">1.3 Open Multi-Agent 的设计哲学</h2>
+
+<p>Open Multi-Agent 框架有三大核心理念：</p>
+
+<h3 id="1-3-1-goal-in-result-out-目标进-结果出">1.3.1 Goal In, Result Out（目标进，结果出）</h3>
+
+<p>这是框架的设计初心。</p>
+
+<pre><code class="language-typescript">// 只需要描述你的目标
+const result = await orchestrator.runTeam(team, '创建一个 REST API 用户登录系统')
+
+// 框架自动完成：目标分解 → 任务分配 → 并行执行 → 结果汇总
+console.log(result.success)  // true
+console.log(result.output)  // 完整的登录系统代码
+</code></pre>
+
+<p>不需要手动定义任务图，不需要指定谁先做谁后做，不需要处理复杂的依赖关系。<strong>你只管说要什么，框架负责怎么做。</strong></p>
+
+<h3 id="1-3-2-coordinator-pattern-协调者模式">1.3.2 Coordinator Pattern（协调者模式）</h3>
+
+<p>框架的秘密武器是<strong>自动协调者（Coordinator）</strong>。</p>
+
+<p>当你调用 <code>runTeam()</code> 时，框架会：</p>
+
+<ol>
+<li><strong>启动一个临时的协调者 Agent</strong>（不是你自己创建的 Agent）</li>
+<li>协调者<strong>阅读你的目标描述</strong>，理解你想要什么</li>
+<li>协调者<strong>把大目标分解成具体任务</strong>，形成任务依赖图</li>
+<li>协调者<strong>分配任务给团队成员</strong>，并根据依赖关系调度执行</li>
+<li>协调者<strong>收集所有结果</strong>，整合成最终输出</li>
+</ol>
+
+<div class="mermaid">graph LR
+    A["Goal: 登录系统"] --> B["Coordinator"]
+    B --> C["Task: 数据库设计"]
+    B --> D["Task: 后端接口"]
+    B --> E["Task: 前端页面"]
+    C --> F["完成"]
+    D --> F
+    E --> F</div>
+
+<p>这个协调者是框架的<strong>杀手级特性（Killer Feature）</strong>——它让"说需求"成为可能，而不需要"写代码"。</p>
+
+<h3 id="1-3-3-parallel-by-default-默认并行">1.3.3 Parallel-by-Default（默认并行）</h3>
+
+<p>独立的任务会<strong>自动并行执行</strong>。</p>
+
+<pre><code>任务A（无依赖） ──┐
+                  ├──► 并行执行，速度提升 3 倍
+任务B（无依赖） ──┤
+                  │
+任务C（无依赖） ──┘
+</code></pre>
+
+<p>如果任务 B 依赖任务 A，那么 B 会等待 A 完成后才启动。框架自动处理这一切，你不需要操心。</p>
+
+<h3 id="1-3-4-graceful-failure-优雅失败">1.3.4 Graceful Failure（优雅失败）</h3>
+
+<p>单个任务失败了怎么办？</p>
+
+<p>框架的设计是：<strong>失败的任务标记自己为 <code>failed</code>，它的直接依赖者永久等待，其他任务继续执行。</strong></p>
+
+<pre><code>任务A ──► 任务B（失败） ──► 任务C（永久等待 B）
+任务A ──► 任务D（继续执行） ✓
+任务A ──► 任务E（继续执行） ✓
+</code></pre>
+
+<p>这叫做"优雅失败"——局部失败不会导致全局崩溃，最大化你的有效输出。</p>
+
+<h2 id="1-4-框架的独特优势">1.4 框架的独特优势</h2>
+
+<h3 id="typescript-原生">TypeScript 原生</h3>
+
+<p>Open Multi-Agent 是用 TypeScript 编写的，专为 TypeScript 开发者设计。</p>
+
+<ul>
+<li><strong>完整的类型提示</strong>：IDE 自动补全，告别猜测</li>
+<li><strong>Zod 集成</strong>：结构化输出 + 运行时验证，双重保障</li>
+<li><strong>3 个运行时依赖</strong>：只有 <code>@anthropic-ai/sdk</code>、<code>openai</code>、<code>zod</code>，轻量如羽</li>
+</ul>
+
+<h3 id="模型无关">模型无关</h3>
+
+<p>不绑定特定 LLM 提供商：</p>
+
+<ul>
+<li><strong>Anthropic</strong>: Claude 系列</li>
+<li><strong>OpenAI</strong>: GPT 系列</li>
+<li><strong>Google</strong>: Gemini</li>
+<li><strong>GitHub</strong>: Copilot</li>
+<li><strong>本地模型</strong>: Ollama、vLLM、LM Studio</li>
+</ul>
+
+<p>你可以在同一个团队里混用不同的模型，每个 Agent 可以选择最适合自己的。</p>
+
+<h3 id="轻量且可审计">轻量且可审计</h3>
+
+<pre><code>3 个运行时依赖
+33 个源码文件
+可读性极高 —— 一个下午就能通读全框架
+</code></pre>
+
+<p>不像某些"重量级选手"，这个框架你可以完全读懂、完全掌控。</p>
+
+<h2 id="1-5-快速一览框架架构">1.5 快速一览框架架构</h2>
+
+<p>让我们从高处看看这个框架的组成：</p>
+
+<div class="mermaid">graph TB
+    subgraph "核心层"
+        O["OpenMultiAgent<br/>编排器"]
+        T["Team<br/>团队"]
+        A["Agent<br/>智能体"]
+        TK["Task<br/>任务"]
+    end
+
+    subgraph "执行层"
+        Q["TaskQueue<br/>任务队列"]
+        P["AgentPool<br/>智能体池"]
+        S["Scheduler<br/>调度器"]
+    end
+
+    subgraph "基础设施"
+        TR["ToolRegistry<br/>工具注册表"]
+        EX["ToolExecutor<br/>工具执行器"]
+        SM["SharedMemory<br/>共享内存"]
+        MB["MessageBus<br/>消息总线"]
+    end
+
+    subgraph "集成层"
+        AD["LLM Adapter<br/>模型适配器"]
+        AN["Anthropic"]
+        OA["OpenAI"]
+        OL["Ollama"]
+    end
+
+    O --> T
+    T --> A
+    T --> TK
+    TK --> Q
+    A --> P
+    Q --> S
+    A --> TR
+    TR --> EX
+    T --> SM
+    T --> MB
+    AD --> AN
+    AD --> OA
+    AD --> OL</div>
+
+<p>看不懂没关系，这个图会在后续章节逐一讲解。现在你只需要知道：<strong>这个框架有很多组件，但它们分工明确、协作有序。</strong></p>
+
+<h2 id="1-6-本书结构">1.6 本书结构</h2>
+
+<p>接下来的 11 章，我们将深入这个框架的每一个角落：</p>
+
+<div class="table-wrap"><table>
+<tr><th>章节</th><th>内容</th></tr>
+<tr><td>------</td><td>------</td></tr>
+<tr><td>第 2 章</td><td><strong>快速上手</strong>：5 分钟运行第一个示例</td></tr>
+<tr><td>第 3 章</td><td><strong>核心概念</strong>：Agent、Task、Team、Orchestrator</td></tr>
+<tr><td>第 4 章</td><td><strong>任务调度</strong>：DAG、依赖管理、并行执行</td></tr>
+<tr><td>第 5 章</td><td><strong>工具系统</strong>：内置工具 + 自定义工具</td></tr>
+<tr><td>第 6 章</td><td><strong>多模型支持</strong>：接入 Claude、GPT、本地模型</td></tr>
+<tr><td>第 7 章</td><td><strong>共享内存</strong>：Agent 之间的数据传递</td></tr>
+<tr><td>第 8 章</td><td><strong>结构化输出</strong>：Zod + 重试机制</td></tr>
+<tr><td>第 9 章</td><td><strong>高级特性</strong>：循环检测、人工审批、生命周期钩子</td></tr>
+<tr><td>第 10 章</td><td><strong>可观测性</strong>：追踪、日志、监控</td></tr>
+<tr><td>第 11 章</td><td><strong>实战案例</strong>：3 个完整项目</td></tr>
+<tr><td>第 12 章</td><td><strong>扩展开发</strong>：自定义 Adapter 和 Tool</td></tr>
+</table></div>
+
+<h2 id="1-7-环境准备">1.7 环境准备</h2>
+
+<p>在开始下一章之前，请确保你的环境满足要求：</p>
+
+<ul>
+<li><strong>Node.js &gt;= 18</strong>：框架运行在 Node.js 之上</li>
+<li><strong>包管理器</strong>：npm、pnpm 或 yarn 均可</li>
+<li><strong>API Key</strong>：至少准备一个 LLM 提供商的 API Key</li>
+</ul>
+
+<pre><code class="language-bash"># 检查 Node.js 版本
+node --version  # 应该 &gt;= 18.0.0
+
+# 如果使用 Claude，还需要
+echo $ANTHROPIC_API_KEY  # 应该有一串密钥
+</code></pre>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>多智能体系统</strong>是多个 AI Agent 协同工作的架构，分工提升效率，专业保证质量。</li>
+</ol>
+
+<ol>
+<li><strong>Open Multi-Agent</strong> 是一个 TypeScript 原生的 Agent 编排框架，核心理念是"Goal In, Result Out"。</li>
+</ol>
+
+<ol>
+<li><strong>Coordinator Pattern</strong> 是框架的杀手级特性——自动把目标分解成任务图，无需手动定义。</li>
+</ol>
+
+<ol>
+<li>框架支持<strong>并行执行</strong>、<strong>优雅失败</strong>、<strong>模型无关</strong>、<strong>零配置默认值</strong>，开箱即用。</li>
+</ol>
+
+<ol>
+<li>框架只有 3 个运行时依赖、33 个源码文件，<strong>轻量且可审计</strong>。</li>
+</ol>
+
+<h2 id="思考题">思考题</h2>
+
+<ol>
+<li>在什么场景下，你会选择使用多智能体系统而不是单一 Agent？</li>
+</ol>
+
+<ol>
+<li>"Goal In, Result Out"的理念有什么优缺点？你能想到哪些场景下这个模式可能不太适用？</li>
+</ol>
+
+<ol>
+<li>如果你是框架的设计者，你会选择"自动协调者"还是"手动任务定义"？为什么？</li>
+</ol>
+
+
+<nav class="chapter-nav">
+  <a href="index.html">◀ 目录</a>
+  <a href="ch02.html">第 2 章 快速上手 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#从一个故事开始">从一个故事开始</a></li><li><a href="#1-1-什么是多智能体系统">1.1 什么是多智能体系统？</a></li><li><a href="#1-2-为什么需要-agent-编排框架">1.2 为什么需要 Agent 编排框架？</a></li><li><a href="#1-3-open-multi-agent-的设计哲学">1.3 Open Multi-Agent 的设计哲学</a></li><li><a href="#1-4-框架的独特优势">1.4 框架的独特优势</a></li><li><a href="#1-5-快速一览框架架构">1.5 快速一览框架架构</a></li><li><a href="#1-6-本书结构">1.6 本书结构</a></li><li><a href="#1-7-环境准备">1.7 环境准备</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#思考题">思考题</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var links = document.querySelectorAll('.toc-list a');
+  if (links.length) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, fromTop = s.scrollTop + 100;
+      links.forEach(function(link) {
+        var sec = document.getElementById(link.getAttribute('href').slice(1));
+        if (sec && sec.offsetTop <= fromTop) {
+          document.querySelectorAll('.toc-list a').forEach(function(l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    });
+  }
+})();</script>
+</body>
+</html>

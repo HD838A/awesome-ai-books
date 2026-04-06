@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 7 章 共享内存与通信 — Open Multi-Agent 实战</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+#layout { display: flex; min-height: 100vh; }
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a:hover { background: #E8E2D8; text-decoration: none; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a:hover { color: #C7553A; border-left-color: #C7553A; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.index-intro { max-width: 640px; margin: 0 auto 48px; }
+.index-intro p { margin: 0.8em 0; font-size: 1.02em; line-height: 1.9; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; text-decoration: none; }
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Open Multi-Agent 实战</div>
+      <div class="sidebar-subtitle">用 TypeScript 构建你的第一个多智能体系统</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第 1 章 认识多智能体系统</a>
+<a href="ch02.html">第 2 章 快速上手</a>
+<a href="ch03.html">第 3 章 核心概念</a>
+<a href="ch04.html">第 4 章 任务调度与依赖管理</a>
+<a href="ch05.html">第 5 章 工具系统</a>
+<a href="ch06.html">第 6 章 多模型支持</a>
+<a href="ch07.html" class="active">第 7 章 共享内存与通信</a>
+<a href="ch08.html">第 8 章 结构化输出与重试</a>
+<a href="ch09.html">第 9 章 高级特性</a>
+<a href="ch10.html">第 10 章 可观测性</a>
+<a href="ch11.html">第 11 章 实战案例</a>
+<a href="ch12.html">第 12 章 扩展开发</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-7-章-共享内存与通信">第 7 章：共享内存与通信</h1>
+
+<h2 id="agent-之间的-记忆共享">Agent 之间的"记忆共享"</h2>
+
+<p>想象一个真实的软件团队：</p>
+
+<ul>
+<li>架构师在白板上画了系统设计图</li>
+<li>开发者看到设计后开始写代码</li>
+<li>测试工程师基于开发者的代码写测试用例</li>
+</ul>
+
+<p>他们之间需要<strong>共享信息</strong>。架构师不会每次都重新解释设计，开发者也不会每次都问架构师"系统要做什么"。</p>
+
+<p>在 Open Multi-Agent 中，<strong>SharedMemory（共享内存）</strong> 就是团队成员之间的"白板"——让 Agent 能够共享信息，而不需要每次都重新传递上下文。</p>
+
+<h2 id="7-1-sharedmemory-概述">7.1 SharedMemory 概述</h2>
+
+<h3 id="7-1-1-核心概念">7.1.1 核心概念</h3>
+
+<p>SharedMemory 是一个<strong>命名空间隔离</strong>的键值存储：</p>
+
+<pre><code class="language-typescript">import { SharedMemory } from '@jackchen_me/open-multi-agent'
+
+const memory = new SharedMemory()
+</code></pre>
+
+<p><strong>写入数据</strong>：</p>
+
+<pre><code class="language-typescript">// Agent "researcher" 在自己的区域写入
+await memory.write('researcher', 'findings', 'TypeScript 5.5 支持 const 类型参数')
+
+// Agent "developer" 在自己的区域写入
+await memory.write('developer', 'plan', '使用 const 类型参数重构泛型')
+</code></pre>
+
+<p><strong>读取数据</strong>：</p>
+
+<pre><code class="language-typescript">// 按完整 key 读取
+const entry = await memory.read('researcher/findings')
+console.log(entry?.value)  // "TypeScript 5.5 支持 const 类型参数"
+
+// 按 Agent 过滤
+const researcherEntries = await memory.listByAgent('researcher')
+console.log(researcherEntries)
+// [{ key: 'researcher/findings', value: '...', metadata: { agent: 'researcher' } }]
+</code></pre>
+
+<h3 id="7-1-2-命名空间设计">7.1.2 命名空间设计</h3>
+
+<p>为什么用 <code>agentName/key</code> 作为 key？</p>
+
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                    SharedMemory                              │
+│                                                              │
+│  researcher/findings ────────────────────────────────────┐   │
+│  researcher/api-design ───────────────────────────────┐  │   │
+│  developer/plan ──────────────────────────────────┐   │  │   │
+│  developer/test-status ───────────────────────┐   │  │  │   │
+│  reviewer/comments ───────────────────────┐    │   │  │  │   │
+│                                           │    │   │  │  │   │
+└───────────────────────────────────────────┴────┴───┴──┴───┘   │
+                                               │    │   │  │
+                                              ┌┘    │   │  │
+                                              │researcher│  │
+                                              │         │  │
+                                              │developer │  │
+                                              │          │
+                                              │reviewer  │
+                                              └──────────┘
+</code></pre>
+
+<p><strong>好处</strong>：</p>
+<ul>
+<li>不同 Agent 的数据<strong>不会冲突</strong></li>
+<li>便于<strong>按 Agent 过滤</strong></li>
+<li>数据来源<strong>可追溯</strong>（<code>metadata.agent</code>）</li>
+</ul>
+
+<h2 id="7-2-团队共享内存">7.2 团队共享内存</h2>
+
+<h3 id="7-2-1-创建团队时启用">7.2.1 创建团队时启用</h3>
+
+<pre><code class="language-typescript">const team = orchestrator.createTeam('dev-team', {
+  name: 'dev-team',
+  agents: [architect, developer, reviewer],
+  sharedMemory: true,  // 启用共享内存
+})
+
+// 获取团队的共享内存实例
+const memory = team.getSharedMemory()
+</code></pre>
+
+<h3 id="7-2-2-agent-内部使用">7.2.2 Agent 内部使用</h3>
+
+<p>在自定义工具中访问共享内存：</p>
+
+<pre><code class="language-typescript">const fileWriteTool = defineTool({
+  name: 'file_write',
+  description: 'Write content to a file and record the action in team memory.',
+
+  inputSchema: z.object({
+    path: z.string(),
+    content: z.string(),
+    record?: z.boolean().default(true),  // 是否记录到共享内存
+  }),
+
+  execute: async ({ path, content, record = true }) =&gt; {
+    await fs.writeFile(path, content)
+
+    if (record) {
+      const memory = team.getSharedMemory()
+      await memory.write('developer', 'files_written', `Created ${path}`)
+    }
+
+    return { data: `Written to ${path}`, isError: false }
+  },
+})
+</code></pre>
+
+<h3 id="7-2-3-跨-agent-数据传递">7.2.3 跨 Agent 数据传递</h3>
+
+<pre><code class="language-typescript">// Agent A：研究阶段，写入发现
+await memory.write('researcher', 'competitors', JSON.stringify({
+  productA: { price: 100, features: ['a', 'b'] },
+  productB: { price: 80, features: ['b', 'c'] },
+}))
+
+// Agent B：分析阶段，读取研究结果
+const research = await memory.read('researcher/competitors')
+const competitors = JSON.parse(research?.value ?? '{}')
+
+// Agent C：撰写报告，引用分析结论
+const report = `基于竞品分析，${competitors.productA.name} 的定价偏高...`
+</code></pre>
+
+<h2 id="7-3-生成上下文摘要">7.3 生成上下文摘要</h2>
+
+<h3 id="7-3-1-getsummary-方法">7.3.1 getSummary() 方法</h3>
+
+<pre><code class="language-typescript">const summary = await memory.getSummary()
+
+console.log(summary)
+</code></pre>
+
+<p>输出示例：</p>
+
+<pre><code class="language-markdown">## Shared Team Memory
+
+### researcher
+- findings: TypeScript 5.5 支持 const 类型参数
+- competitors: {"productA": {"price": 100...}}
+
+### developer
+- plan: 使用 const 类型参数重构泛型
+- files_written: Created /tmp/main.ts
+
+### reviewer
+- comments: LGTM，但建议增加边界测试
+</code></pre>
+
+<h3 id="7-3-2-注入到-system-prompt">7.3.2 注入到 System Prompt</h3>
+
+<pre><code class="language-typescript">// 在 Agent 配置中使用摘要
+const analyst: AgentConfig = {
+  name: 'analyst',
+  model: 'claude-sonnet-4-6',
+  systemPrompt: `你是一个数据分析师。
+
+以下是团队共享的信息：
+${await memory.getSummary()}
+
+请基于以上信息进行数据分析。`,
+}
+</code></pre>
+
+<h3 id="7-3-3-动态更新上下文">7.3.3 动态更新上下文</h3>
+
+<p>每次 Agent 运行时获取最新摘要：</p>
+
+<pre><code class="language-typescript">async function runWithMemory(agent: Agent, prompt: string, memory: SharedMemory) {
+  const summary = await memory.getSummary()
+  const contextPrompt = summary
+    ? `${prompt}\n\n## Team Context\n${summary}`
+    : prompt
+
+  return await agent.run(contextPrompt)
+}
+</code></pre>
+
+<h2 id="7-4-memorystore-接口">7.4 MemoryStore 接口</h2>
+
+<p>SharedMemory 基于 MemoryStore 接口实现：</p>
+
+<pre><code class="language-typescript">interface MemoryStore {
+  get(key: string): Promise&lt;MemoryEntry | null&gt;
+  set(key: string, value: string, metadata?: Record&lt;string, unknown&gt;): Promise&lt;void&gt;
+  list(): Promise&lt;MemoryEntry[]&gt;
+}
+
+interface MemoryEntry {
+  key: string
+  value: string
+  metadata: Record&lt;string, unknown&gt;
+  createdAt: Date
+  updatedAt: Date
+}
+</code></pre>
+
+<h3 id="7-4-1-内置实现-inmemorystore">7.4.1 内置实现：InMemoryStore</h3>
+
+<p>默认使用内存存储：</p>
+
+<pre><code class="language-typescript">import { InMemoryStore } from '@jackchen_me/open-multi-agent'
+
+const store = new InMemoryStore()
+await store.set('key', 'value')
+const entry = await store.get('key')
+</code></pre>
+
+<h3 id="7-4-2-自定义存储后端">7.4.2 自定义存储后端</h3>
+
+<p>实现 MemoryStore 接口，使用 Redis、PostgreSQL 等持久化存储：</p>
+
+<pre><code class="language-typescript">import type { MemoryStore } from '@jackchen_me/open-multi-agent'
+
+class RedisStore implements MemoryStore {
+  constructor(private client: Redis) {}
+
+  async get(key: string) {
+    const data = await this.client.hgetall(key)
+    if (!data) return null
+    return {
+      key,
+      value: data.value,
+      metadata: JSON.parse(data.metadata ?? '{}'),
+      createdAt: new Date(data.createdAt),
+      updatedAt: new Date(data.updatedAt),
+    }
+  }
+
+  async set(key: string, value: string, metadata?: Record&lt;string, unknown&gt;) {
+    await this.client.hmset(key, { value, metadata: JSON.stringify(metadata) })
+  }
+
+  async list() {
+    const keys = await this.client.keys('*')
+    return Promise.all(keys.map(k =&gt; this.get(k)))
+  }
+}
+
+// 使用自定义存储
+const redisStore = new RedisStore(redisClient)
+const memory = new SharedMemory(redisStore)
+</code></pre>
+
+<h2 id="7-5-团队通信机制">7.5 团队通信机制</h2>
+
+<h3 id="7-5-1-事件总线">7.5.1 事件总线</h3>
+
+<p>Team 内部包含 EventBus，用于 Agent 间事件通知：</p>
+
+<pre><code class="language-typescript">// 监听团队事件
+team.on('agent:start', (event) =&gt; {
+  console.log(`Agent "${event.agent}" 开始执行`)
+})
+
+team.on('agent:complete', (event) =&gt; {
+  console.log(`Agent "${event.agent}" 完成`)
+})
+
+team.on('task:complete', (event) =&gt; {
+  console.log(`任务 "${event.task}" 完成`)
+})
+</code></pre>
+
+<h3 id="7-5-2-共享内存作为通信媒介">7.5.2 共享内存作为通信媒介</h3>
+
+<pre><code class="language-typescript">// Agent A 通知 Agent B
+await memory.write('agent-a', 'status', '已完成初步分析')
+await memory.write('agent-a', 'result', JSON.stringify(analysisResult))
+
+// Agent B 检查 Agent A 的状态
+const aStatus = await memory.read('agent-a/status')
+if (aStatus?.value === '已完成初步分析') {
+  const aResult = JSON.parse((await memory.read('agent-a/result'))?.value)
+  // 使用 Agent A 的结果
+}
+</code></pre>
+
+<h3 id="7-5-3-共享工具注册表">7.5.3 共享工具注册表</h3>
+
+<p>团队中的所有 Agent 共享同一个 ToolRegistry：</p>
+
+<pre><code class="language-typescript">const registry = new ToolRegistry()
+registry.register(customTool)
+
+// 所有 Agent 都可以使用这个工具
+team.getAgents().forEach(agent =&gt; {
+  console.log(agent.name, '可用的工具:', registry.list().map(t =&gt; t.name))
+})
+</code></pre>
+
+<h2 id="7-6-实践案例-研究-分析-报告流水线">7.6 实践案例：研究→分析→报告流水线</h2>
+
+<pre><code class="language-typescript">async function researchPipeline(query: string) {
+  const memory = new SharedMemory()
+  const orchestrator = new OpenMultiAgent()
+
+  // 研究员：搜索和整理信息
+  const researcher = orchestrator.createAgent({
+    name: 'researcher',
+    systemPrompt: `你是一个研究员，负责收集信息。
+将重要发现记录到共享内存：await memory.write('researcher', 'findings', ...)`,
+    tools: ['web_search', 'bash'],
+  })
+
+  // 分析员：分析收集的信息
+  const analyst = orchestrator.createAgent({
+    name: 'analyst',
+    systemPrompt: `你是一个分析师。
+读取研究员的发现：memory.read('researcher/findings')
+将分析结果记录到共享内存：memory.write('analyst', 'insights', ...)`,
+    tools: ['bash'],
+  })
+
+  // 报告员：撰写最终报告
+  const writer = orchestrator.createAgent({
+    name: 'writer',
+    systemPrompt: `你是一个技术作家。
+读取所有发现和分析：memory.listAll()
+撰写最终报告。`,
+    tools: ['file_write'],
+  })
+
+  // 阶段 1：研究
+  await researcher.run(`研究 ${query}，记录关键发现`)
+
+  // 阶段 2：分析
+  const findings = await memory.read('researcher/findings')
+  await analyst.run(`分析以下发现：${findings?.value}`)
+
+  // 阶段 3：写作
+  const insights = await memory.read('analyst/insights')
+  await writer.run(`基于以下分析撰写报告：${insights?.value}`)
+
+  // 输出完整上下文
+  console.log(await memory.getSummary())
+}
+</code></pre>
+
+<h2 id="7-7-最佳实践">7.7 最佳实践</h2>
+
+<h3 id="7-7-1-命名规范">7.7.1 命名规范</h3>
+
+<pre><code class="language-typescript">// ✅ 推荐：清晰的层级命名
+await memory.write('researcher', 'sources/2024-q1', '...')
+await memory.write('researcher', 'findings/feature-x', '...')
+
+// ❌ 不推荐：无结构的 key
+await memory.write('researcher', 'stuff1', '...')
+await memory.write('researcher', 'stuff2', '...')
+</code></pre>
+
+<h3 id="7-7-2-数据大小控制">7.7.2 数据大小控制</h3>
+
+<pre><code class="language-typescript">// 存储大对象前考虑压缩或摘要
+const largeData = await fetchHugeDataset()
+
+// 选项 1：只存摘要
+await memory.write('analyst', 'dataset-summary', summarize(largeData))
+
+// 选项 2：分块存储
+for (const chunk of chunkArray(largeData, 1000)) {
+  await memory.write('analyst', `dataset/chunk-${i}`, JSON.stringify(chunk))
+}
+</code></pre>
+
+<h3 id="7-7-3-过期数据清理">7.7.3 过期数据清理</h3>
+
+<pre><code class="language-typescript">// 定期清理过期数据
+async function cleanupMemory(memory: SharedMemory, maxAgeMs: number) {
+  const all = await memory.listAll()
+  const now = Date.now()
+
+  for (const entry of all) {
+    const age = now - entry.updatedAt.getTime()
+    if (age &gt; maxAgeMs) {
+      await memory.getStore().delete(entry.key)  // 如果 store 支持 delete
+    }
+  }
+}
+</code></pre>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>SharedMemory</strong> 是团队 Agent 之间的共享存储，基于命名空间（<code>agentName/key</code>）实现隔离和可追溯性。</li>
+</ol>
+
+<ol>
+<li><strong>write()</strong> 将数据写入特定 Agent 的命名空间，<strong>read()</strong> 按完整 key 读取，<strong>listByAgent()</strong> 按 Agent 过滤。</li>
+</ol>
+
+<ol>
+<li><strong>getSummary()</strong> 生成 Markdown 格式的摘要，可以直接注入到 Agent 的 system prompt。</li>
+</ol>
+
+<ol>
+<li><strong>MemoryStore 接口</strong> 支持自定义后端（Redis、PostgreSQL），只需实现 <code>get/set/list</code>。</li>
+</ol>
+
+<ol>
+<li><strong>团队通信</strong>：共享内存 + EventBus 构成完整的 Agent 间通信机制。</li>
+</ol>
+
+<h2 id="思考题">思考题</h2>
+
+<ol>
+<li>如果研究员和分析员同时写入同一个 key，会发生什么？如何避免数据覆盖？</li>
+</ol>
+
+<ol>
+<li>SharedMemory 和 Agent 的 messageHistory 有什么区别？什么时候用哪个？</li>
+</ol>
+
+<ol>
+<li>如果要实现"只读权限"的 Agent（不能写入共享内存），应该如何设计？</li>
+</ol>
+
+<h2 id="下章预告">下章预告</h2>
+
+<p>第 8 章我们将深入讲解<strong>结构化输出与重试机制</strong>。你会理解如何让 Agent 返回可靠的 JSON 数据，以及框架如何处理临时失败。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch06.html">◀ 第 6 章 多模型支持</a>
+  <a href="ch08.html">第 8 章 结构化输出与重试 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#agent-之间的-记忆共享">Agent 之间的"记忆共享"</a></li><li><a href="#7-1-sharedmemory-概述">7.1 SharedMemory 概述</a></li><li><a href="#7-2-团队共享内存">7.2 团队共享内存</a></li><li><a href="#7-3-生成上下文摘要">7.3 生成上下文摘要</a></li><li><a href="#7-4-memorystore-接口">7.4 MemoryStore 接口</a></li><li><a href="#7-5-团队通信机制">7.5 团队通信机制</a></li><li><a href="#7-6-实践案例-研究-分析-报告流水线">7.6 实践案例：研究→分析→报告流水线</a></li><li><a href="#7-7-最佳实践">7.7 最佳实践</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#思考题">思考题</a></li><li><a href="#下章预告">下章预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var links = document.querySelectorAll('.toc-list a');
+  if (links.length) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, fromTop = s.scrollTop + 100;
+      links.forEach(function(link) {
+        var sec = document.getElementById(link.getAttribute('href').slice(1));
+        if (sec && sec.offsetTop <= fromTop) {
+          document.querySelectorAll('.toc-list a').forEach(function(l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    });
+  }
+})();</script>
+</body>
+</html>

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 8 章 结构化输出与重试 — Open Multi-Agent 实战</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+#layout { display: flex; min-height: 100vh; }
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a:hover { background: #E8E2D8; text-decoration: none; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a:hover { color: #C7553A; border-left-color: #C7553A; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.index-intro { max-width: 640px; margin: 0 auto 48px; }
+.index-intro p { margin: 0.8em 0; font-size: 1.02em; line-height: 1.9; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; text-decoration: none; }
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Open Multi-Agent 实战</div>
+      <div class="sidebar-subtitle">用 TypeScript 构建你的第一个多智能体系统</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第 1 章 认识多智能体系统</a>
+<a href="ch02.html">第 2 章 快速上手</a>
+<a href="ch03.html">第 3 章 核心概念</a>
+<a href="ch04.html">第 4 章 任务调度与依赖管理</a>
+<a href="ch05.html">第 5 章 工具系统</a>
+<a href="ch06.html">第 6 章 多模型支持</a>
+<a href="ch07.html">第 7 章 共享内存与通信</a>
+<a href="ch08.html" class="active">第 8 章 结构化输出与重试</a>
+<a href="ch09.html">第 9 章 高级特性</a>
+<a href="ch10.html">第 10 章 可观测性</a>
+<a href="ch11.html">第 11 章 实战案例</a>
+<a href="ch12.html">第 12 章 扩展开发</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-8-章-结构化输出与重试">第 8 章：结构化输出与重试</h1>
+
+<h2 id="让-ai-输出更可靠">让 AI 输出更可靠</h2>
+
+<p>默认情况下，LLM 输出的是自由文本。这对于写作、聊天等场景很合适。但在编程场景中，我们需要：</p>
+
+<ul>
+<li>返回<strong>类型安全的 JSON 数据</strong></li>
+<li>遇到临时错误时<strong>自动重试</strong></li>
+<li>防止 Agent 进入<strong>死循环</strong></li>
+</ul>
+
+<p>本章我们将学习 Open Multi-Agent 如何解决这些问题。</p>
+
+<h2 id="8-1-结构化输出">8.1 结构化输出</h2>
+
+<h3 id="8-1-1-问题">8.1.1 问题</h3>
+
+<p>让 LLM 输出精确的 JSON 格式是很困难的：</p>
+
+<pre><code class="language-typescript">// ❌ LLM 可能输出这样的"混乱"结果：
+// "Here is the data: { \"name\": \"Alice\", \"age\": 30 }"
+// 或者
+// "```json\n{...}\n```"
+// 甚至
+// "根据您的要求，以下是结果：{name: 'Alice', age: 30}"
+</code></pre>
+
+<h3 id="8-1-2-解决方案-三步曲">8.1.2 解决方案：三步曲</h3>
+
+<p>框架提供了完整的三步解决方案：</p>
+
+<pre><code>┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│ 1. Prompt 注入   │    │ 2. JSON 提取     │    │ 3. Zod 验证     │
+│                  │    │                  │    │                  │
+│ 在 systemPrompt  │    │ 从可能混乱的     │    │ 用 Zod schema   │
+│ 中告诉 LLM 输出  │ ──►│ 输出中找到      │ ──►│ 验证并转换     │
+│ 什么格式         │    │ JSON 对象        │    │ 类型安全的结果  │
+└──────────────────┘    └──────────────────┘    └──────────────────┘
+</code></pre>
+
+<h3 id="8-1-3-第一步-定义-schema">8.1.3 第一步：定义 Schema</h3>
+
+<pre><code class="language-typescript">import { z } from 'zod'
+
+const UserSchema = z.object({
+  name: z.string().describe('用户名'),
+  age: z.number().describe('年龄'),
+  email: z.string().email().describe('邮箱地址'),
+  role: z.enum(['admin', 'user', 'guest']).describe('用户角色'),
+})
+</code></pre>
+
+<h3 id="8-1-4-第二步-配置-agent">8.1.4 第二步：配置 Agent</h3>
+
+<pre><code class="language-typescript">import { buildStructuredOutputInstruction } from '@jackchen_me/open-multi-agent'
+
+const userSchema = z.object({
+  name: z.string(),
+  age: z.number(),
+  email: z.string().email(),
+  role: z.enum(['admin', 'user', 'guest']),
+})
+
+const instruction = buildStructuredOutputInstruction(userSchema)
+// instruction 输出：
+// ## Output Format (REQUIRED)
+// You MUST respond with ONLY valid JSON that conforms to...
+// {"type": "object", "properties": {"name": {...}, ...}, ...}
+
+const agent: AgentConfig = {
+  name: 'data-extractor',
+  model: 'claude-sonnet-4-6',
+  systemPrompt: `你是一个数据提取专家。
+从用户输入中提取信息并以 JSON 格式返回。
+${instruction}`,
+  tools: [],
+  outputSchema: userSchema,  // 框架自动注入指令
+}
+</code></pre>
+
+<h3 id="8-1-5-第三步-使用结果">8.1.5 第三步：使用结果</h3>
+
+<pre><code class="language-typescript">// 方式 1：直接从 result 获取
+const result = await agent.run('用户 Alice，30岁，邮箱 alice@example.com')
+
+if (result.outputSchemaResult) {
+  const user = result.outputSchemaResult as z.infer&lt;typeof UserSchema&gt;
+  console.log(user.name)    // "Alice"
+  console.log(user.age)     // 30
+  console.log(user.email)   // "alice@example.com"
+}
+
+// 方式 2：手动提取和验证
+import { extractJSON, validateOutput } from '@jackchen_me/open-multi-agent'
+
+const parsed = extractJSON(result.output)  // 提取 JSON
+const user = validateOutput(UserSchema, parsed)  // 验证
+console.log(user.name)  // "Alice"
+</code></pre>
+
+<h2 id="8-2-agentrunner-的对话循环">8.2 AgentRunner 的对话循环</h2>
+
+<h3 id="8-2-1-核心流程">8.2.1 核心流程</h3>
+
+<p>AgentRunner 是框架的核心，它运行一个<strong>多轮对话循环</strong>：</p>
+
+<div class="mermaid">flowchart TD
+    A["开始"] --> B["发送消息到 LLM"]
+    B --> C["接收 LLM 响应"]
+    C --> D{"有工具调用?"}
+    D -- 是 --> E["执行工具"]
+    E --> F["将结果添加回对话"]
+    F --> B
+    D -- 否 --> G["结束，返回输出"]</div>
+
+<h3 id="8-2-2-流式事件">8.2.2 流式事件</h3>
+
+<p>框架使用 AsyncGenerator 提供<strong>实时流式事件</strong>：</p>
+
+<pre><code class="language-typescript">for await (const event of agent.stream('写一首关于 AI 的诗')) {
+  switch (event.type) {
+    case 'text':
+      process.stdout.write(event.data)  // 实时显示
+      break
+
+    case 'tool_use':
+      console.log(`\n🔧 调用工具: ${event.data.name}`)
+      break
+
+    case 'tool_result':
+      console.log(`✅ 工具结果: ${event.data.content?.slice(0, 50)}...`)
+      break
+
+    case 'loop_detected':
+      console.log(`⚠️ 检测到循环: ${event.data.detail}`)
+      break
+
+    case 'done':
+      console.log('\n🎉 完成！')
+      break
+
+    case 'error':
+      console.error(`❌ 错误: ${event.data.message}`)
+      break
+  }
+}
+</code></pre>
+
+<h3 id="8-2-3-回调选项">8.2.3 回调选项</h3>
+
+<pre><code class="language-typescript">const result = await agent.run('生成报告', {
+  onToolCall: (name, input) =&gt; {
+    console.log(`🔧 ${name}(${JSON.stringify(input)})`)
+  },
+  onToolResult: (name, result) =&gt; {
+    console.log(`✅ ${name}: ${result.isError ? '❌' : '✓'}`)
+  },
+  onMessage: (message) =&gt; {
+    console.log(`📨 消息: ${message.role}`)
+  },
+  onWarning: (msg) =&gt; {
+    console.warn(`⚠️ 警告: ${msg}`)
+  },
+})
+</code></pre>
+
+<h2 id="8-3-循环检测">8.3 循环检测</h2>
+
+<h3 id="8-3-1-问题">8.3.1 问题</h3>
+
+<p>有时 Agent 会陷入"死循环"：</p>
+
+<pre><code class="language-text">Turn 1: 调用 bash("ls") → 失败
+Turn 2: 调用 bash("ls") → 失败
+Turn 3: 调用 bash("ls") → 失败
+Turn 4: ...无限循环
+</code></pre>
+
+<h3 id="8-3-2-loopdetector">8.3.2 LoopDetector</h3>
+
+<p>框架使用滑动窗口检测循环：</p>
+
+<pre><code class="language-typescript">interface LoopDetectionConfig {
+  maxRepetitions?: number      // 连续重复多少次触发（默认 3）
+  loopDetectionWindow?: number  // 滑动窗口大小（默认 4）
+  onLoopDetected?: 'warn' | 'terminate' | ((info) =&gt; 'continue' | 'inject' | 'terminate')
+}
+
+const agent: AgentConfig = {
+  name: 'developer',
+  model: 'claude-sonnet-4-6',
+  loopDetection: {
+    maxRepetitions: 3,
+    onLoopDetected: 'terminate',  // 检测到循环直接终止
+  },
+}
+</code></pre>
+
+<h3 id="8-3-3-处理策略">8.3.3 处理策略</h3>
+
+<div class="table-wrap"><table>
+<tr><th>策略</th><th>行为</th></tr>
+<tr><td>------</td><td>------</td></tr>
+<tr><td><code>'warn'</code></td><td>第一次警告，继续执行；如果再次检测到，终止</td></tr>
+<tr><td><code>'terminate'</code></td><td>直接终止对话</td></tr>
+<tr><td><code>'continue'</code></td><td>无视，继续执行</td></tr>
+<tr><td><code>'inject'</code></td><td>注入警告到上下文中，让 LLM 自我修正</td></tr>
+</table></div>
+
+<pre><code class="language-typescript">// 自定义处理函数
+const agent: AgentConfig = {
+  name: 'developer',
+  loopDetection: {
+    maxRepetitions: 2,
+    onLoopDetected: (info) =&gt; {
+      console.error(`检测到循环: ${info.detail}`)
+      return 'inject'  // 注入警告到上下文
+    },
+  },
+}
+</code></pre>
+
+<h3 id="8-3-4-检测内容">8.3.4 检测内容</h3>
+
+<p>LoopDetector 检测两种循环：</p>
+
+<ol>
+<li><strong>工具调用重复</strong>：相同工具 + 相同参数反复调用</li>
+<li><strong>文本输出重复</strong>：相同的文本响应反复出现</li>
+</ol>
+
+<h2 id="8-4-重试机制">8.4 重试机制</h2>
+
+<h3 id="8-4-1-为什么需要重试">8.4.1 为什么需要重试？</h3>
+
+<p>LLM API 调用可能因为以下原因失败：</p>
+
+<ul>
+<li>网络临时不可用</li>
+<li>API 限流（Rate Limit）</li>
+<li>服务端临时过载</li>
+<li>验证错误（可恢复）</li>
+</ul>
+
+<p>这些错误通常是<strong>临时性的</strong>，重试往往能成功。</p>
+
+<h3 id="8-4-2-重试配置">8.4.2 重试配置</h3>
+
+<pre><code class="language-typescript">const task = createTask({
+  title: '调用外部 API',
+  description: '调用天气 API 获取数据',
+  maxRetries: 3,        // 最多重试 3 次（总尝试 4 次）
+  retryDelayMs: 1000,   // 基础延迟 1 秒
+  retryBackoff: 2,       // 退避系数：2 = 指数退避
+})
+</code></pre>
+
+<h3 id="8-4-3-指数退避">8.4.3 指数退避</h3>
+
+<div class="mermaid">graph LR
+    A["Attempt 1<br/>失败"] --> B["等待 1s"]
+    B --> C["Attempt 2<br/>失败"]
+    C --> D["等待 2s"]
+    D --> E["Attempt 3<br/>失败"]
+    E --> F["等待 4s"]
+    F --> G["Attempt 4<br/>成功"]</div>
+
+<p><strong>延迟计算</strong>：</p>
+
+<pre><code>delay = min(baseDelay * backoff^(attempt-1), MAX_DELAY)
+       = min(1000 * 2^(attempt-1), 60000)
+       = min(1000, 60000) = 1s
+       = min(2000, 60000) = 2s
+       = min(4000, 60000) = 4s
+       = ...
+</code></pre>
+
+<h3 id="8-4-4-重试回调">8.4.4 重试回调</h3>
+
+<pre><code class="language-typescript">const result = await orchestrator.runTasks(tasks, agents, {
+  onRetry: ({ attempt, maxAttempts, error, nextDelayMs }) =&gt; {
+    console.log(`重试 ${attempt}/${maxAttempts}: ${error}`)
+    console.log(`下次延迟: ${nextDelayMs}ms`)
+  },
+})
+</code></pre>
+
+<h3 id="8-4-5-重试-vs-不重试">8.4.5 重试 vs 不重试</h3>
+
+<pre><code class="language-typescript">// 适合重试的错误：
+// - 网络超时
+// - API Rate Limit (429)
+// - 服务器临时错误 (503)
+
+// 不适合重试的错误：
+// - 认证失败 (401) — API Key 错误，重试也不会成功
+// - 参数错误 (400) — 请求格式错误
+// - 业务逻辑错误 — 数据本身的问题
+</code></pre>
+
+<h2 id="8-5-综合示例">8.5 综合示例</h2>
+
+<h3 id="8-5-1-场景-结构化数据提取-重试">8.5.1 场景：结构化数据提取 + 重试</h3>
+
+<pre><code class="language-typescript">import { z } from 'zod'
+
+const ArticleSchema = z.object({
+  title: z.string().describe('文章标题'),
+  author: z.string().describe('作者'),
+  publishedAt: z.string().describe('发布日期 (ISO 8601)'),
+  tags: z.array(z.string()).describe('标签列表'),
+  summary: z.string().describe('文章摘要'),
+  url: z.string().url().describe('文章链接'),
+})
+
+const ArticleExtractor: AgentConfig = {
+  name: 'extractor',
+  model: 'claude-sonnet-4-6',
+  outputSchema: ArticleSchema,
+  loopDetection: { maxRepetitions: 3, onLoopDetected: 'terminate' },
+}
+
+async function extractArticle(url: string): Promise&lt;z.infer&lt;typeof ArticleSchema&gt;&gt; {
+  for (let attempt = 1; attempt &lt;= 3; attempt++) {
+    try {
+      const result = await agent.run(`提取 ${url} 的文章信息`)
+      return result.outputSchemaResult as z.infer&lt;typeof ArticleSchema&gt;
+    } catch (error) {
+      if (attempt === 3) throw error
+      const delay = 1000 * Math.pow(2, attempt - 1)
+      console.log(`第 ${attempt} 次尝试失败，${delay}ms 后重试...`)
+      await sleep(delay)
+    }
+  }
+  throw new Error('提取失败')
+}
+</code></pre>
+
+<h3 id="8-5-2-场景-循环检测-自动修正">8.5.2 场景：循环检测 + 自动修正</h3>
+
+<pre><code class="language-typescript">const SafeDeveloper: AgentConfig = {
+  name: 'developer',
+  model: 'claude-sonnet-4-6',
+  tools: ['bash', 'file_read', 'file_write', 'file_edit'],
+  loopDetection: {
+    maxRepetitions: 2,
+    onLoopDetected: 'inject',  // 注入警告，让 LLM 自我修正
+  },
+  systemPrompt: `你是一个开发者，负责修复 bug。
+
+重要规则：
+1. 每次修复后必须运行测试验证
+2. 如果测试持续失败，不要重复相同的操作
+3. 尝试不同的方法解决问题`,
+}
+
+// 运行
+for await (const event of developer.stream('修复 /tmp/app.ts 中的空指针错误')) {
+  if (event.type === 'loop_detected') {
+    console.log(`⚠️ 检测到可能的循环: ${event.data.detail}`)
+    console.log('框架将注入警告到上下文中...')
+  }
+}
+</code></pre>
+
+<h2 id="8-6-最佳实践">8.6 最佳实践</h2>
+
+<h3 id="8-6-1-结构化输出">8.6.1 结构化输出</h3>
+
+<ol>
+<li><strong>使用描述性字段名</strong>：Zod 的 <code>.describe()</code> 会成为 JSON Schema 的一部分</li>
+<li><strong>添加示例</strong>：在 systemPrompt 中提供输出示例</li>
+<li><strong>验证始终进行</strong>：即使 LLM 输出看起来正确，也要验证</li>
+</ol>
+
+<pre><code class="language-typescript">const ProductSchema = z.object({
+  name: z.string().describe('产品名称，例如 "iPhone 15 Pro"'),
+  price: z.number().min(0).describe('价格（人民币）'),
+  inStock: z.boolean().describe('是否有库存'),
+})
+</code></pre>
+
+<h3 id="8-6-2-循环检测">8.6.2 循环检测</h3>
+
+<ol>
+<li><strong>设置合理的阈值</strong>：<code>maxRepetitions: 3</code> 通常足够</li>
+<li><strong>使用 'inject' 策略</strong>：让 LLM 有机会自我修正</li>
+<li><strong>记录循环详情</strong>：用于调试和改进 Agent</li>
+</ol>
+
+<h3 id="8-6-3-重试策略">8.6.3 重试策略</h3>
+
+<pre><code class="language-typescript">// 快速失败场景（如用户请求）
+const task = createTask({ title: '快速操作', maxRetries: 0 })
+
+// 可靠性优先场景（如数据提取）
+const task = createTask({
+  title: '可靠提取',
+  maxRetries: 3,
+  retryDelayMs: 1000,
+  retryBackoff: 2,
+})
+
+// 指数退避 + 抖动（避免雷鸣羊群效应）
+const jitter = Math.random() * 1000  // 0-1秒随机抖动
+await sleep(delay + jitter)
+</code></pre>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>结构化输出三步曲</strong>：<code>buildStructuredOutputInstruction</code> → <code>extractJSON</code> → <code>validateOutput</code></li>
+</ol>
+
+<ol>
+<li><strong>AgentRunner 对话循环</strong>：LLM → 工具调用 → 结果回传 → 循环</li>
+</ol>
+
+<ol>
+<li><strong>流式事件</strong>：AsyncGenerator 提供 <code>text/tool_use/tool_result/done/error/loop_detected</code></li>
+</ol>
+
+<ol>
+<li><strong>循环检测</strong>：滑动窗口检测相同工具调用或文本输出，可配置 <code>warn/terminate/inject</code></li>
+</ol>
+
+<ol>
+<li><strong>重试机制</strong>：指数退避，<code>maxRetries/retryDelayMs/retryBackoff</code> 配置</li>
+</ol>
+
+<h2 id="思考题">思考题</h2>
+
+<ol>
+<li>如果 LLM 输出了 JSON 但不符合 Zod schema（多了字段），<code>validateOutput</code> 会怎么处理？</li>
+</ol>
+
+<ol>
+<li>循环检测中，为什么用滑动窗口而不是记录所有历史？滑动窗口的大小应该如何选择？</li>
+</ol>
+
+<ol>
+<li>指数退避的抖动（Jitter）为什么重要？它解决了什么问题？</li>
+</ol>
+
+<h2 id="下章预告">下章预告</h2>
+
+<p>第 9 章我们将介绍<strong>高级特性</strong>，包括追踪系统（Tracing）、流式输出、批量执行等，让你的 Agent 系统更加健壮和可观测。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch07.html">◀ 第 7 章 共享内存与通信</a>
+  <a href="ch09.html">第 9 章 高级特性 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#让-ai-输出更可靠">让 AI 输出更可靠</a></li><li><a href="#8-1-结构化输出">8.1 结构化输出</a></li><li><a href="#8-2-agentrunner-的对话循环">8.2 AgentRunner 的对话循环</a></li><li><a href="#8-3-循环检测">8.3 循环检测</a></li><li><a href="#8-4-重试机制">8.4 重试机制</a></li><li><a href="#8-5-综合示例">8.5 综合示例</a></li><li><a href="#8-6-最佳实践">8.6 最佳实践</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#思考题">思考题</a></li><li><a href="#下章预告">下章预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var links = document.querySelectorAll('.toc-list a');
+  if (links.length) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, fromTop = s.scrollTop + 100;
+      links.forEach(function(link) {
+        var sec = document.getElementById(link.getAttribute('href').slice(1));
+        if (sec && sec.offsetTop <= fromTop) {
+          document.querySelectorAll('.toc-list a').forEach(function(l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    });
+  }
+})();</script>
+</body>
+</html>

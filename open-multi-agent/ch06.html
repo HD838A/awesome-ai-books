@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 6 章 多模型支持 — Open Multi-Agent 实战</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+#layout { display: flex; min-height: 100vh; }
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a:hover { background: #E8E2D8; text-decoration: none; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a:hover { color: #C7553A; border-left-color: #C7553A; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.index-intro { max-width: 640px; margin: 0 auto 48px; }
+.index-intro p { margin: 0.8em 0; font-size: 1.02em; line-height: 1.9; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; text-decoration: none; }
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Open Multi-Agent 实战</div>
+      <div class="sidebar-subtitle">用 TypeScript 构建你的第一个多智能体系统</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第 1 章 认识多智能体系统</a>
+<a href="ch02.html">第 2 章 快速上手</a>
+<a href="ch03.html">第 3 章 核心概念</a>
+<a href="ch04.html">第 4 章 任务调度与依赖管理</a>
+<a href="ch05.html">第 5 章 工具系统</a>
+<a href="ch06.html" class="active">第 6 章 多模型支持</a>
+<a href="ch07.html">第 7 章 共享内存与通信</a>
+<a href="ch08.html">第 8 章 结构化输出与重试</a>
+<a href="ch09.html">第 9 章 高级特性</a>
+<a href="ch10.html">第 10 章 可观测性</a>
+<a href="ch11.html">第 11 章 实战案例</a>
+<a href="ch12.html">第 12 章 扩展开发</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-6-章-多模型支持">第 6 章：多模型支持</h1>
+
+<h2 id="一个团队-多种能力">一个团队，多种能力</h2>
+
+<p>在现实中，一个高效的团队会招募不同专长的成员：</p>
+
+<ul>
+<li>架构师负责系统设计</li>
+<li>开发者负责编码实现</li>
+<li>测试工程师负责质量保障</li>
+</ul>
+
+<p>同样，在 Open Multi-Agent 中，你可以让不同的 Agent 使用不同的 AI 模型，发挥各自的优势。本章我们将学习如何：</p>
+
+<ul>
+<li>配置不同的 LLM 提供商</li>
+<li>在同一团队中混合使用多种模型</li>
+<li>连接本地模型（如 Ollama）</li>
+</ul>
+
+<h2 id="6-1-llm-适配器架构">6.1 LLM 适配器架构</h2>
+
+<h3 id="6-1-1-为什么需要适配器">6.1.1 为什么需要适配器？</h3>
+
+<p>每个 LLM 提供商的 API 都不一样：</p>
+
+<pre><code>Anthropic:  messages.create({ model: 'claude-3-5-sonnet-20241022', ... })
+OpenAI:     chat.completions.create({ model: 'gpt-4o', ... })
+Gemini:     model.generateContent({ model: 'gemini-2.0-flash', ... })
+</code></pre>
+
+<p>如果框架直接调用这些 API，代码会变得混乱不堪。</p>
+
+<p><strong>解决方案</strong>：适配器模式（Adapter Pattern）</p>
+
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                      框架代码                                │
+│                                                              │
+│  agent.chat(messages)  ←── 统一的 LLMAdapter 接口           │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                          │
+           ┌──────────────┼──────────────┐
+           ▼              ▼              ▼
+      ┌─────────┐   ┌──────────┐   ┌────────┐
+      │Anthropic│   │  OpenAI  │   │ Gemini │
+      │Adapter  │   │ Adapter  │   │Adapter │
+      │  ↓ API  │   │   ↓ API  │   │  ↓ API │
+      └─────────┘   └──────────┘   └────────┘
+</code></pre>
+
+<h3 id="6-1-2-llmadapter-接口">6.1.2 LLMAdapter 接口</h3>
+
+<p>所有适配器都实现统一的接口：</p>
+
+<pre><code class="language-typescript">interface LLMAdapter {
+  // 发送消息，获取回复
+  chat(messages: LLMMessage[], options: LLMChatOptions): Promise&lt;LLMResponse&gt;
+
+  // 流式输出（逐字返回）
+  stream(messages: LLMMessage[], options: LLMStreamOptions): AsyncGenerator&lt;StreamEvent&gt;
+
+  // 获取模型能力（如是否支持工具调用）
+  getCapabilities(): LLMAdapterCapabilities
+
+  // 估算 token 数量
+  getTokenEstimate(text: string): number
+}
+</code></pre>
+
+<h2 id="6-2-创建适配器">6.2 创建适配器</h2>
+
+<h3 id="6-2-1-使用-createadapter-工厂">6.2.1 使用 createAdapter 工厂</h3>
+
+<pre><code class="language-typescript">import { createAdapter } from '@jackchen_me/open-multi-agent'
+
+// 创建 Anthropic 适配器（使用 Claude）
+const anthropicAdapter = await createAdapter('anthropic')
+
+// 创建 OpenAI 适配器（使用 GPT-4）
+const openaiAdapter = await createAdapter('openai')
+
+// 创建 Gemini 适配器
+const geminiAdapter = await createAdapter('gemini')
+</code></pre>
+
+<h3 id="6-2-2-api-key-配置">6.2.2 API Key 配置</h3>
+
+<p><strong>方式 1：环境变量（推荐）</strong></p>
+
+<pre><code class="language-bash"># .env 文件
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+OPENAI_API_KEY=sk-proj-xxxxx
+GEMINI_API_KEY=xxxxx
+</code></pre>
+
+<p><strong>方式 2：构造函数参数（覆盖环境变量）</strong></p>
+
+<pre><code class="language-typescript">const adapter = await createAdapter(
+  'anthropic',
+  'sk-ant-xxxxx'  // 显式传入 API Key
+)
+</code></pre>
+
+<h3 id="6-2-3-api-key-回退机制">6.2.3 API Key 回退机制</h3>
+
+<p>框架按以下优先级查找 API Key：</p>
+
+<pre><code>构造函数参数 &gt; 环境变量 &gt; SDK 默认值
+</code></pre>
+
+<pre><code class="language-typescript">// 伪代码实现
+class AnthropicAdapter {
+  constructor(privateApiKey?: string) {
+    this.apiKey = privateApiKey ?? process.env.ANTHROPIC_API_KEY
+  }
+}
+</code></pre>
+
+<h2 id="6-3-支持的模型">6.3 支持的模型</h2>
+
+<h3 id="6-3-1-anthropic-claude">6.3.1 Anthropic Claude</h3>
+
+<div class="table-wrap"><table>
+<tr><th>模型</th><th>特点</th><th>推荐场景</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>claude-opus-4-6</code></td><td>最强性能，成本高</td><td>复杂推理、架构设计</td></tr>
+<tr><td><code>claude-sonnet-4-6</code></td><td>平衡型，速度快</td><td>日常开发（<strong>推荐默认</strong>）</td></tr>
+<tr><td><code>claude-haiku-3-5</code></td><td>最快，最便宜</td><td>简单任务、批量处理</td></tr>
+</table></div>
+
+<pre><code class="language-typescript">const agent: AgentConfig = {
+  name: 'coder',
+  provider: 'anthropic',
+  model: 'claude-sonnet-4-6',  // 指定具体模型
+  systemPrompt: '你是一个 TypeScript 开发者...',
+}
+</code></pre>
+
+<h3 id="6-3-2-openai-gpt">6.3.2 OpenAI GPT</h3>
+
+<div class="table-wrap"><table>
+<tr><th>模型</th><th>特点</th><th>推荐场景</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>gpt-4o</code></td><td>旗舰多模态</td><td>复杂任务</td></tr>
+<tr><td><code>gpt-4-turbo</code></td><td>快速版 GPT-4</td><td>日常开发</td></tr>
+<tr><td><code>gpt-3.5-turbo</code></td><td>最便宜</td><td>简单任务</td></tr>
+</table></div>
+
+<pre><code class="language-typescript">const agent: AgentConfig = {
+  name: 'coder',
+  provider: 'openai',
+  model: 'gpt-4o',
+  systemPrompt: 'You are a senior developer...',
+}
+</code></pre>
+
+<h3 id="6-3-3-google-gemini">6.3.3 Google Gemini</h3>
+
+<div class="table-wrap"><table>
+<tr><th>模型</th><th>特点</th><th>推荐场景</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>gemini-2.0-flash</code></td><td>最新快速模型</td><td>日常任务</td></tr>
+<tr><td><code>gemini-1.5-pro</code></td><td>长上下文</td><td>文档分析</td></tr>
+</table></div>
+
+<pre><code class="language-typescript">const agent: AgentConfig = {
+  name: 'analyzer',
+  provider: 'gemini',
+  model: 'gemini-2.0-flash',
+  systemPrompt: 'You analyze data...',
+}
+</code></pre>
+
+<h3 id="6-3-4-grok-xai">6.3.4 Grok (xAI)</h3>
+
+<pre><code class="language-typescript">const agent: AgentConfig = {
+  name: 'researcher',
+  provider: 'grok',
+  model: 'grok-2',
+  systemPrompt: 'You are a witty AI assistant...',
+}
+</code></pre>
+
+<h2 id="6-4-多模型团队">6.4 多模型团队</h2>
+
+<h3 id="6-4-1-为什么混合使用模型">6.4.1 为什么混合使用模型？</h3>
+
+<p>不同的模型有不同的优势：</p>
+
+<pre><code>架构师 (Claude Sonnet)     → 强大的分析和推理能力
+开发者 (GPT-4o)           → 优秀的代码生成
+审核员 (Claude Opus)      → 细致的审查能力
+</code></pre>
+
+<h3 id="6-4-2-创建多模型团队">6.4.2 创建多模型团队</h3>
+
+<pre><code class="language-typescript">import { OpenMultiAgent } from '@jackchen_me/open-multi-agent'
+
+const orchestrator = new OpenMultiAgent({
+  defaultModel: 'claude-sonnet-4-6',
+})
+
+// 架构师：使用 Claude Sonnet
+const architect: AgentConfig = {
+  name: 'architect',
+  provider: 'anthropic',
+  model: 'claude-sonnet-4-6',
+  systemPrompt: `你是一个经验丰富的软件架构师。
+你擅长设计可扩展、高性能的分布式系统。
+你会考虑系统的长期可维护性。`,
+  tools: ['bash', 'file_write'],
+}
+
+// 开发者：使用 GPT-4o
+const developer: AgentConfig = {
+  name: 'developer',
+  provider: 'openai',
+  model: 'gpt-4o',
+  systemPrompt: `你是一个全栈开发工程师。
+你擅长编写简洁、可维护的代码。
+你会遵循最佳实践和代码规范。`,
+  tools: ['bash', 'file_read', 'file_write', 'file_edit'],
+}
+
+// 审核员：使用 Claude Opus（最强模型）
+const reviewer: AgentConfig = {
+  name: 'reviewer',
+  provider: 'anthropic',
+  model: 'claude-opus-4-6',
+  systemPrompt: `你是一个资深代码审查专家。
+你关注代码的正确性、安全性和性能。
+你会提出建设性的改进建议。`,
+  tools: ['bash', 'grep', 'file_read'],
+}
+
+// 创建团队
+const team = orchestrator.createTeam('dev-team', {
+  name: 'dev-team',
+  agents: [architect, developer, reviewer],
+  sharedMemory: true,
+})
+</code></pre>
+
+<h3 id="6-4-3-多模型协作示例">6.4.3 多模型协作示例</h3>
+
+<pre><code class="language-typescript">async function buildProject(goal: string) {
+  const result = await orchestrator.runTeam(team, goal)
+
+  console.log('各 Agent 结果:')
+  for (const [name, agentResult] of result.agentResults) {
+    const model = team.getAgents().find(a =&gt; a.name === name)?.model
+    console.log(`  ${name} (${model}): ${agentResult.success ? '✅' : '❌'}`)
+  }
+}
+
+// 运行
+await buildProject('创建一个电商网站后端 API')
+</code></pre>
+
+<h3 id="6-4-4-输出示例">6.4.4 输出示例</h3>
+
+<pre><code>各 Agent 结果:
+  architect (claude-sonnet-4-6): ✅
+  developer (gpt-4o): ✅
+  reviewer (claude-opus-4-6): ✅
+
+Token 消耗:
+  anthropic: 2,345 (输入) / 1,234 (输出)
+  openai:    1,890 (输入) / 987 (输出)
+  Total:     4,235 / 2,221
+</code></pre>
+
+<h2 id="6-5-本地模型支持">6.5 本地模型支持</h2>
+
+<h3 id="6-5-1-为什么使用本地模型">6.5.1 为什么使用本地模型？</h3>
+
+<ul>
+<li><strong>隐私</strong>：数据不离开你的机器</li>
+<li><strong>成本</strong>：免费使用，无需 API Key</li>
+<li><strong>速度</strong>：本地运行，无网络延迟</li>
+</ul>
+
+<h3 id="6-5-2-使用-ollama">6.5.2 使用 Ollama</h3>
+
+<p><strong>1. 安装 Ollama</strong></p>
+
+<pre><code class="language-bash"># macOS
+brew install ollama
+
+# Linux
+curl -fsSL https://ollama.com/install.sh | sh
+</code></pre>
+
+<p><strong>2. 下载模型</strong></p>
+
+<pre><code class="language-bash">ollama pull llama3.2
+ollama pull codellama
+</code></pre>
+
+<p><strong>3. 配置框架</strong></p>
+
+<pre><code class="language-typescript">// Ollama 提供 OpenAI 兼容 API
+const adapter = await createAdapter(
+  'openai',                        // 使用 OpenAI 适配器
+  'ollama-is-local',              // Ollama 不需要真正的 API Key
+  'http://localhost:11434/v1'      // Ollama 的 base URL
+)
+
+// 或者在 Agent 中配置
+const localAgent: AgentConfig = {
+  name: 'local-assistant',
+  provider: 'openai',
+  model: 'llama3.2',              // Ollama 模型名
+  apiKey: 'ollama-is-local',      // 占位符
+  baseURL: 'http://localhost:11434/v1',
+}
+</code></pre>
+
+<h3 id="6-5-3-使用-vllm">6.5.3 使用 vLLM</h3>
+
+<pre><code class="language-typescript">// vLLM 服务器
+const adapter = await createAdapter(
+  'openai',
+  'my-api-key',                    // vLLM 服务的 API Key
+  'https://vllm.example.com/v1'   // vLLM base URL
+)
+</code></pre>
+
+<h2 id="6-6-模型选择指南">6.6 模型选择指南</h2>
+
+<h3 id="6-6-1-根据任务类型选择">6.6.1 根据任务类型选择</h3>
+
+<div class="table-wrap"><table>
+<tr><th>任务类型</th><th>推荐模型</th><th>理由</th></tr>
+<tr><td>----------</td><td>----------</td><td>------</td></tr>
+<tr><td>系统架构设计</td><td>Claude Opus/Sonnet</td><td>强大的分析和推理能力</td></tr>
+<tr><td>代码生成</td><td>GPT-4o / Claude Sonnet</td><td>优秀的长上下文理解</td></tr>
+<tr><td>代码审查</td><td>Claude Opus</td><td>细致入微的分析</td></tr>
+<tr><td>简单任务</td><td>GPT-3.5 / Claude Haiku</td><td>成本低，速度快</td></tr>
+<tr><td>图像理解</td><td>GPT-4o / Claude</td><td>多模态支持</td></tr>
+</table></div>
+
+<h3 id="6-6-2-成本优化策略">6.6.2 成本优化策略</h3>
+
+<pre><code class="language-typescript">// 策略 1：简单任务用便宜模型
+const simpleAgent: AgentConfig = {
+  name: 'formatter',
+  provider: 'anthropic',
+  model: 'claude-haiku-3-5',  // 便宜快速
+  systemPrompt: '你格式化代码，确保符合规范。',
+}
+
+// 策略 2：复杂任务用强大模型
+const complexAgent: AgentConfig = {
+  name: 'architect',
+  provider: 'anthropic',
+  model: 'claude-opus-4-6',   // 昂贵但强大
+  systemPrompt: '你设计系统架构。',
+}
+</code></pre>
+
+<h3 id="6-6-3-模型比较示例">6.6.3 模型比较示例</h3>
+
+<pre><code class="language-typescript">// 测试不同模型对同一问题的回答
+const question = '解释什么是依赖注入，以及它的好处'
+
+const models = ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.0-flash']
+
+for (const model of models) {
+  const adapter = await createAdapter('anthropic', undefined, undefined)
+  const result = await adapter.chat(
+    [{ role: 'user', content: [{ type: 'text', text: question }] }],
+    { model, maxTokens: 500 }
+  )
+  console.log(`\n=== ${model} ===\n${result.message.content[0]?.text}`)
+}
+</code></pre>
+
+<h2 id="6-7-常见问题">6.7 常见问题</h2>
+
+<h3 id="q1-报错-model-not-found">Q1: 报错 <code>Model not found</code></h3>
+
+<p>确保模型名称正确：</p>
+
+<pre><code class="language-typescript">// Anthropic 模型名
+'claude-opus-4-6'      // ✓
+'claude-sonnet-4-6'    // ✓
+'claude-3-5-sonnet'    // ✗ 旧格式
+
+// OpenAI 模型名
+'gpt-4o'               // ✓
+'gpt-4-turbo'          // ✓
+'chatgpt-4'            // ✗
+</code></pre>
+
+<h3 id="q2-报错-invalid-api-key">Q2: 报错 <code>Invalid API Key</code></h3>
+
+<p>检查环境变量：</p>
+
+<pre><code class="language-bash"># 验证环境变量
+echo $ANTHROPIC_API_KEY   # 应该有值
+echo $OPENAI_API_KEY      # 应该有值
+</code></pre>
+
+<h3 id="q3-ollama-连接失败">Q3: Ollama 连接失败</h3>
+
+<p>确保 Ollama 服务正在运行：</p>
+
+<pre><code class="language-bash"># 启动 Ollama 服务
+ollama serve
+
+# 测试连接
+curl http://localhost:11434/api/tags
+</code></pre>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>适配器模式</strong>：统一接口，隐藏不同 LLM 提供商的差异。</li>
+</ol>
+
+<ol>
+<li><strong>createAdapter 工厂</strong>：一行代码创建适配器，支持懒加载。</li>
+</ol>
+
+<ol>
+<li><strong>五大提供商</strong>：Anthropic、OpenAI、Gemini、Grok、Copilot。</li>
+</ol>
+
+<ol>
+<li><strong>多模型团队</strong>：每个 Agent 可以使用不同模型，发挥各自优势。</li>
+</ol>
+
+<ol>
+<li><strong>本地模型</strong>：通过 OpenAI 兼容 API 支持 Ollama 和 vLLM。</li>
+</ol>
+
+<ol>
+<li><strong>成本优化</strong>：简单任务用便宜模型，复杂任务用强大模型。</li>
+</ol>
+
+<h2 id="思考题">思考题</h2>
+
+<ol>
+<li>如果你要构建一个"代码审查助手"，你会选择哪些 Agent？它们分别用什么模型？</li>
+</ol>
+
+<ol>
+<li>Ollama 使用 OpenAI 兼容 API，但不需要真正的 API Key。框架是如何处理这种情况的？</li>
+</ol>
+
+<ol>
+<li>在多模型团队中，不同模型的 Token 计费是独立的。如何估算整个团队的总成本？</li>
+</ol>
+
+<h2 id="下章预告">下章预告</h2>
+
+<p>第 7 章我们将深入讲解<strong>共享内存与通信</strong>。你会理解 Agent 之间如何共享数据，Team 的消息总线是如何工作的。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch05.html">◀ 第 5 章 工具系统</a>
+  <a href="ch07.html">第 7 章 共享内存与通信 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#一个团队-多种能力">一个团队，多种能力</a></li><li><a href="#6-1-llm-适配器架构">6.1 LLM 适配器架构</a></li><li><a href="#6-2-创建适配器">6.2 创建适配器</a></li><li><a href="#6-3-支持的模型">6.3 支持的模型</a></li><li><a href="#6-4-多模型团队">6.4 多模型团队</a></li><li><a href="#6-5-本地模型支持">6.5 本地模型支持</a></li><li><a href="#6-6-模型选择指南">6.6 模型选择指南</a></li><li><a href="#6-7-常见问题">6.7 常见问题</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#思考题">思考题</a></li><li><a href="#下章预告">下章预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var links = document.querySelectorAll('.toc-list a');
+  if (links.length) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, fromTop = s.scrollTop + 100;
+      links.forEach(function(link) {
+        var sec = document.getElementById(link.getAttribute('href').slice(1));
+        if (sec && sec.offsetTop <= fromTop) {
+          document.querySelectorAll('.toc-list a').forEach(function(l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    });
+  }
+})();</script>
+</body>
+</html>

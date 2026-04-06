@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 10 章 可观测性 — Open Multi-Agent 实战</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+#layout { display: flex; min-height: 100vh; }
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a:hover { background: #E8E2D8; text-decoration: none; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a:hover { color: #C7553A; border-left-color: #C7553A; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.index-intro { max-width: 640px; margin: 0 auto 48px; }
+.index-intro p { margin: 0.8em 0; font-size: 1.02em; line-height: 1.9; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; text-decoration: none; }
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Open Multi-Agent 实战</div>
+      <div class="sidebar-subtitle">用 TypeScript 构建你的第一个多智能体系统</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第 1 章 认识多智能体系统</a>
+<a href="ch02.html">第 2 章 快速上手</a>
+<a href="ch03.html">第 3 章 核心概念</a>
+<a href="ch04.html">第 4 章 任务调度与依赖管理</a>
+<a href="ch05.html">第 5 章 工具系统</a>
+<a href="ch06.html">第 6 章 多模型支持</a>
+<a href="ch07.html">第 7 章 共享内存与通信</a>
+<a href="ch08.html">第 8 章 结构化输出与重试</a>
+<a href="ch09.html">第 9 章 高级特性</a>
+<a href="ch10.html" class="active">第 10 章 可观测性</a>
+<a href="ch11.html">第 11 章 实战案例</a>
+<a href="ch12.html">第 12 章 扩展开发</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-10-章-可观测性">第 10 章：可观测性</h1>
+
+<h2 id="为什么你的-agent-系统需要-仪表盘">为什么你的 Agent 系统需要"仪表盘"</h2>
+
+<p>想象你开一辆车，却没有仪表盘——没有速度表、没有油量表、没有发动机故障灯。这辆车也许能开，但出了问题你完全不知道。</p>
+
+<p>Open Multi-Agent 的可观测性系统就是你的"仪表盘"。它让你：</p>
+
+<ul>
+<li><strong>看见</strong>每个 Agent 在做什么</li>
+<li><strong>量化</strong>Token 消耗和成本</li>
+<li><strong>追踪</strong>问题出在哪一步</li>
+<li><strong>监控</strong>系统健康状态</li>
+</ul>
+
+<h2 id="10-1-追踪系统详解">10.1 追踪系统详解</h2>
+
+<h3 id="10-1-1-traceevent-结构">10.1.1 TraceEvent 结构</h3>
+
+<p><strong>位置</strong>：<code>src/utils/trace.ts</code> + <code>src/types.ts</code></p>
+
+<p>框架在每个关键节点发射追踪事件：</p>
+
+<pre><code class="language-typescript">interface TraceEvent {
+  type: 'llm_call' | 'tool_call' | 'task' | 'agent'
+  runId: string          // 关联同一次运行的唯一 ID
+  agent: string          // Agent 名称
+  model: string          // 使用的模型
+  turn?: number          // 对话轮次
+  tokens?: {
+    input_tokens: number
+    output_tokens: number
+  }
+  tool?: string          // 工具名称（tool_call 类型）
+  taskTitle?: string     // 任务标题（task 类型）
+  success?: boolean      // 是否成功
+  retries?: number       // 重试次数
+  startMs: number        // 开始时间
+  endMs: number          // 结束时间
+  durationMs: number     // 持续时间（毫秒）
+}
+</code></pre>
+
+<h3 id="10-1-2-安全设计">10.1.2 安全设计</h3>
+
+<p>追踪系统的一个关键设计原则：<strong>可观测性永远不能破坏执行</strong>。</p>
+
+<pre><code class="language-typescript">export function emitTrace(
+  fn: ((event: TraceEvent) =&gt; void | Promise&lt;void&gt;) | undefined,
+  event: TraceEvent,
+): void {
+  if (!fn) return
+  try {
+    const result = fn(event) as unknown
+    if (result &amp;&amp; typeof (result as Promise&lt;unknown&gt;).catch === 'function') {
+      (result as Promise&lt;unknown&gt;).catch(noop)  // 吞掉异步 reject
+    }
+  } catch {
+    // 吞掉所有错误 — 追踪出错不影响主流程
+  }
+}
+</code></pre>
+
+<p><strong>为什么要这样做？</strong></p>
+
+<p>如果追踪服务崩溃（如发送到远程服务器失败），框架不应该因此停止运行。用户的业务逻辑优先级高于可观测性。</p>
+
+<h3 id="10-1-3-追踪处理器">10.1.3 追踪处理器</h3>
+
+<pre><code class="language-typescript">function handleTrace(event: TraceEvent): void {
+  const dur = `${event.durationMs}ms`.padStart(7)
+
+  switch (event.type) {
+    case 'llm_call':
+      console.log(
+        `[LLM]  ${dur} agent=${event.agent} model=${event.model}` +
+        ` turn=${event.turn} tokens=${event.tokens.input_tokens}in/${event.tokens.output_tokens}out`
+      )
+      break
+
+    case 'tool_call':
+      console.log(
+        `[TOOL] ${dur} agent=${event.agent} tool=${event.tool}` +
+        ` error=${event.isError}`
+      )
+      break
+
+    case 'task':
+      console.log(
+        `[TASK] ${dur} task="${event.taskTitle}" agent=${event.agent}` +
+        ` success=${event.success} retries=${event.retries}`
+      )
+      break
+
+    case 'agent':
+      console.log(
+        `[AGNT] ${dur} agent=${event.agent} turns=${event.turns}` +
+        ` tools=${event.toolCalls}`
+      )
+      break
+  }
+}
+</code></pre>
+
+<h3 id="10-1-4-集成追踪">10.1.4 集成追踪</h3>
+
+<pre><code class="language-typescript">const orchestrator = new OpenMultiAgent({
+  defaultModel: 'claude-sonnet-4-6',
+  onTrace: handleTrace,  // 注册追踪处理器
+})
+</code></pre>
+
+<h2 id="10-2-orchestratorevent-事件系统">10.2 OrchestratorEvent 事件系统</h2>
+
+<h3 id="10-2-1-事件类型">10.2.1 事件类型</h3>
+
+<pre><code class="language-typescript">type OrchestratorEvent = {
+  type: 'agent_start'       // Agent 开始执行
+            | 'agent_complete'   // Agent 完成
+            | 'task_start'        // 任务开始
+            | 'task_complete'     // 任务完成
+            | 'task_skipped'      // 任务跳过
+            | 'task_retry'        // 任务重试
+            | 'message'           // 消息事件
+            | 'error'             // 错误事件
+  agent?: string
+  task?: string
+  data?: unknown
+}
+</code></pre>
+
+<h3 id="10-2-2-进度处理器">10.2.2 进度处理器</h3>
+
+<pre><code class="language-typescript">const startTimes = new Map&lt;string, number&gt;()
+
+function handleProgress(event: OrchestratorEvent): void {
+  const ts = new Date().toISOString().slice(11, 23)
+
+  switch (event.type) {
+    case 'agent_start':
+      startTimes.set(event.agent ?? '', Date.now())
+      console.log(`[${ts}] AGENT START  → ${event.agent}`)
+      break
+
+    case 'agent_complete': {
+      const elapsed = Date.now() - (startTimes.get(event.agent ?? '') ?? Date.now())
+      console.log(`[${ts}] AGENT DONE   ← ${event.agent} (${elapsed}ms)`)
+      break
+    }
+
+    case 'task_start':
+      console.log(`[${ts}] TASK START   ↓ ${event.task}`)
+      break
+
+    case 'task_complete':
+      console.log(`[${ts}] TASK DONE    ✓ ${event.task}`)
+      break
+
+    case 'task_retry': {
+      const d = event.data as {
+        attempt: number
+        maxAttempts: number
+        error: string
+        nextDelayMs: number
+      }
+      console.log(`[${ts}] TASK RETRY  ⚡ ${event.task} — ${d.attempt}/${d.maxAttempts}`)
+      break
+    }
+  }
+}
+
+const orchestrator = new OpenMultiAgent({
+  defaultModel: 'claude-sonnet-4-6',
+  onProgress: handleProgress,
+})
+</code></pre>
+
+<h2 id="10-3-成本追踪">10.3 成本追踪</h2>
+
+<h3 id="10-3-1-token-统计">10.3.1 Token 统计</h3>
+
+<pre><code class="language-typescript">let totalInputTokens = 0
+let totalOutputTokens = 0
+let llmCallCount = 0
+
+orchestrator.onTrace = (event) =&gt; {
+  if (event.type === 'llm_call') {
+    totalInputTokens += event.tokens?.input_tokens ?? 0
+    totalOutputTokens += event.tokens?.output_tokens ?? 0
+    llmCallCount++
+  }
+}
+</code></pre>
+
+<h3 id="10-3-2-成本计算">10.3.2 成本计算</h3>
+
+<pre><code class="language-typescript">const PRICING = {
+  'claude-sonnet-4-6': { input: 3, output: 15 },      // $/MTok
+  'claude-opus-4-7':    { input: 15, output: 75 },
+  'gpt-4o':             { input: 5, output: 15 },
+  'gpt-4o-mini':        { input: 0.15, output: 0.6 },
+}
+
+function calculateCost(events: TraceEvent[]): CostReport {
+  const byModel = new Map&lt;string, { input: number; output: number; calls: number }&gt;()
+
+  for (const event of events) {
+    if (event.type !== 'llm_call') continue
+
+    const pricing = PRICING[event.model]
+    if (!pricing) continue
+
+    const existing = byModel.get(event.model) ?? { input: 0, output: 0, calls: 0 }
+    existing.input += event.tokens?.input_tokens ?? 0
+    existing.output += event.tokens?.output_tokens ?? 0
+    existing.calls++
+    byModel.set(event.model, existing)
+  }
+
+  const lines: string[] = ['📊 成本报告', '══════════════════════════════']
+  let totalCost = 0
+
+  for (const [model, usage] of byModel) {
+    const pricing = PRICING[model]
+    const inputCost = (usage.input / 1_000_000) * pricing.input
+    const outputCost = (usage.output / 1_000_000) * pricing.output
+    const modelCost = inputCost + outputCost
+    totalCost += modelCost
+
+    lines.push(`${model}`)
+    lines.push(`  调用 ${usage.calls} 次`)
+    lines.push(`  输入 ${usage.input.toLocaleString()} tokens ($${inputCost.toFixed(4)})`)
+    lines.push(`  输出 ${usage.output.toLocaleString()} tokens ($${outputCost.toFixed(4)})`)
+    lines.push(`  小计 $${modelCost.toFixed(4)}`)
+  }
+
+  lines.push('══════════════════════════════')
+  lines.push(`💰 总成本: $${totalCost.toFixed(4)}`)
+  lines.push(`🔢 LLM 调用: ${llmCallCount} 次`)
+  lines.push(`📝 Token 总量: ${totalInputTokens.toLocaleString()} in / ${totalOutputTokens.toLocaleString()} out`)
+
+  return { totalCost, byModel, lines: lines.join('\n') }
+}
+</code></pre>
+
+<h3 id="10-3-3-输出示例">10.3.3 输出示例</h3>
+
+<pre><code>📊 成本报告
+══════════════════════════════
+claude-sonnet-4-6
+  调用 8 次
+  输入 12,345 tokens ($0.0370)
+  输出 5,678 tokens ($0.0852)
+  小计 $0.1222
+══════════════════════════════
+💰 总成本: $0.1222
+🔢 LLM 调用: 8 次
+📝 Token 总量: 12,345 in / 5,678 out
+</code></pre>
+
+<h2 id="10-4-审批门-approval-gate">10.4 审批门（Approval Gate）</h2>
+
+<h3 id="10-4-1-什么是审批门">10.4.1 什么是审批门？</h3>
+
+<p>高级特性：在每批任务完成后、下一批开始前，可以选择批准或拒绝。</p>
+
+<pre><code class="language-typescript">const orchestrator = new OpenMultiAgent({
+  defaultModel: 'claude-sonnet-4-6',
+  onApproval: async (completedTasks, pendingTasks) =&gt; {
+    console.log(`\n${completedTasks.length} 个任务完成，${pendingTasks.length} 个待执行`)
+
+    // 显示完成的任务结果
+    for (const task of completedTasks) {
+      console.log(`  ✓ ${task.title}: ${task.result?.success ? '成功' : '失败'}`)
+    }
+
+    // 交互式审批（示例）
+    const answer = await askUser('是否继续执行剩余任务？(y/n)')
+    return answer.toLowerCase() === 'y'
+  },
+})
+</code></pre>
+
+<h3 id="10-4-2-触发条件">10.4.2 触发条件</h3>
+
+<p>审批门<strong>不会</strong>在以下情况触发：</p>
+
+<ul>
+<li>本批所有任务都失败（无可审批内容）</li>
+<li>没有剩余待执行任务（最终批次）</li>
+</ul>
+
+<h2 id="10-5-opentelemetry-集成">10.5 OpenTelemetry 集成</h2>
+
+<h3 id="10-5-1-为什么用-opentelemetry">10.5.1 为什么用 OpenTelemetry？</h3>
+
+<p>OpenTelemetry（OTel）是云原生计算基金会（CNCF）的可观测性标准，支持：</p>
+<ul>
+<li>分布式追踪（Traces）</li>
+<li>指标（Metrics）</li>
+<li>日志（Logs）</li>
+</ul>
+
+<h3 id="10-5-2-集成示例">10.5.2 集成示例</h3>
+
+<pre><code class="language-typescript">import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
+import { ConsoleSpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-node'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+
+// 设置追踪提供者
+const provider = new NodeTracerProvider()
+provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()))
+
+// 可选：发送到 OTEL 收集器
+// provider.addSpanProcessor(new SimpleSpanProcessor(
+//   new OTLPTraceExporter({ url: 'http://localhost:4318/v1/traces' })
+// ))
+provider.register()
+
+// 转换为 OTLP 格式
+orchestrator.onTrace = (event) =&gt; {
+  const span = tracer.startSpan(`agent.${event.type}`)
+  span.setAttributes({
+    'agent.name': event.agent,
+    'agent.model': event.model,
+    'agent.run_id': event.runId,
+    'agent.duration_ms': event.durationMs,
+  })
+
+  if (event.type === 'llm_call') {
+    span.setAttributes({
+      'llm.tokens.in': event.tokens.input_tokens,
+      'llm.tokens.out': event.tokens.output_tokens,
+      'llm.turn': event.turn ?? 0,
+    })
+  }
+
+  if (event.type === 'tool_call') {
+    span.setAttributes({ 'tool.name': event.tool ?? '' })
+  }
+
+  span.end()
+}
+</code></pre>
+
+<h2 id="10-6-生产环境最佳实践">10.6 生产环境最佳实践</h2>
+
+<h3 id="10-6-1-环境区分">10.6.1 环境区分</h3>
+
+<pre><code class="language-typescript">const isProduction = process.env.NODE_ENV === 'production'
+const isDevelopment = process.env.NODE_ENV === 'development'
+
+const orchestrator = new OpenMultiAgent({
+  defaultModel: 'claude-sonnet-4-6',
+
+  onTrace: isProduction ? sendToCollector : logToConsole,
+  onProgress: isDevelopment ? logToConsole : undefined,
+})
+</code></pre>
+
+<h3 id="10-6-2-采样策略">10.6.2 采样策略</h3>
+
+<p>高频场景下，不要记录所有事件：</p>
+
+<pre><code class="language-typescript">let eventCount = 0
+const sampleRate = 0.1  // 采样 10%
+
+orchestrator.onTrace = (event) =&gt; {
+  eventCount++
+  if (event.type === 'llm_call' &amp;&amp; Math.random() &gt; sampleRate) {
+    return  // 跳过大部分 LLM 调用
+  }
+  sendToCollector(event)
+}
+</code></pre>
+
+<h3 id="10-6-3-异步缓冲">10.6.3 异步缓冲</h3>
+
+<pre><code class="language-typescript">const buffer: TraceEvent[] = []
+const FLUSH_INTERVAL = 5000
+
+setInterval(async () =&gt; {
+  if (buffer.length === 0) return
+  const batch = buffer.splice(0, buffer.length)
+  await collector.send(batch)  // 批量发送
+}, FLUSH_INTERVAL)
+
+orchestrator.onTrace = (event) =&gt; {
+  buffer.push(event)
+}
+</code></pre>
+
+<h2 id="10-7-调试技巧">10.7 调试技巧</h2>
+
+<h3 id="10-7-1-本地追踪输出">10.7.1 本地追踪输出</h3>
+
+<pre><code class="language-typescript">import { generateRunId } from '@jackchen_me/open-multi-agent'
+
+const runId = generateRunId()
+console.log(`Run ID: ${runId}`)
+
+orchestrator.onTrace = (event) =&gt; {
+  // 只输出本轮运行的事件
+  if (event.runId !== runId) return
+  console.log(`[${event.type}] ${event.agent} ${event.durationMs}ms`)
+}
+</code></pre>
+
+<h3 id="10-7-2-性能瓶颈定位">10.7.2 性能瓶颈定位</h3>
+
+<pre><code class="language-typescript">const durations = new Map&lt;string, number[]&gt;()
+
+orchestrator.onTrace = (event) =&gt; {
+  if (event.type === 'llm_call' || event.type === 'tool_call') {
+    const key = `${event.type}:${event.agent}:${event.tool ?? event.model}`
+    const existing = durations.get(key) ?? []
+    existing.push(event.durationMs)
+    durations.set(key, existing)
+  }
+}
+
+// 运行结束后分析
+process.on('exit', () =&gt; {
+  for (const [key, times] of durations) {
+    const avg = times.reduce((a, b) =&gt; a + b, 0) / times.length
+    console.log(`${key}: avg=${avg.toFixed(0)}ms, count=${times.length}`)
+  }
+})
+</code></pre>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>TraceEvent</strong>：四种类型（<code>llm_call/tool_call/task/agent</code>），包含时间戳、Token 消耗等详细信息。</li>
+</ol>
+
+<ol>
+<li><strong>emitTrace 安全设计</strong>：try-catch 包裹，异步回调的 reject 被吞掉，确保可观测性不影响主流程。</li>
+</ol>
+
+<ol>
+<li><strong>OrchestratorEvent</strong>：任务/Agent 生命周期事件，包括重试事件 <code>task_retry</code>。</li>
+</ol>
+
+<ol>
+<li><strong>成本追踪</strong>：基于 Token 用量和模型定价计算成本。</li>
+</ol>
+
+<ol>
+<li><strong>审批门（onApproval）</strong>：批次完成后可选择批准或拒绝执行。</li>
+</ol>
+
+<ol>
+<li><strong>OpenTelemetry 集成</strong>：将 TraceEvent 转换为 OTLP 格式，支持分布式追踪。</li>
+</ol>
+
+<h2 id="思考题">思考题</h2>
+
+<ol>
+<li>为什么追踪系统选择用 <code>Map&lt;agentName, result&gt;</code> 而不是数组来存储并行任务结果？这种设计对追踪有什么影响？</li>
+</ol>
+
+<ol>
+<li>采样策略中，随机采样的问题是什么？有什么更好的采样策略？</li>
+</ol>
+
+<ol>
+<li>如果要实现"只追踪超过 5 秒的操作"，代码应该怎么写？</li>
+</ol>
+
+<h2 id="下章预告">下章预告</h2>
+
+<p>第 11 章我们将进入<strong>实战案例</strong>阶段，通过 4 个完整的真实项目，展示如何组合使用框架的各种功能。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch09.html">◀ 第 9 章 高级特性</a>
+  <a href="ch11.html">第 11 章 实战案例 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#为什么你的-agent-系统需要-仪表盘">为什么你的 Agent 系统需要"仪表盘"</a></li><li><a href="#10-1-追踪系统详解">10.1 追踪系统详解</a></li><li><a href="#10-2-orchestratorevent-事件系统">10.2 OrchestratorEvent 事件系统</a></li><li><a href="#10-3-成本追踪">10.3 成本追踪</a></li><li><a href="#10-4-审批门-approval-gate">10.4 审批门（Approval Gate）</a></li><li><a href="#10-5-opentelemetry-集成">10.5 OpenTelemetry 集成</a></li><li><a href="#10-6-生产环境最佳实践">10.6 生产环境最佳实践</a></li><li><a href="#10-7-调试技巧">10.7 调试技巧</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#思考题">思考题</a></li><li><a href="#下章预告">下章预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var links = document.querySelectorAll('.toc-list a');
+  if (links.length) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, fromTop = s.scrollTop + 100;
+      links.forEach(function(link) {
+        var sec = document.getElementById(link.getAttribute('href').slice(1));
+        if (sec && sec.offsetTop <= fromTop) {
+          document.querySelectorAll('.toc-list a').forEach(function(l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    });
+  }
+})();</script>
+</body>
+</html>

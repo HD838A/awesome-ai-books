@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 9 章 高级特性 — Open Multi-Agent 实战</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+#layout { display: flex; min-height: 100vh; }
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a:hover { background: #E8E2D8; text-decoration: none; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a:hover { color: #C7553A; border-left-color: #C7553A; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.index-intro { max-width: 640px; margin: 0 auto 48px; }
+.index-intro p { margin: 0.8em 0; font-size: 1.02em; line-height: 1.9; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; text-decoration: none; }
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Open Multi-Agent 实战</div>
+      <div class="sidebar-subtitle">用 TypeScript 构建你的第一个多智能体系统</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第 1 章 认识多智能体系统</a>
+<a href="ch02.html">第 2 章 快速上手</a>
+<a href="ch03.html">第 3 章 核心概念</a>
+<a href="ch04.html">第 4 章 任务调度与依赖管理</a>
+<a href="ch05.html">第 5 章 工具系统</a>
+<a href="ch06.html">第 6 章 多模型支持</a>
+<a href="ch07.html">第 7 章 共享内存与通信</a>
+<a href="ch08.html">第 8 章 结构化输出与重试</a>
+<a href="ch09.html" class="active">第 9 章 高级特性</a>
+<a href="ch10.html">第 10 章 可观测性</a>
+<a href="ch11.html">第 11 章 实战案例</a>
+<a href="ch12.html">第 12 章 扩展开发</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-9-章-高级特性">第 9 章：高级特性</h1>
+
+<h2 id="让系统更健壮">让系统更健壮</h2>
+
+<p>前面的章节介绍了 Open Multi-Agent 的核心功能。本章我们将探索一些高级特性，让你的 Agent 系统更加：</p>
+
+<ul>
+<li><strong>可观测</strong>：了解系统内部发生了什么</li>
+<li><strong>可控</strong>：随时中断长时间运行的任务</li>
+<li><strong>高效</strong>：批量并行处理大量任务</li>
+<li><strong>可靠</strong>：优雅处理各种异常情况</li>
+</ul>
+
+<h2 id="9-1-追踪系统-tracing">9.1 追踪系统（Tracing）</h2>
+
+<h3 id="9-1-1-为什么需要追踪">9.1.1 为什么需要追踪？</h3>
+
+<p>当一个复杂任务涉及多个 Agent、多轮对话、多次工具调用时，<strong>调试</strong>变得非常困难：</p>
+
+<pre><code>用户请求
+    ↓
+团队协作（3 个 Agent）
+    ↓
+每个 Agent 进行多轮对话
+    ↓
+每次对话可能调用 10+ 次工具
+    ↓
+Token 消耗几何级增长
+</code></pre>
+
+<p>如果没有追踪，你就像在黑暗中操作。</p>
+
+<h3 id="9-1-2-traceevent-结构">9.1.2 TraceEvent 结构</h3>
+
+<pre><code class="language-typescript">interface TraceEvent {
+  type: 'llm_call' | 'tool_call' | 'task_start' | 'task_complete'
+  runId: string          // 唯一运行 ID
+  taskId?: string        // 任务 ID
+  agent: string          // Agent 名称
+  model: string          // 模型名称
+  turn?: number          // 对话轮次
+  tokens?: TokenUsage    // Token 消耗
+  startMs: number        // 开始时间戳
+  endMs: number          // 结束时间戳
+  durationMs: number     // 持续时间（毫秒）
+}
+</code></pre>
+
+<h3 id="9-1-3-基本使用">9.1.3 基本使用</h3>
+
+<pre><code class="language-typescript">const result = await orchestrator.runTeam(team, goal, {
+  onTrace: (event) =&gt; {
+    console.log(`[${event.type}] ${event.agent} | ${event.durationMs}ms`)
+
+    if (event.type === 'llm_call') {
+      console.log(`  模型: ${event.model}`)
+      console.log(`  Token: 输入 ${event.tokens?.input_tokens}, 输出 ${event.tokens?.output_tokens}`)
+      console.log(`  轮次: ${event.turn}`)
+    }
+  },
+})
+</code></pre>
+
+<h3 id="9-1-4-输出示例">9.1.4 输出示例</h3>
+
+<pre><code>[llm_call] architect | 2345ms
+  模型: claude-sonnet-4-6
+  Token: 输入 1234, 输出 567
+  轮次: 1
+[llm_call] architect | 1890ms
+  模型: claude-sonnet-4-6
+  Token: 输入 1801, 输出 890
+  轮次: 2
+[tool_call] developer | 123ms
+  工具: bash | 等待: 0ms
+[llm_call] developer | 3456ms
+  模型: gpt-4o
+  Token: 输入 2345, 输出 1234
+  轮次: 1
+[task_complete] architect | 4567ms
+[task_complete] developer | 6789ms
+</code></pre>
+
+<h3 id="9-1-5-集成追踪服务">9.1.5 集成追踪服务</h3>
+
+<pre><code class="language-typescript">import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
+import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-node'
+
+// 创建追踪提供者
+const provider = new NodeTracerProvider()
+provider.addSpanProcessor(new ConsoleSpanExporter())
+provider.register()
+
+// 追踪回调
+const traces: TraceEvent[] = []
+
+result = await orchestrator.runTeam(team, goal, {
+  onTrace: (event) =&gt; {
+    traces.push(event)
+
+    // 发送到追踪服务
+    const span = tracer.startSpan(event.type)
+    span.setAttributes({
+      'agent.name': event.agent,
+      'llm.model': event.model,
+      'duration.ms': event.durationMs,
+    })
+    span.end()
+  },
+})
+</code></pre>
+
+<h3 id="9-1-6-成本追踪">9.1.6 成本追踪</h3>
+
+<pre><code class="language-typescript">interface CostSummary {
+  totalInputTokens: number
+  totalOutputTokens: number
+  estimatedCost: number
+  byAgent: Map&lt;string, TokenUsage&gt;
+  byModel: Map&lt;string, TokenUsage&gt;
+}
+
+function calculateCost(result: TeamRunResult): CostSummary {
+  const byAgent = new Map&lt;string, TokenUsage&gt;()
+  const byModel = new Map&lt;string, TokenUsage&gt;()
+
+  let totalInput = 0
+  let totalOutput = 0
+
+  for (const [name, agentResult] of result.agentResults) {
+    const usage = agentResult.tokenUsage
+    totalInput += usage.input_tokens
+    totalOutput += usage.output_tokens
+
+    byAgent.set(name, usage)
+    // 按模型汇总...
+  }
+
+  // Claude Sonnet 定价：输入 $3/MTok, 输出 $15/MTok
+  const estimatedCost =
+    (totalInput / 1_000_000) * 3 +
+    (totalOutput / 1_000_000) * 15
+
+  return { totalInputTokens: totalInput, totalOutputTokens: totalOutput, estimatedCost, byAgent, byModel }
+}
+</code></pre>
+
+<h2 id="9-2-流式输出-streaming">9.2 流式输出（Streaming）</h2>
+
+<h3 id="9-2-1-实时显示-ai-输出">9.2.1 实时显示 AI 输出</h3>
+
+<pre><code class="language-typescript">console.log('正在生成报告...\n')
+
+for await (const event of agent.stream('写一篇关于 AI 的技术报告')) {
+  if (event.type === 'text') {
+    process.stdout.write(event.data)  // 实时显示
+  }
+}
+
+console.log('\n\n✅ 报告生成完成！')
+</code></pre>
+
+<h3 id="9-2-2-带进度的工具执行">9.2.2 带进度的工具执行</h3>
+
+<pre><code class="language-typescript">for await (const event of developer.stream('创建 TODO 应用')) {
+  switch (event.type) {
+    case 'text':
+      process.stdout.write(event.data)
+      break
+
+    case 'tool_use':
+      console.log(`\n🔧 [${new Date().toLocaleTimeString()}] 调用工具: ${event.data.name}`)
+      break
+
+    case 'tool_result':
+      if (event.data.is_error) {
+        console.log(`   ❌ 失败: ${event.data.content}`)
+      } else {
+        console.log(`   ✅ 成功`)
+      }
+      break
+
+    case 'loop_detected':
+      console.log(`\n⚠️ 警告: 检测到可能的循环`)
+      break
+
+    case 'done':
+      console.log('\n\n✅ 完成！')
+      break
+  }
+}
+</code></pre>
+
+<h3 id="9-2-3-带超时的流式处理">9.2.3 带超时的流式处理</h3>
+
+<pre><code class="language-typescript">import { EventEmitter } from 'events'
+
+const controller = new AbortController()
+
+// 30 秒超时
+const timeout = setTimeout(() =&gt; {
+  console.log('⏰ 超时，中止执行')
+  controller.abort()
+}, 30000)
+
+try {
+  for await (const event of agent.stream('长文本生成', {
+    abortSignal: controller.signal,
+  })) {
+    if (event.type === 'text') {
+      process.stdout.write(event.data)
+    } else if (event.type === 'done') {
+      clearTimeout(timeout)
+    }
+  }
+} catch (error) {
+  if (error.name === 'AbortError') {
+    console.log('\n⛔ 请求被中止')
+  }
+}
+</code></pre>
+
+<h2 id="9-3-批量执行">9.3 批量执行</h2>
+
+<h3 id="9-3-1-agentpool-runparallel">9.3.1 AgentPool.runParallel</h3>
+
+<pre><code class="language-typescript">import { AgentPool } from '@jackchen_me/open-multi-agent'
+
+const pool = new AgentPool(3)  // 最多 3 个并发
+
+pool.add(agent1)
+pool.add(agent2)
+pool.add(agent3)
+pool.add(agent4)
+
+// 批量并行执行
+const results = await pool.runParallel([
+  { agent: 'agent1', prompt: '任务 A' },
+  { agent: 'agent2', prompt: '任务 B' },
+  { agent: 'agent3', prompt: '任务 C' },
+  { agent: 'agent4', prompt: '任务 D' },  // agent4 会等待，因为 maxConcurrency=3
+])
+
+// 处理结果
+for (const [name, result] of results) {
+  console.log(`${name}: ${result.success ? '✅' : '❌'}`)
+  if (!result.success) {
+    console.log(`  错误: ${result.output}`)
+  }
+}
+</code></pre>
+
+<h3 id="9-3-2-批量工具执行">9.3.2 批量工具执行</h3>
+
+<pre><code class="language-typescript">const executor = new ToolExecutor(registry, { maxConcurrency: 5 })
+
+// 一次执行多个工具
+const batchResults = await executor.executeBatch([
+  { id: 'call-1', name: 'file_read', input: { path: '/tmp/a.txt' } },
+  { id: 'call-2', name: 'file_read', input: { path: '/tmp/b.txt' } },
+  { id: 'call-3', name: 'bash', input: { command: 'ls /tmp' } },
+], context)
+
+// 等待所有结果
+for (const [id, result] of batchResults) {
+  console.log(`${id}: ${result.isError ? '❌' : '✅'}`)
+}
+</code></pre>
+
+<h3 id="9-3-3-批量任务处理">9.3.3 批量任务处理</h3>
+
+<pre><code class="language-typescript">async function processBatch(items: string[]) {
+  const results: ProcessedItem[] = []
+
+  const chunks = chunkArray(items, 5)  // 每批 5 个
+
+  for (const chunk of chunks) {
+    const batchResults = await pool.runParallel(
+      chunk.map((item, i) =&gt; ({
+        agent: `processor-${i % 3}`,  // 轮换使用 3 个 Agent
+        prompt: `处理: ${item}`,
+      }))
+    )
+
+    for (const [, result] of batchResults) {
+      if (result.success) {
+        results.push(JSON.parse(result.output))
+      }
+    }
+  }
+
+  return results
+}
+</code></pre>
+
+<h2 id="9-4-abortsignal-与取消">9.4 AbortSignal 与取消</h2>
+
+<h3 id="9-4-1-基本取消">9.4.1 基本取消</h3>
+
+<pre><code class="language-typescript">const controller = new AbortController()
+
+// 在另一个地方触发取消
+button.onClick = () =&gt; controller.abort()
+
+try {
+  const result = await orchestrator.runTeam(team, goal, {
+    abortSignal: controller.signal,
+  })
+} catch (error) {
+  if (error.name === 'AbortError') {
+    console.log('任务被用户取消')
+  }
+}
+</code></pre>
+
+<h3 id="9-4-2-超时取消">9.4.2 超时取消</h3>
+
+<pre><code class="language-typescript">// 5 分钟超时
+const result = await agent.run('长任务', {
+  abortSignal: AbortSignal.timeout(5 * 60 * 1000),
+})
+
+// 或者使用 setTimeout
+const controller = new AbortController()
+setTimeout(() =&gt; controller.abort(), 5 * 60 * 1000)
+</code></pre>
+
+<h3 id="9-4-3-组合取消信号">9.4.3 组合取消信号</h3>
+
+<pre><code class="language-typescript">// 任一条件触发即取消
+const userCancel = new AbortController()
+const timeoutCancel = AbortSignal.timeout(5 * 60 * 1000)
+
+const combined = mergeAbortSignals(userCancel.signal, timeoutCancel)
+
+const result = await agent.run(task, {
+  abortSignal: combined,
+})
+
+// 辅助函数
+function mergeAbortSignals(a: AbortSignal, b: AbortSignal): AbortSignal {
+  const controller = new AbortController()
+  if (a.aborted || b.aborted) { controller.abort(); return controller.signal }
+
+  a.addEventListener('abort', () =&gt; controller.abort(), { once: true })
+  b.addEventListener('abort', () =&gt; controller.abort(), { once: true })
+
+  return controller.signal
+}
+</code></pre>
+
+<h2 id="9-5-事件系统">9.5 事件系统</h2>
+
+<h3 id="9-5-1-taskqueue-事件">9.5.1 TaskQueue 事件</h3>
+
+<pre><code class="language-typescript">const queue = new TaskQueue()
+
+queue.on('task:ready', (task) =&gt; {
+  console.log(`📋 任务就绪: ${task.title}`)
+  scheduleTask(task)  // 调度执行
+})
+
+queue.on('task:complete', (task) =&gt; {
+  console.log(`✅ 完成: ${task.title}`)
+  notifyCompletion(task)
+})
+
+queue.on('task:failed', (task) =&gt; {
+  console.error(`❌ 失败: ${task.title}`)
+  console.error(`   错误: ${task.result}`)
+  alertFailure(task)
+})
+
+queue.on('all:complete', () =&gt; {
+  console.log('🎉 所有任务完成！')
+  cleanup()
+})
+
+// 添加任务，触发事件
+queue.addBatch(tasks)
+</code></pre>
+
+<h3 id="9-5-2-团队事件">9.5.2 团队事件</h3>
+
+<pre><code class="language-typescript">team.on('agent:start', (event) =&gt; {
+  metrics.increment('agent.started', { agent: event.agent })
+})
+
+team.on('agent:complete', (event) =&gt; {
+  metrics.increment('agent.completed', { agent: event.agent })
+  const duration = event.timestamp - event.startTimestamp
+  metrics.timing('agent.duration', duration, { agent: event.agent })
+})
+
+team.on('error', (event) =&gt; {
+  console.error(`❌ 团队错误: ${event.message}`)
+  monitoring.alert('team.error', event)
+})
+</code></pre>
+
+<h3 id="9-5-3-自定义事件">9.5.3 自定义事件</h3>
+
+<pre><code class="language-typescript">// 定义事件类型
+type ProgressEvent = {
+  type: 'progress'
+  agent: string
+  percent: number
+  message: string
+}
+
+// 发射自定义事件
+function emitProgress(team: Team, agent: string, percent: number, msg: string) {
+  const event: OrchestratorEvent = {
+    type: 'custom:progress',
+    agent,
+    task: `${percent}%`,
+    data: { percent, message: msg },
+    timestamp: Date.now(),
+  }
+  team.emit(event)
+}
+
+// 监听
+team.on('custom:progress', (event) =&gt; {
+  console.log(`${event.agent}: ${event.data.percent}% - ${event.data.message}`)
+})
+</code></pre>
+
+<h2 id="9-6-完整可观测性示例">9.6 完整可观测性示例</h2>
+
+<h3 id="9-6-1-构建监控仪表盘">9.6.1 构建监控仪表盘</h3>
+
+<pre><code class="language-typescript">interface Metrics {
+  llmCalls: number
+  totalTokens: number
+  toolCalls: number
+  errors: number
+  startTime: number
+}
+
+async function runWithMonitoring(
+  team: Team,
+  goal: string,
+): Promise&lt;{ result: TeamRunResult; metrics: Metrics }&gt; {
+  const metrics: Metrics = {
+    llmCalls: 0,
+    totalTokens: 0,
+    toolCalls: 0,
+    errors: 0,
+    startTime: Date.now(),
+  }
+
+  const result = await orchestrator.runTeam(team, goal, {
+    onTrace: (event) =&gt; {
+      switch (event.type) {
+        case 'llm_call':
+          metrics.llmCalls++
+          metrics.totalTokens +=
+            (event.tokens?.input_tokens ?? 0) +
+            (event.tokens?.output_tokens ?? 0)
+          break
+        case 'tool_call':
+          metrics.toolCalls++
+          break
+      }
+    },
+    onWarning: (msg) =&gt; {
+      console.warn(`⚠️ 警告: ${msg}`)
+    },
+  })
+
+  // 统计错误
+  for (const [, agentResult] of result.agentResults) {
+    if (!agentResult.success) metrics.errors++
+  }
+
+  return { result, metrics }
+}
+
+// 使用
+const { result, metrics } = await runWithMonitoring(team, goal)
+
+console.log(`
+📊 执行报告
+══════════════════════════════
+LLM 调用: ${metrics.llmCalls}
+Token 消耗: ${metrics.totalTokens}
+工具调用: ${metrics.toolCalls}
+错误数: ${metrics.errors}
+耗时: ${Date.now() - metrics.startTime}ms
+成功率: ${result.success ? '100%' : '部分失败'}
+══════════════════════════════
+`)
+</code></pre>
+
+<h3 id="9-6-2-输出示例">9.6.2 输出示例</h3>
+
+<pre><code>📊 执行报告
+══════════════════════════════
+LLM 调用: 12
+Token 消耗: 45678
+工具调用: 34
+错误数: 1
+耗时: 23456ms
+成功率: 部分失败
+══════════════════════════════
+</code></pre>
+
+<h2 id="9-7-最佳实践">9.7 最佳实践</h2>
+
+<h3 id="9-7-1-追踪配置">9.7.1 追踪配置</h3>
+
+<pre><code class="language-typescript">// 开发环境：详细日志
+if (process.env.NODE_ENV === 'development') {
+  orchestrator = new OpenMultiAgent({
+    onTrace: (event) =&gt; console.log(`[TRACE] ${JSON.stringify(event)}`),
+    onWarning: (msg) =&gt; console.warn(`[WARN] ${msg}`),
+  })
+}
+
+// 生产环境：聚合指标
+if (process.env.NODE_ENV === 'production') {
+  orchestrator = new OpenMultiAgent({
+    onTrace: async (event) =&gt; {
+      await metricsBuffer.add(event)
+      if (metricsBuffer.size &gt;= 100) {
+        await metricsService.flush(metricsBuffer.flush())
+      }
+    },
+  })
+}
+</code></pre>
+
+<h3 id="9-7-2-优雅降级">9.7.2 优雅降级</h3>
+
+<pre><code class="language-typescript">async function resilientRun(team: Team, goal: string, timeoutMs = 60000) {
+  try {
+    return await orchestrator.runTeam(team, goal, {
+      abortSignal: AbortSignal.timeout(timeoutMs),
+    })
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.log('⏰ 超时，返回部分结果')
+      return partialResult  // 返回已收集的部分结果
+    }
+    throw error  // 其他错误重新抛出
+  }
+}
+</code></pre>
+
+<h3 id="9-7-3-资源清理">9.7.3 资源清理</h3>
+
+<pre><code class="language-typescript">async function runWithCleanup(team: Team, goal: string) {
+  const controller = new AbortController()
+
+  // 确保清理
+  const cleanup = () =&gt; {
+    controller.abort()
+    team.removeAllListeners()
+    console.log('🧹 资源已清理')
+  }
+
+  // 无论如何都要清理
+  try {
+    return await orchestrator.runTeam(team, goal, {
+      abortSignal: controller.signal,
+    })
+  } finally {
+    cleanup()
+  }
+}
+</code></pre>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>追踪系统（Tracing）</strong>：通过 <code>onTrace</code> 回调收集 <code>TraceEvent</code>，可用于调试、成本分析、性能优化。</li>
+</ol>
+
+<ol>
+<li><strong>流式输出（Streaming）</strong>：<code>AsyncGenerator</code> 提供 <code>text/tool_use/tool_result/done/error/loop_detected</code> 事件，实现实时输出和进度显示。</li>
+</ol>
+
+<ol>
+<li><strong>批量执行</strong>：AgentPool 的 <code>runParallel()</code> 和 ToolExecutor 的 <code>executeBatch()</code> 支持并行处理。</li>
+</ol>
+
+<ol>
+<li><strong>AbortSignal</strong>：支持取消、超时、组合取消信号，实现可控执行。</li>
+</ol>
+
+<ol>
+<li><strong>事件系统</strong>：TaskQueue 和 Team 提供 <code>task:ready/complete/failed</code> 和 <code>agent:start/complete</code> 等事件。</li>
+</ol>
+
+<ol>
+<li><strong>可观测性最佳实践</strong>：开发/生产环境不同配置、优雅降级、资源清理。</li>
+</ol>
+
+<h2 id="思考题">思考题</h2>
+
+<ol>
+<li>如果你要实现一个"Agent 性能仪表盘"，你会收集哪些指标？如何在不增加太多开销的情况下收集这些数据？</li>
+</ol>
+
+<ol>
+<li>在流式输出中，如果 LLM 在输出中途被 AbortSignal 中止，框架会如何处理？是否有数据丢失的风险？</li>
+</ol>
+
+<ol>
+<li>批量执行时，<code>Promise.allSettled</code> 和 <code>Promise.all</code> 哪种更合适？为什么？</li>
+</ol>
+
+<h2 id="下章预告">下章预告</h2>
+
+<p>第 10 章我们将介绍<strong>可观测性</strong>的更多细节，包括日志系统、监控指标、可视化等，让你的 Agent 系统真正可以投入生产环境。</p>
+
+<p>第 11 章和第 12 章将进入<strong>实战与扩展</strong>阶段，我们会从头构建一个真实项目，并讲解如何扩展框架功能。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch08.html">◀ 第 8 章 结构化输出与重试</a>
+  <a href="ch10.html">第 10 章 可观测性 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#让系统更健壮">让系统更健壮</a></li><li><a href="#9-1-追踪系统-tracing">9.1 追踪系统（Tracing）</a></li><li><a href="#9-2-流式输出-streaming">9.2 流式输出（Streaming）</a></li><li><a href="#9-3-批量执行">9.3 批量执行</a></li><li><a href="#9-4-abortsignal-与取消">9.4 AbortSignal 与取消</a></li><li><a href="#9-5-事件系统">9.5 事件系统</a></li><li><a href="#9-6-完整可观测性示例">9.6 完整可观测性示例</a></li><li><a href="#9-7-最佳实践">9.7 最佳实践</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#思考题">思考题</a></li><li><a href="#下章预告">下章预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var links = document.querySelectorAll('.toc-list a');
+  if (links.length) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, fromTop = s.scrollTop + 100;
+      links.forEach(function(link) {
+        var sec = document.getElementById(link.getAttribute('href').slice(1));
+        if (sec && sec.offsetTop <= fromTop) {
+          document.querySelectorAll('.toc-list a').forEach(function(l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    });
+  }
+})();</script>
+</body>
+</html>

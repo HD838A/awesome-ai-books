@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 4 章 任务调度与依赖管理 — Open Multi-Agent 实战</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+#layout { display: flex; min-height: 100vh; }
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a:hover { background: #E8E2D8; text-decoration: none; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a:hover { color: #C7553A; border-left-color: #C7553A; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.index-intro { max-width: 640px; margin: 0 auto 48px; }
+.index-intro p { margin: 0.8em 0; font-size: 1.02em; line-height: 1.9; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; text-decoration: none; }
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Open Multi-Agent 实战</div>
+      <div class="sidebar-subtitle">用 TypeScript 构建你的第一个多智能体系统</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第 1 章 认识多智能体系统</a>
+<a href="ch02.html">第 2 章 快速上手</a>
+<a href="ch03.html">第 3 章 核心概念</a>
+<a href="ch04.html" class="active">第 4 章 任务调度与依赖管理</a>
+<a href="ch05.html">第 5 章 工具系统</a>
+<a href="ch06.html">第 6 章 多模型支持</a>
+<a href="ch07.html">第 7 章 共享内存与通信</a>
+<a href="ch08.html">第 8 章 结构化输出与重试</a>
+<a href="ch09.html">第 9 章 高级特性</a>
+<a href="ch10.html">第 10 章 可观测性</a>
+<a href="ch11.html">第 11 章 实战案例</a>
+<a href="ch12.html">第 12 章 扩展开发</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-4-章-任务调度与依赖管理">第 4 章：任务调度与依赖管理</h1>
+
+<h2 id="任务调度的艺术">任务调度的艺术</h2>
+
+<p>想象你是一个项目经理，手里有一堆工作指令卡（Task），还有几个员工（Agent）。你需要决定：</p>
+
+<ul>
+<li><strong>谁来做？</strong> 分配问题</li>
+<li><strong>什么时候做？</strong> 顺序问题</li>
+<li><strong>做不完怎么办？</strong> 并发问题</li>
+</ul>
+
+<p>这就是<strong>任务调度</strong>要解决的问题。</p>
+
+<h2 id="4-1-task-的完整生命周期">4.1 Task 的完整生命周期</h2>
+
+<h3 id="4-1-1-状态机">4.1.1 状态机</h3>
+
+<pre><code>                    ┌──────────────────────────────────────────┐
+                    │                                          │
+                    ▼                                          │
+┌─────────┐  assign  ┌──────────┐  complete   ┌───────────┐   │
+│ pending │ ───────► │in_progress│ ──────────► │ completed │   │
+└─────────┘          └──────────┘              └───────────┘   │
+     │                    │                          ▲         │
+     │                    │ error                    │         │
+     │                    ▼                          │         │
+     │               ┌────────┐                      │         │
+     │               │ failed │ ── retry ────────────┤         │
+     │               └────────┘                      │         │
+     │                    │                           │         │
+     │                    └─► ┌────────┐              │         │
+     │                         │skipped│ ────────────┘         │
+     └────────────────────────►└────────┘   dependsOn failed   │
+              dependsOn                       ▲                  │
+              unresolved                                       │
+                                                         cascade
+</code></pre>
+
+<h3 id="4-1-2-创建任务">4.1.2 创建任务</h3>
+
+<pre><code class="language-typescript">import { createTask } from '@jackchen_me/open-multi-agent'
+
+const task1 = createTask({
+  title: '设计 API 结构',
+  description: '为 TODO 应用设计 REST API endpoints',
+  assignee: 'architect',
+})
+
+const task2 = createTask({
+  title: '实现后端',
+  description: '使用 Express.js 实现后端逻辑',
+  assignee: 'developer',
+  dependsOn: [task1.id],  // 等待 task1 完成
+})
+
+const task3 = createTask({
+  title: '编写测试',
+  description: '为后端 API 编写单元测试',
+  assignee: 'tester',
+  dependsOn: [task2.id],  // 等待 task2 完成
+})
+</code></pre>
+
+<h3 id="4-1-3-task-的属性">4.1.3 Task 的属性</h3>
+
+<pre><code class="language-typescript">interface Task {
+  id: string
+  title: string
+  description: string
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped'
+  assignee?: string
+  dependsOn?: string[]     // 依赖的任务 ID 列表
+  result?: string           // 执行结果
+  maxRetries?: number       // 最大重试次数
+  retryDelayMs?: number     // 重试延迟（毫秒）
+  retryBackoff?: number     // 退避系数（如 2 = 指数退避）
+}
+</code></pre>
+
+<h2 id="4-2-taskqueue-依赖感知的任务队列">4.2 TaskQueue：依赖感知的任务队列</h2>
+
+<h3 id="4-2-1-为什么需要-taskqueue">4.2.1 为什么需要 TaskQueue？</h3>
+
+<p>普通数组无法处理依赖关系：</p>
+
+<pre><code class="language-typescript">// ❌ 简单数组的问题
+const tasks = [task1, task2, task3]
+// 如果 task2 依赖 task1，你必须手动检查 task1 是否完成
+// 才能决定是否可以执行 task2
+</code></pre>
+
+<p>TaskQueue 帮你自动处理这些：</p>
+
+<pre><code class="language-typescript">import { TaskQueue } from '@jackchen_me/open-multi-agent'
+
+const queue = new TaskQueue()
+
+// 添加任务时，TaskQueue 自动检查依赖
+queue.add(task1)  // 状态: pending
+queue.add(task2)  // 状态: blocked（因为 task1 未完成）
+queue.add(task3)  // 状态: blocked（因为 task2 未完成）
+</code></pre>
+
+<h3 id="4-2-2-事件驱动">4.2.2 事件驱动</h3>
+
+<p>TaskQueue 会在状态变化时触发事件：</p>
+
+<pre><code class="language-typescript">queue.on('task:ready', (task) =&gt; {
+  console.log(`任务 "${task.title}" 可以开始执行了！`)
+  scheduleToAgent(task)
+})
+
+queue.on('task:complete', (task) =&gt; {
+  console.log(`任务 "${task.title}" 已完成`)
+})
+
+queue.on('task:failed', (task) =&gt; {
+  console.error(`任务 "${task.title}" 失败了: ${task.result}`)
+})
+
+queue.on('all:complete', () =&gt; {
+  console.log('所有任务完成！')
+})
+</code></pre>
+
+<h3 id="4-2-3-complete-的自动解封">4.2.3 complete() 的自动解封</h3>
+
+<pre><code class="language-typescript">// 任务 1 完成后，任务 2 和 3 会自动解封
+queue.complete(task1.id)
+
+// TaskQueue 内部发生了什么：
+// 1. task1 状态 → completed
+// 2. 检查 task2: dependsOn 包含 task1.id ✓ → status → pending，触发 'task:ready'
+// 3. 检查 task3: dependsOn 包含 task2.id，但 task2 还是 blocked → 等待
+</code></pre>
+
+<h3 id="4-2-4-级联失败">4.2.4 级联失败</h3>
+
+<p>当一个任务失败时，所有依赖它的任务都会被标记为失败：</p>
+
+<div class="mermaid">graph TD
+    A["task1: 设计\n✅ completed"] --> B["task2: 开发\n❌ failed"]
+    B --> C["task3: 测试\n⛔ skipped (cascade)"]
+    B --> D["task4: 部署\n⛔ skipped (cascade)"]
+    E["task5: 文档\n⛔ skipped (cascade)"]
+    B --> E</div>
+
+<pre><code class="language-typescript">queue.fail(task2.id, '数据库连接失败')
+
+// 级联效果：
+// - task2: failed
+// - task3: skipped（上游失败，无法执行）
+// - task4: skipped
+// - task5: skipped
+</code></pre>
+
+<h2 id="4-3-调度策略">4.3 调度策略</h2>
+
+<h3 id="4-3-1-四种策略一览">4.3.1 四种策略一览</h3>
+
+<div class="table-wrap"><table>
+<tr><th>策略</th><th>名称</th><th>核心逻辑</th><th>适用场景</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td><td>----------</td></tr>
+<tr><td><code>round-robin</code></td><td>轮询</td><td>顺序分配，循环使用</td><td>负载均衡</td></tr>
+<tr><td><code>least-busy</code></td><td>最空闲优先</td><td>选择任务最少的 Agent</td><td>资源平衡</td></tr>
+<tr><td><code>capability-match</code></td><td>能力匹配</td><td>关键词匹配最合适的 Agent</td><td>专业化分工</td></tr>
+<tr><td><code>dependency-first</code></td><td>依赖优先</td><td>关键路径优先</td><td>多步骤流水线（<strong>默认</strong>）</td></tr>
+</table></div>
+
+<h3 id="4-3-2-轮询策略-round-robin">4.3.2 轮询策略（round-robin）</h3>
+
+<p>最简单的策略：任务轮流分配给 Agent。</p>
+
+<pre><code class="language-typescript">const scheduler = new Scheduler('round-robin')
+
+const tasks = [task1, task2, task3, task4]
+const agents = [agentA, agentB]
+
+const assignments = scheduler.schedule(tasks, agents)
+// task1 → agentA
+// task2 → agentB
+// task3 → agentA
+// task4 → agentB
+</code></pre>
+
+<h3 id="4-3-3-最空闲优先-least-busy">4.3.3 最空闲优先（least-busy）</h3>
+
+<p>选择当前负载最轻的 Agent：</p>
+
+<pre><code class="language-typescript">const scheduler = new Scheduler('least-busy')
+
+// Agent A 正在执行 2 个任务，Agent B 正在执行 0 个
+const assignments = scheduler.schedule(tasks, [agentA, agentB])
+// 新任务会优先分配给 Agent B
+</code></pre>
+
+<h3 id="4-3-4-能力匹配-capability-match">4.3.4 能力匹配（capability-match）</h3>
+
+<p>根据任务的关键词匹配最合适的 Agent：</p>
+
+<pre><code class="language-typescript">const agents = [
+  { name: 'architect', systemPrompt: 'You design system architecture...' },
+  { name: 'developer', systemPrompt: 'You write clean code...' },
+  { name: 'reviewer', systemPrompt: 'You review code quality...' },
+]
+
+const scheduler = new Scheduler('capability-match')
+
+const task = createTask({
+  title: '设计数据库',
+  description: 'Design a PostgreSQL schema for user management',
+})
+
+const assignments = scheduler.schedule([task], agents)
+// architect 的 systemPrompt 包含 "architecture"
+// 与 task 的 "Design" 关键词匹配 → 分配给 architect
+</code></pre>
+
+<h3 id="4-3-5-依赖优先-dependency-first-默认">4.3.5 依赖优先（dependency-first，默认）</h3>
+
+<p>这是框架的<strong>杀手锏</strong>。</p>
+
+<p>核心思想：<strong>优先完成"阻塞最多其他任务"的关键路径任务</strong>。</p>
+
+<pre><code class="language-typescript">const scheduler = new Scheduler('dependency-first')
+
+// 任务依赖关系：
+// taskA (无依赖)
+// taskB (依赖 taskA)
+// taskC (依赖 taskA)
+// taskD (依赖 taskB 和 taskC)
+
+// 关键度分析：
+// - taskA: 被 B、C、D 依赖 → 关键度 = 3
+// - taskB: 被 D 依赖 → 关键度 = 1
+// - taskC: 被 D 依赖 → 关键度 = 1
+// - taskD: 无依赖 → 关键度 = 0
+
+// 分配顺序：taskA 最先分配（关键度最高）
+const assignments = scheduler.schedule([taskD, taskC, taskB, taskA], agents)
+// 实际顺序: taskA → taskB → taskC → taskD（按关键度排序）
+</code></pre>
+
+<h2 id="4-4-并发控制-semaphore">4.4 并发控制：Semaphore</h2>
+
+<h3 id="4-4-1-问题">4.4.1 问题</h3>
+
+<p>当你有 10 个 Agent，但只想同时运行 3 个时，怎么办？</p>
+
+<h3 id="4-4-2-答案-semaphore-信号量">4.4.2 答案：Semaphore 信号量</h3>
+
+<p>把它想象成<strong>停车场的闸机</strong>：</p>
+
+<ul>
+<li>闸机有 N 个车位（<code>maxConcurrency</code>）</li>
+<li>每辆车进入时占用一个车位</li>
+<li>车位满时，后面的车排队等待</li>
+<li>有车离开时，下一辆车进入</li>
+</ul>
+
+<pre><code class="language-typescript">import { Semaphore } from '@jackchen_me/open-multi-agent'
+
+const semaphore = new Semaphore(3)  // 最多同时 3 个
+
+async function runTask(task) {
+  await semaphore.acquire()  // 等待车位
+  try {
+    return await execute(task)
+  } finally {
+    semaphore.release()  // 释放车位
+  }
+}
+</code></pre>
+
+<h3 id="4-4-3-自动释放">4.4.3 自动释放</h3>
+
+<pre><code class="language-typescript">// 使用 run() 方法自动处理获取和释放
+const result = await semaphore.run(async () =&gt; {
+  return await agent.run(prompt)
+})
+// 不管成功还是失败，信号量都会被释放
+</code></pre>
+
+<h2 id="4-5-agentpool-agent-并发池">4.5 AgentPool：Agent 并发池</h2>
+
+<h3 id="4-5-1-agentpool-是什么">4.5.1 AgentPool 是什么？</h3>
+
+<p>AgentPool 是 Agent 的容器，提供了<strong>注册、调度、执行</strong>的一站式服务：</p>
+
+<pre><code class="language-typescript">import { AgentPool } from '@jackchen_me/open-multi-agent'
+
+const pool = new AgentPool(3)  // 最多同时 3 个 Agent
+
+pool.add(agentA)
+pool.add(agentB)
+pool.add(agentC)
+
+// 运行单个 Agent
+const result = await pool.run('architect', '设计一个 API')
+
+// 并行运行多个
+const results = await pool.runParallel([
+  { agent: 'architect', prompt: '设计 API' },
+  { agent: 'developer', prompt: '实现 API' },
+  { agent: 'reviewer', prompt: '审查代码' },
+])
+
+// 轮询选择任意 Agent
+const result = await pool.runAny('处理一个随机任务')
+</code></pre>
+
+<h3 id="4-5-2-并发控制原理">4.5.2 并发控制原理</h3>
+
+<pre><code>maxConcurrency = 3
+
+时间 ──────────────────────────────────────────────────────►
+
+Agent1: ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+Agent2: ░░░░████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+Agent3: ░░░░░░░░░░░░░░░░████████░░░░░░░░░░░░░░░░░░░░░░░░░
+
+        ^          ^         ^         ^
+        T1         T2        T3        T4（需要等待）
+</code></pre>
+
+<h3 id="4-5-3-runparallel-的容错">4.5.3 runParallel 的容错</h3>
+
+<pre><code class="language-typescript">const results = await pool.runParallel([
+  { agent: 'architect', prompt: '设计 API' },
+  { agent: 'developer', prompt: '实现 API' },  // 这个可能失败
+  { agent: 'reviewer', prompt: '审查代码' },
+])
+
+// 即使 developer 失败，architect 和 reviewer 仍然会执行
+// 失败的 Agent 结果会包含在 Map 中
+const devResult = results.get('developer')
+if (!devResult.success) {
+  console.error('开发者任务失败:', devResult.output)
+}
+</code></pre>
+
+<h2 id="4-6-综合示例">4.6 综合示例</h2>
+
+<h3 id="4-6-1-完整流程">4.6.1 完整流程</h3>
+
+<pre><code class="language-typescript">import {
+  OpenMultiAgent,
+  TaskQueue,
+  Scheduler,
+  createTask,
+} from '@jackchen_me/open-multi-agent'
+
+const orchestrator = new OpenMultiAgent()
+
+// 1. 创建团队
+const team = orchestrator.createTeam('dev-team', {
+  name: 'dev-team',
+  agents: [architect, developer, reviewer],
+  sharedMemory: true,
+})
+
+// 2. 创建任务队列
+const queue = new TaskQueue()
+
+// 3. 监听事件
+queue.on('task:ready', (task) =&gt; {
+  const scheduler = new Scheduler('dependency-first')
+  scheduler.autoAssign(queue, team.getAgents())
+})
+
+queue.on('task:complete', (task) =&gt; {
+  console.log(`✅ ${task.title} 完成`)
+})
+
+queue.on('all:complete', () =&gt; {
+  console.log('🎉 所有任务完成！')
+})
+
+// 4. 添加任务
+queue.addBatch([
+  createTask({ title: '设计', assignee: 'architect', dependsOn: [] }),
+  createTask({ title: '开发', assignee: 'developer', dependsOn: ['design-id'] }),
+  createTask({ title: '审核', assignee: 'reviewer', dependsOn: ['dev-id'] }),
+])
+
+// 5. 手动触发第一个任务的执行
+const readyTask = queue.list().find(t =&gt; t.status === 'pending')
+if (readyTask) {
+  const result = await orchestrator.runAgent(
+    { name: readyTask.assignee!, ... },
+    readyTask.description
+  )
+  queue.complete(readyTask.id, result.output)
+}
+</code></pre>
+
+<h2 id="4-7-调度策略对比">4.7 调度策略对比</h2>
+
+<pre><code>                    简单场景                    复杂流水线
+                         │                        │
+          ┌───────────────┼───────────────┐        │
+          ▼               ▼               ▼        ▼
+      round-robin    least-busy   capability-match  dependency-first
+          │               │               │            │
+          ▼               ▼               ▼            ▼
+      轮询分配        负载均衡      专业化分工      关键路径优先 ← 推荐
+</code></pre>
+
+<p><strong>推荐原则</strong>：</p>
+<ul>
+<li>简单任务 → <code>round-robin</code></li>
+<li>负载敏感 → <code>least-busy</code></li>
+<li>专业分工 → <code>capability-match</code></li>
+<li>复杂流水线 → <code>dependency-first</code>（默认）</li>
+</ul>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>Task 状态机</strong>：<code>pending → in_progress → completed/failed/skipped</code></li>
+</ol>
+
+<ol>
+<li><strong>TaskQueue</strong> 自动处理依赖：完成一个任务后，自动解封依赖它的任务。</li>
+</ol>
+
+<ol>
+<li><strong>级联失败</strong>：上游失败会级联影响所有下游任务，防止它们永远阻塞。</li>
+</ol>
+
+<ol>
+<li><strong>四种调度策略</strong>：</li>
+</ol>
+<ul>
+<li><code>round-robin</code>：轮询分配</li>
+<li><code>least-busy</code>：选择最空闲 Agent</li>
+<li><code>capability-match</code>：关键词匹配最合适的 Agent</li>
+<li><code>dependency-first</code>：关键路径优先（<strong>默认</strong>）</li>
+</ul>
+
+<ol>
+<li><strong>Semaphore</strong> 是并发控制的核心，限制同时运行的任务数量。</li>
+</ol>
+
+<ol>
+<li><strong>AgentPool</strong> 封装了 Agent 注册、调度、执行，提供 <code>runParallel()</code> 等高级 API。</li>
+</ol>
+
+<h2 id="思考题">思考题</h2>
+
+<ol>
+<li>如果 taskB 依赖 taskA，taskC 同时依赖 taskA 和 taskB，那么 taskC 何时会从 <code>blocked</code> 变为 <code>pending</code>？</li>
+</ol>
+
+<ol>
+<li>为什么 <code>dependency-first</code> 是默认策略？考虑一个 10 步的流水线，如果关键任务被延迟会怎样？</li>
+</ol>
+
+<ol>
+<li>Semaphore 的 <code>acquire()</code> 返回 Promise。这在 Node.js 的单线程模型中是如何工作的？</li>
+</ol>
+
+<h2 id="下章预告">下章预告</h2>
+
+<p>第 5 章我们将深入讲解<strong>工具系统</strong>。你会理解 <code>defineTool()</code> 如何工作，ToolRegistry 如何管理工具，以及如何编写自定义工具。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch03.html">◀ 第 3 章 核心概念</a>
+  <a href="ch05.html">第 5 章 工具系统 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#任务调度的艺术">任务调度的艺术</a></li><li><a href="#4-1-task-的完整生命周期">4.1 Task 的完整生命周期</a></li><li><a href="#4-2-taskqueue-依赖感知的任务队列">4.2 TaskQueue：依赖感知的任务队列</a></li><li><a href="#4-3-调度策略">4.3 调度策略</a></li><li><a href="#4-4-并发控制-semaphore">4.4 并发控制：Semaphore</a></li><li><a href="#4-5-agentpool-agent-并发池">4.5 AgentPool：Agent 并发池</a></li><li><a href="#4-6-综合示例">4.6 综合示例</a></li><li><a href="#4-7-调度策略对比">4.7 调度策略对比</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#思考题">思考题</a></li><li><a href="#下章预告">下章预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var links = document.querySelectorAll('.toc-list a');
+  if (links.length) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, fromTop = s.scrollTop + 100;
+      links.forEach(function(link) {
+        var sec = document.getElementById(link.getAttribute('href').slice(1));
+        if (sec && sec.offsetTop <= fromTop) {
+          document.querySelectorAll('.toc-list a').forEach(function(l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    });
+  }
+})();</script>
+</body>
+</html>
