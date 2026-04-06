@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 7 章 · Systematic Debugging</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html" class="active">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-7-章-systematic-debugging">第 7 章 · Systematic Debugging</h1>
+      <section>
+        <h2 id="铁律">7.1 铁律</h2>
+        <blockquote>
+          <p>NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST</p>
+        </blockquote>
+        <p><strong>翻译</strong>：没有根本原因调查，就不能修复。</p>
+        <h3 id="反模式-快速修复">反模式：快速修复</h3>
+        <blockquote>
+          <p>"这只是一个简单的问题，我直接改一下就好了。"</p>
+        </blockquote>
+        <p><strong>不。即使问题看起来简单，也不要跳过调试过程。</strong></p>
+      </section>
+      <section>
+        <h2 id="四阶段流程">7.2 四阶段流程</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>阶段</th><th>内容</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>根本原因调查</td></tr>
+              <tr><td>2</td><td>模式分析</td></tr>
+              <tr><td>3</td><td>假设与测试</td></tr>
+              <tr><td>4</td><td>验证</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="phase-1-根本原因调查">7.3 Phase 1: 根本原因调查</h2>
+        <h3 id="仔细阅读错误信息">仔细阅读错误信息</h3>
+        <ul>
+          <li>不要跳过错误或警告</li>
+          <li>完全阅读堆栈跟踪</li>
+          <li>记录行号、文件路径</li>
+        </ul>
+        <h3 id="一致地复现">一致地复现</h3>
+        <ul>
+          <li>你能可靠地触发它吗？</li>
+          <li>如果不可复现 → 收集更多数据，<strong>不要猜测</strong></li>
+        </ul>
+      </section>
+      <section>
+        <h2 id="phase-2-模式分析">7.4 Phase 2: 模式分析</h2>
+        <ul>
+          <li>找到工作的例子</li>
+          <li>与参考比较</li>
+          <li>识别差异</li>
+          <li>理解依赖</li>
+        </ul>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch06.html">← 第 6 章</a>
+        <span></span>
+        <a href="ch08.html">第 8 章 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#铁律">7.1 铁律</a></li>
+        <li><a href="#四阶段流程">7.2 四阶段流程</a></li>
+        <li><a href="#phase-1-根本原因调查">7.3 Phase 1: 根本原因调查</a></li>
+        <li><a href="#phase-2-模式分析">7.4 Phase 2: 模式分析</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

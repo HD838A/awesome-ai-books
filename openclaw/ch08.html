@@ -7,34 +7,57 @@
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <div class="container">
-    <header class="chapter-header">
-      <span class="chapter-number">第 8 章</span>
-      <h1>上下文管理</h1>
-      <span class="review-status">✅ 审查通过</span>
-    </header>
-    <nav class="toc-nav"><a href="index.html">← 返回目录</a></nav>
-    <main class="content">
-      <section class="overview">
-        <h2>概述</h2>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">OpenClaw 源码解析</div>
+        <div class="sidebar-subtitle">面向 iOS 开发者的 AI Agent 编程指南</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · OpenClaw 概览与核心概念</a>
+        <a href="ch02.html">第 2 章 · 项目结构与模块划分</a>
+        <a href="ch03.html">第 3 章 · Agent 核心架构</a>
+        <a href="ch04.html">第 4 章 · 对话引擎</a>
+        <a href="ch05.html">第 5 章 · 提示词工程</a>
+        <a href="ch06.html">第 6 章 · 文件系统集成</a>
+        <a href="ch07.html">第 7 章 · 记忆系统</a>
+        <a href="ch08.html" class="active">第 8 章 · 上下文管理</a>
+        <a href="ch09.html">第 9 章 · 工具系统</a>
+        <a href="ch10.html">第 10 章 · 网络与通信</a>
+        <a href="ch11.html">第 11 章 · 插件系统</a>
+        <a href="ch12.html">第 12 章 · 扩展与生态</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-8-章-上下文管理">第 8 章 · 上下文管理</h1>
+      <section>
+        <h2 id="概述">概述</h2>
         <p>本章深入探讨 OpenClaw 的上下文管理系统，了解如何优雅地管理 Token 预算、处理上下文窗口限制。</p>
       </section>
       <section>
-        <h2>8.1 Token 预算</h2>
+        <h2 id="token-预算">8.1 Token 预算</h2>
         <pre><code>Token 预算 = 模型上限 - 预留 - 系统提示词</code></pre>
         <div class="analogy">
           💡 <strong>类比</strong>：ContextEngine 类似于 <code>NSLinguisticTagger</code>，它分析文本的结构和语义，但 ContextEngine 管理的是对话的"语义"——哪些消息应该保留，哪些应该压缩。
         </div>
       </section>
-    </main>
-    <footer class="chapter-footer">
-      <p>本章审查通过 · 版本 1.0.0 · 2026-04-06</p>
-      <nav class="chapter-nav">
+      <div class="chapter-nav">
         <a href="ch07.html">← 第 7 章</a>
-        <a href="index.html">目录</a>
+        <span></span>
         <a href="ch09.html">第 9 章 →</a>
-      </nav>
-    </footer>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#概述">概述</a></li>
+        <li><a href="#token-预算">8.1 Token 预算</a></li>
+      </ul>
+    </nav>
   </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
 </body>
 </html>

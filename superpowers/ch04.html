@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 4 章 · Brainstorming 技能</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html" class="active">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-4-章-brainstorming-技能">第 4 章 · Brainstorming 技能</h1>
+      <section>
+        <h2 id="hard-gate-核心规则">4.1 HARD-GATE：核心规则</h2>
+        <p>Brainstorming 技能的核心是 <strong>HARD-GATE</strong> 规则：</p>
+        <blockquote>
+          <p>Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it.</p>
+        </blockquote>
+        <p><strong>翻译</strong>：在用户批准设计之前，AI 不能写任何代码。没有任何例外。</p>
+        <h3 id="反模式-太简单不需要设计">反模式：太简单不需要设计</h3>
+        <blockquote>
+          <p>"这只是一个 todo 列表而已，不需要设计吧？"</p>
+        </blockquote>
+        <p><strong>不，每个项目都经过此过程。</strong></p>
+      </section>
+      <section>
+        <h2 id="步检查清单">4.2 9 步检查清单</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>步骤</th><th>内容</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>探索项目上下文</td></tr>
+              <tr><td>2</td><td>提供视觉伴侣（可选）</td></tr>
+              <tr><td>3</td><td>提出澄清问题</td></tr>
+              <tr><td>4</td><td>提出 2-3 个方案</td></tr>
+              <tr><td>5</td><td>呈现设计方案</td></tr>
+              <tr><td>6</td><td>编写设计文档</td></tr>
+              <tr><td>7</td><td>规范自审</td></tr>
+              <tr><td>8</td><td>用户审阅书面规范</td></tr>
+              <tr><td>9</td><td>过渡到实现</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="理解需求">4.3 理解需求</h2>
+        <h3 id="yagni-原则">YAGNI 原则</h3>
+        <p><strong>YAGNI = You Aren't Gonna Need It（你不会需要它）</strong></p>
+        <p>从所有设计中删除不必要的功能。</p>
+      </section>
+      <section>
+        <h2 id="设计文档">4.4 设计文档</h2>
+        <h3 id="保存位置">保存位置</h3>
+        <p><code>docs/superpowers/specs/YYYY-MM-DD-&lt;topic&gt;-design.md</code></p>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch03.html">← 第 3 章</a>
+        <span></span>
+        <a href="ch05.html">第 5 章 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#hard-gate-核心规则">4.1 HARD-GATE：核心规则</a></li>
+        <li><a href="#步检查清单">4.2 9 步检查清单</a></li>
+        <li><a href="#理解需求">4.3 理解需求</a></li>
+        <li><a href="#设计文档">4.4 设计文档</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

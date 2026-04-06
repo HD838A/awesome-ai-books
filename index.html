@@ -1,122 +1,150 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Books</title>
-    <style>
-        :root {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f8f9fa;
-            --text-primary: #1a1a2e;
-            --text-secondary: #4a4a68;
-            --accent: #6c5ce7;
-            --accent-light: #a29bfe;
-            --border: #e9ecef;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.8;
-            color: var(--text-primary);
-            background: var(--bg-primary);
-        }
-
-        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
-
-        header {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-            color: white;
-            margin-bottom: 3rem;
-        }
-
-        header h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
-        header .subtitle { font-size: 1.2rem; opacity: 0.9; }
-
-        .books {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-        }
-
-        .book-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2rem;
-            text-decoration: none;
-            color: inherit;
-            transition: all 0.2s;
-        }
-
-        .book-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 24px rgba(108, 92, 231, 0.15);
-        }
-
-        .book-card h2 {
-            font-size: 1.5rem;
-            color: var(--accent);
-            margin-bottom: 0.5rem;
-        }
-
-        .book-card p {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .book-card .arrow {
-            display: inline-block;
-            margin-top: 1rem;
-            color: var(--accent);
-            font-weight: 600;
-        }
-
-        footer {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            border-top: 1px solid var(--border);
-        }
-
-        footer a { color: var(--accent); text-decoration: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Books</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+#layout { display: flex; min-height: 100vh; }
+/* Left sidebar */
+#sidebar {
+  position: fixed; top: 0; left: 0;
+  width: 260px; height: 100vh;
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+/* Main content */
+#main { margin-left: 260px; padding: 48px 52px 80px; min-height: 100vh; max-width: 860px; }
+/* Hero */
+.hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.hero h1 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 2.6em; font-weight: 700; color: #1A1A1A; border: none; margin-bottom: 14px; padding: 0;
+}
+.hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+/* Book sections */
+.book-section { margin-bottom: 60px; }
+.book-section h2 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1.55em; color: #1A1A1A; padding-bottom: 0.28em;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 1.2em;
+}
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+.book-desc {
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-left: 4px solid #C7553A;
+  padding: 14px 20px; border-radius: 0 6px 6px 0;
+  margin-bottom: 1.4em; color: #555; font-style: italic;
+}
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>AI Books</h1>
-            <p class="subtitle">深入解读 AI 开源项目的设计思想、架构与源码</p>
-        </header>
-
-        <div class="books">
-            <a class="book-card" href="openclaw/">
-                <h2>openclaw</h2>
-                <p>12 章，深入解读 openclaw 架构设计与实现细节。</p>
-                <span class="arrow">→ 开始阅读</span>
-            </a>
-            <a class="book-card" href="gstack/">
-                <h2>gstack</h2>
-                <p>10 章，深入解读 gstack 架构设计与实现细节。</p>
-                <span class="arrow">→ 开始阅读</span>
-            </a>
-            <a class="book-card" href="superpowers/">
-                <h2>superpowers</h2>
-                <p>深入解读 superpowers 开源项目。</p>
-                <span class="arrow">→ 开始阅读</span>
-            </a>
-        </div>
-
-        <footer>
-            Generated by <a href="https://github.com/lordmos/scriptorium">scriptorium</a>
-        </footer>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI Books</div>
+      <div class="sidebar-subtitle">深入解读 AI 开源项目的设计思想、架构与源码</div>
     </div>
+    <div class="sidebar-nav">
+      <a href="#" class="active">📖 全部书籍</a>
+    </div>
+  </nav>
+  <main id="main">
+
+<div class="hero">
+  <h1>AI Books</h1>
+  <p class="subtitle">深入解读 AI 开源项目的设计思想、架构与源码</p>
+</div>
+
+<div class="book-section">
+  <h2>openclaw</h2>
+  <p class="book-desc">openclaw 是一款运行在本地设备的 AI 助手平台，通过模块化架构连接各类 AI 模型与服务，提供任务自动化、长程记忆、Web 可视化等核心能力。</p>
+  <ul class="chapter-list">
+    <li><a href="openclaw/ch01.html">第 1 章 · OpenClaw 概览与核心概念</a></li>
+    <li><a href="openclaw/ch02.html">第 2 章 · ACP 协议 - Agent 通信基础</a></li>
+    <li><a href="openclaw/ch03.html">第 3 章 · 配置系统与认证管理</a></li>
+    <li><a href="openclaw/ch04.html">第 4 章 · Agent 生命周期管理</a></li>
+    <li><a href="openclaw/ch05.html">第 5 章 · 沙箱隔离与执行环境</a></li>
+    <li><a href="openclaw/ch06.html">第 6 章 · Skills 系统与插件架构</a></li>
+    <li><a href="openclaw/ch07.html">第 7 章 · 记忆系统</a></li>
+    <li><a href="openclaw/ch08.html">第 8 章 · 上下文管理</a></li>
+    <li><a href="openclaw/ch09.html">第 9 章 · 工具系统</a></li>
+    <li><a href="openclaw/ch10.html">第 10 章 · 网络与通信</a></li>
+    <li><a href="openclaw/ch11.html">第 11 章 · 插件系统</a></li>
+    <li><a href="openclaw/ch12.html">第 12 章 · 扩展与生态</a></li>
+  </ul>
+</div>
+
+<div class="book-section">
+  <h2>gstack</h2>
+  <p class="book-desc">gstack 是一款开源的 AI 辅助编程工具，通过持久化浏览器、SKILL.md 模板系统、多 Host 适配层和 PreToolUse Hook 安全机制，为开发者提供从架构设计到发布部署的全流程支持。</p>
+  <ul class="chapter-list">
+    <li><a href="gstack/ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a></li>
+    <li><a href="gstack/ch02.html">第2章：gstack 的整体架构——守护进程与状态管理</a></li>
+    <li><a href="gstack/ch03.html">第3章：持久化浏览器核心实现——browse 模块架构</a></li>
+    <li><a href="gstack/ch04.html">第4章：SKILL.md 模板系统——Markdown 即配置</a></li>
+    <li><a href="gstack/ch05.html">第5章：核心技能解析——/plan、/review、/ship</a></li>
+    <li><a href="gstack/ch06.html">第6章：autoplan 与 review-army 深度解析</a></li>
+    <li><a href="gstack/ch07.html">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a></li>
+    <li><a href="gstack/ch08.html">第8章：8 大 AI 代理支持——配置即生态</a></li>
+    <li><a href="gstack/ch09.html">第9章：安全机制——freeze / guard / careful</a></li>
+    <li><a href="gstack/ch10.html">第 10 章：构建与发布</a></li>
+  </ul>
+</div>
+
+<div class="book-section">
+  <h2>superpowers</h2>
+  <p class="book-desc">superpowers 开源项目深度解读，探索 AI 编程助手如何赋予开发者超能力。</p>
+  <ul class="chapter-list">
+    <li><a href="superpowers/ch01.html">第 1 章 · Superpowers 概述与快速上手</a></li>
+    <li><a href="superpowers/ch02.html">第 2 章 · 系统架构设计</a></li>
+    <li><a href="superpowers/ch03.html">第 3 章 · Skills 系统实现</a></li>
+    <li><a href="superpowers/ch04.html">第 4 章 · Brainstorming 技能</a></li>
+    <li><a href="superpowers/ch05.html">第 5 章 · Subagent-Driven Development</a></li>
+    <li><a href="superpowers/ch06.html">第 6 章 · 其他核心技能</a></li>
+    <li><a href="superpowers/ch07.html">第 7 章 · Systematic Debugging</a></li>
+    <li><a href="superpowers/ch08.html">第 8 章 · Test-Driven Development</a></li>
+    <li><a href="superpowers/ch09.html">第 9 章 · 多平台适配</a></li>
+    <li><a href="superpowers/ch10.html">第 10 章 · 高级主题与生态</a></li>
+  </ul>
+</div>
+
+  </main>
+</div>
 </body>
 </html>

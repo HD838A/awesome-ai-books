@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 10 章 · 高级主题与生态</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html" class="active">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-10-章-高级主题与生态">第 10 章 · 高级主题与生态</h1>
+      <section>
+        <h2 id="核心原则-技能编写就是-tdd">10.1 核心原则：技能编写就是 TDD</h2>
+        <blockquote>
+          <p>"Writing skills IS Test-Driven Development applied to process documentation."</p>
+        </blockquote>
+        <h3 id="tdd-类比">TDD 类比</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>TDD 概念</th><th>技能创建</th></tr></thead>
+            <tbody>
+              <tr><td>测试用例</td><td>压力场景</td></tr>
+              <tr><td>生产代码</td><td>SKILL.md</td></tr>
+              <tr><td>测试失败</td><td>没有技能时违反规则</td></tr>
+              <tr><td>重构</td><td>堵住漏洞</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="什么时候创建技能">10.2 什么时候创建技能</h2>
+        <h3 id="创建当">创建当</h3>
+        <ul>
+          <li>✅ 技术不是直觉上显而易见的</li>
+          <li>✅ 会在项目中再次参考</li>
+          <li>✅ 模式广泛适用</li>
+        </ul>
+        <h3 id="不要创建">不要创建</h3>
+        <ul>
+          <li>❌ 一次性解决方案</li>
+          <li>❌ 标准实践（已有文档）</li>
+          <li>❌ 特定项目的约定</li>
+        </ul>
+      </section>
+      <section>
+        <h2 id="技能类型">10.3 技能类型</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>类型</th><th>说明</th><th>示例</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Technique</strong></td><td>有步骤的具体方法</td><td>condition-based-waiting</td></tr>
+              <tr><td><strong>Pattern</strong></td><td>思考问题的方式</td><td>flatten-with-flags</td></tr>
+              <tr><td><strong>Reference</strong></td><td>API 文档</td><td>office docs</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="测试技能">10.4 测试技能</h2>
+        <h3 id="red-阶段-基线测试">RED 阶段：基线测试</h3>
+        <p>在没有技能的情况下运行测试，观察代理失败，记录确切的失败。</p>
+        <h3 id="green-阶段-编写技能">GREEN 阶段：编写技能</h3>
+        <p>针对具体的基线失败编写技能。</p>
+        <h3 id="refactor-阶段-堵洞">REFACTOR 阶段：堵洞</h3>
+        <p>发现新的理性化，添加对策。</p>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch09.html">← 第 9 章</a>
+        <span></span>
+        <a href="appendix.html">附录 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#核心原则-技能编写就是-tdd">10.1 核心原则：技能编写就是 TDD</a></li>
+        <li><a href="#什么时候创建技能">10.2 什么时候创建技能</a></li>
+        <li><a href="#技能类型">10.3 技能类型</a></li>
+        <li><a href="#测试技能">10.4 测试技能</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

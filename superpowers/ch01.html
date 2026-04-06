@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 1 章 · Superpowers 概述与快速上手</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html" class="active">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-1-章-superpowers-概述与快速上手">第 1 章 · Superpowers 概述与快速上手</h1>
+      <section>
+        <h2 id="superpowers-是什么">1.1 Superpowers 是什么</h2>
+        <p><strong>Superpowers</strong> 是一个为 AI 编程助手提供"超能力"的插件框架。安装之后，你的 AI 助手会从"只会写代码"进化为"能够进行系统化设计、规范开发、持续迭代"的超级开发者。</p>
+        <h3 id="核心设计理念">核心设计理念</h3>
+        <p>想象一下 RPG 游戏中的装备系统：穿上不同的装备，你的角色就获得了不同的能力。Superpowers 就是这样一个"装备系统"——每个 <strong>Skill（技能）</strong> 是一种可以独立使用、也可以组合的功能块。</p>
+        <p>当你需要设计一个功能时，"brainstorming" 技能自动激活，帮助你明确需求；当你需要实现时，"TDD" 技能自动激活，确保你先写测试再写代码；当你遇到 bug 时，"systematic-debugging" 技能自动激活，引导你系统化地定位问题。</p>
+        <h3 id="与其他工具的区别">与其他工具的区别</h3>
+        <p>大多数 AI 编程助手追求的是"秒级生成代码"——你给一个提示，它给你一堆代码。这种方式的代价是：代码质量参差不齐，边界情况被忽略，架构设计全靠运气。</p>
+        <p>Superpowers 的追求是"一次做对"——通过结构化的工作流程，确保 AI 在动手之前先理解需求，先做设计，先写测试。</p>
+      </section>
+      <section>
+        <h2 id="工作原理概览">1.2 工作原理概览</h2>
+        <p>Superpowers 的核心是 <strong>Skills 系统</strong>和 <strong>Hooks 机制</strong>。</p>
+        <h3 id="skills-系统">Skills 系统</h3>
+        <p><strong>Skill</strong> 是一种特殊的 Markdown 文件，定义了某种工作方式的最佳实践。每个 Skill 包含：</p>
+        <ul>
+          <li>触发条件（什么时候应该用这个技能）</li>
+          <li>工作流程（如何执行这个技能）</li>
+          <li>质量标准（什么算做好了）</li>
+        </ul>
+        <p>Skills 会自动触发——不需要你手动调用。</p>
+        <h3 id="hooks-机制">Hooks 机制</h3>
+        <p><strong>Hook</strong> 是在特定事件发生时自动执行的脚本。Superpowers 在会话启动时注入上下文。</p>
+      </section>
+      <section>
+        <h2 id="快速安装">1.3 快速安装</h2>
+        <h3 id="claude-code">Claude Code</h3>
+        <pre><code>/claude plugin install superpowers@claude-plugins-official</code></pre>
+        <h3 id="copilot-cli">Copilot CLI</h3>
+        <pre><code>copilot plugin install superpowers</code></pre>
+        <p>安装完成后，重新启动 AI 编程助手，Superpowers 会自动激活。</p>
+      </section>
+      <section>
+        <h2 id="第一个项目">1.4 第一个项目</h2>
+        <p>让我们通过一个简单项目来体验 Superpowers：</p>
+        <p><strong>需求</strong>：创建一个待办事项列表应用。</p>
+        <p><strong>第一步：告诉 AI 你的需求</strong></p>
+        <pre><code>我想创建一个待办事项列表应用，使用 React。</code></pre>
+        <p><strong>第二步：Superpowers 自动激活 brainstorming</strong></p>
+        <p>AI 会先进行需求澄清，而不是直接写代码。</p>
+        <p><strong>第三步：设计文档</strong></p>
+        <p>在获得你的回答后，AI 会编写设计文档，包括技术选型、组件结构、数据流设计。</p>
+        <p><strong>第四步：实现计划</strong></p>
+        <p>设计批准后，AI 会创建实现计划，每个步骤都有清晰的检查点。</p>
+        <p><strong>第五步：TDD 实现</strong></p>
+        <p>按照红-绿-重构循环，先写测试，再写代码。</p>
+      </section>
+      <section>
+        <h2 id="核心概念">1.5 核心概念</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>概念</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Skill</strong></td><td>定义工作方式的 Markdown 文件</td></tr>
+              <tr><td><strong>Hook</strong></td><td>事件触发的脚本</td></tr>
+              <tr><td><strong>HARD-GATE</strong></td><td>没有批准就不能前进的硬性规则</td></tr>
+              <tr><td><strong>RED FLAGS</strong></td><td>识别理性化的信号</td></tr>
+              <tr><td><strong>Bootstrap</strong></td><td>会话初始化时的上下文注入</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <div class="chapter-nav">
+        <a href="index.html">← 返回目录</a>
+        <span></span>
+        <a href="ch02.html">第 2 章 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#superpowers-是什么">1.1 Superpowers 是什么</a></li>
+        <li><a href="#工作原理概览">1.2 工作原理概览</a></li>
+        <li><a href="#快速安装">1.3 快速安装</a></li>
+        <li><a href="#第一个项目">1.4 第一个项目</a></li>
+        <li><a href="#核心概念">1.5 核心概念</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

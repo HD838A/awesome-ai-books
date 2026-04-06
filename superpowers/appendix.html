@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>附录 · 快速参考</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html" class="active">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="附录-快速参考">附录 · 快速参考</h1>
+      <section>
+        <h2 id="核心规则速查">A.1 核心规则速查</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>技能</th><th>铁律</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Brainstorming</strong></td><td>没有设计批准就不能实现</td></tr>
+              <tr><td><strong>Systematic Debugging</strong></td><td>没有根因调查就不能修复</td></tr>
+              <tr><td><strong>TDD</strong></td><td>没有失败的测试就不能写代码</td></tr>
+              <tr><td><strong>Subagent-Driven Development</strong></td><td>没有两阶段审查就不能交付</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="技能速查表">A.2 技能速查表</h2>
+        <h3 id="brainstorming">Brainstorming</h3>
+        <p><strong>9 步检查清单</strong>：探索 → 澄清 → 方案 → 设计 → 文档 → 自审 → 审阅 → 计划</p>
+        <h3 id="tdd">TDD</h3>
+        <p><strong>红-绿-重构</strong>：🔴 RED → ✅ GREEN → 🔵 REFACTOR</p>
+        <h3 id="subagent-driven-development">Subagent-Driven Development</h3>
+        <p><strong>两阶段审查</strong>：规范合规审查 → 代码质量审查</p>
+      </section>
+      <section>
+        <h2 id="red-flags-通用">A.3 RED FLAGS（通用）</h2>
+        <ul>
+          <li>"这只是简单的问题"</li>
+          <li>"我需要先获取更多上下文"</li>
+          <li>"让我先探索代码库"</li>
+          <li>"这不需要正式技能"</li>
+          <li>"我已经手动测试了"</li>
+          <li>"就这一次"</li>
+        </ul>
+      </section>
+      <section>
+        <h2 id="原则速查">A.4 原则速查</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>缩写</th><th>全称</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>YAGNI</td><td>You Aren't Gonna Need It</td><td>不要添加不需要的功能</td></tr>
+              <tr><td>DRY</td><td>Don't Repeat Yourself</td><td>不要重复知识</td></tr>
+              <tr><td>HARD-GATE</td><td>-</td><td>没有批准就不能前进</td></tr>
+              <tr><td>RED FLAGS</td><td>-</td><td>识别理性化的信号</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="文件命名规范">A.5 文件命名规范</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>文件类型</th><th>命名规范</th><th>示例</th></tr></thead>
+            <tbody>
+              <tr><td>规范</td><td><code>YYYY-MM-DD-&lt;topic&gt;-design.md</code></td><td><code>2026-04-06-login-design.md</code></td></tr>
+              <tr><td>计划</td><td><code>YYYY-MM-DD-&lt;feature-name&gt;.md</code></td><td><code>2026-04-06-user-auth.md</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="工作流概览">A.6 工作流概览</h2>
+        <p>用户请求 → brainstorming → 规范文档 → writing-plans → 实现计划 → subagent-driven-development → 两阶段审查 → 完成</p>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch10.html">← 第 10 章</a>
+        <span></span>
+        <span>🎉 完结</span>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#核心规则速查">A.1 核心规则速查</a></li>
+        <li><a href="#技能速查表">A.2 技能速查表</a></li>
+        <li><a href="#red-flags-通用">A.3 RED FLAGS（通用）</a></li>
+        <li><a href="#原则速查">A.4 原则速查</a></li>
+        <li><a href="#文件命名规范">A.5 文件命名规范</a></li>
+        <li><a href="#工作流概览">A.6 工作流概览</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

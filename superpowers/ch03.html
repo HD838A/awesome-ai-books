@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 3 章 · Skills 系统实现</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html" class="active">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-3-章-skills-系统实现">第 3 章 · Skills 系统实现</h1>
+      <section>
+        <h2 id="skill-是什么">3.1 Skill 是什么</h2>
+        <p><strong>Skill</strong> 是一种 Markdown 格式的过程文档，定义了某种工作方式的最佳实践。</p>
+        <h3 id="三个属性">三个属性</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>属性</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Reusable</strong></td><td>可跨项目重用</td></tr>
+              <tr><td><strong>Triggerable</strong></td><td>可以自动触发</td></tr>
+              <tr><td><strong>Composable</strong></td><td>可以组合使用</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 id="与-prompt-的区别">与 Prompt 的区别</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>方面</th><th>Prompt</th><th>Skill</th></tr></thead>
+            <tbody>
+              <tr><td>触发方式</td><td>每次手动输入</td><td>自动检测触发</td></tr>
+              <tr><td>粒度</td><td>整个对话</td><td>具体任务</td></tr>
+              <tr><td>更新方式</td><td>每次对话不同</td><td>统一版本管理</td></tr>
+              <tr><td>上下文</td><td>需要复制粘贴</td><td>自动加载</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="skill-文件结构">3.2 Skill 文件结构</h2>
+        <h3 id="基本结构">基本结构</h3>
+        <pre><code>---
+name: skill-name
+description: 当...时使用此技能
+---
+
+# Skill Title
+
+## Overview
+
+简要说明。
+
+## When to Use
+
+何时使用。
+
+## The Process
+
+执行步骤。</code></pre>
+        <h3 id="frontmatter-规范">frontmatter 规范</h3>
+        <pre><code>---
+name: brainstorming
+description: Use when starting a new feature or significant change
+---</code></pre>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>字段</th><th>必需</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>name</code></td><td>是</td><td>技能名称</td></tr>
+              <tr><td><code>description</code></td><td>是</td><td>简短描述</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="触发条件">3.3 触发条件</h2>
+        <h3 id="自动触发">自动触发</h3>
+        <p>当 AI 检测到某个 Skill 的触发条件时，自动加载该 Skill。</p>
+        <h3 id="手动触发">手动触发</h3>
+        <p>使用 Skill 工具：</p>
+        <pre><code>/Skill skill-name</code></pre>
+      </section>
+      <section>
+        <h2 id="skill-类型">3.4 Skill 类型</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>类型</th><th>说明</th><th>示例</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Process</strong></td><td>定义工作流程</td><td>brainstorming, TDD</td></tr>
+              <tr><td><strong>Implementation</strong></td><td>实现指导</td><td>frontend-design</td></tr>
+              <tr><td><strong>Reference</strong></td><td>参考文档</td><td>API docs</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="编写高质量-skill">3.5 编写高质量 Skill</h2>
+        <h3 id="好-skill-的标准">好 Skill 的标准</h3>
+        <ul>
+          <li>✅ 触发条件清晰</li>
+          <li>✅ 步骤具体可执行</li>
+          <li>✅ 有明确的产出</li>
+          <li>✅ 包含质量标准</li>
+        </ul>
+        <h3 id="避免的问题">避免的问题</h3>
+        <ul>
+          <li>❌ 触发条件模糊</li>
+          <li>❌ 步骤过于抽象</li>
+          <li>❌ 缺少实际示例</li>
+          <li>❌ 过于冗长</li>
+        </ul>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch02.html">← 第 2 章</a>
+        <span></span>
+        <a href="ch04.html">第 4 章 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#skill-是什么">3.1 Skill 是什么</a></li>
+        <li><a href="#skill-文件结构">3.2 Skill 文件结构</a></li>
+        <li><a href="#触发条件">3.3 触发条件</a></li>
+        <li><a href="#skill-类型">3.4 Skill 类型</a></li>
+        <li><a href="#编写高质量-skill">3.5 编写高质量 Skill</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

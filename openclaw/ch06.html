@@ -3,44 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>第 6 章 · Skills 系统与插件架构</title>
+  <title>第 6 章 · Skills 系统与插件架构 — OpenClaw 源码解析</title>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <div class="container">
-    <header class="chapter-header">
-      <span class="chapter-number">第 6 章</span>
-      <h1>Skills 系统与插件架构</h1>
-      <span class="review-status">✅ 审查通过</span>
-    </header>
-    <nav class="toc-nav"><a href="index.html">← 返回目录</a></nav>
-    <main class="content">
-      <section class="overview">
-        <h2>概述</h2>
-        <p>本章深入探讨 OpenClaw 的 Skills 系统。Skills 是 OpenClaw 提供的可复用功能模块。</p>
-      </section>
-      <section>
-        <h2>6.1 Skills 与 Plugin</h2>
-        <div class="analogy">
-          💡 <strong>类比</strong>：这类似于 iOS 的 <strong>App Extensions</strong> 和 <strong>Shortcuts</strong> 的区别。App Extension 是系统级扩展，Shortcuts 是用户级技能。
-        </div>
-        <table class="comparison-table">
-          <thead><tr><th>概念</th><th>层级</th><th>类比</th></tr></thead>
-          <tbody>
-            <tr><td>Plugin</td><td>系统级</td><td>App Extension</td></tr>
-            <tr><td>Skill</td><td>用户级</td><td>Shortcut</td></tr>
-          </tbody>
-        </table>
-      </section>
-    </main>
-    <footer class="chapter-footer">
-      <p>本章审查通过 · 版本 1.0.0 · 2026-04-06</p>
-      <nav class="chapter-nav">
-        <a href="ch05.html">← 第 5 章</a>
-        <a href="index.html">目录</a>
-        <a href="ch07.html">第 7 章 →</a>
-      </nav>
-    </footer>
-  </div>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">OpenClaw 源码解析</div>
+      <div class="sidebar-subtitle">面向 iOS 开发者的 AI Agent 编程指南</div>
+    </div>
+    <div class="sidebar-nav">
+      <a href="index.html">📖 目录</a>
+      <a href="ch01.html">第 1 章 · OpenClaw 概览与核心概念</a>
+      <a href="ch02.html">第 2 章 · ACP 协议 - Agent 通信基础</a>
+      <a href="ch03.html">第 3 章 · 配置系统与认证管理</a>
+      <a href="ch04.html">第 4 章 · Agent 生命周期管理</a>
+      <a href="ch05.html">第 5 章 · 沙箱隔离与执行环境</a>
+      <a href="ch06.html" class="active">第 6 章 · Skills 系统与插件架构</a>
+      <a href="ch07.html">第 7 章 · 记忆系统</a>
+      <a href="ch08.html">第 8 章 · 上下文管理</a>
+      <a href="ch09.html">第 9 章 · 工具系统</a>
+      <a href="ch10.html">第 10 章 · 网络与通信</a>
+      <a href="ch11.html">第 11 章 · 插件系统</a>
+      <a href="ch12.html">第 12 章 · 扩展与生态</a>
+    </div>
+  </nav>
+  <main id="main">
+    <h1 id="第-6-章-skills-系统与插件架构">第 6 章 · Skills 系统与插件架构</h1>
+
+    <h2 id="概述">概述</h2>
+
+    <p>本章深入探讨 OpenClaw 的 Skills 系统。Skills 是 OpenClaw 提供的可复用功能模块。</p>
+
+    <h2 id="6-1-skills-与-plugin">6.1 Skills 与 Plugin</h2>
+
+    <blockquote><p>💡 <strong>类比</strong>：这类似于 iOS 的 <strong>App Extensions</strong> 和 <strong>Shortcuts</strong> 的区别。App Extension 是系统级扩展，Shortcuts 是用户级技能。</p></blockquote>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>概念</th><th>层级</th><th>类比</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Plugin</td><td>系统级</td><td>App Extension</td></tr>
+          <tr><td>Skill</td><td>用户级</td><td>Shortcut</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="6-2-本章小结">6.2 本章小结</h2>
+
+    <p>Skills 系统和插件架构是 OpenClaw 可扩展性的核心。Plugin 提供系统级扩展能力，Skill 提供用户级可复用功能。</p>
+
+    <div class="chapter-nav">
+      <a href="ch05.html">← 第 5 章</a>
+      <span></span>
+      <a href="ch07.html">第 7 章 →</a>
+    </div>
+  </main>
+  <nav id="toc-right">
+    <div class="toc-title">本章目录</div>
+    <ul class="toc-list">
+      <li><a href="#概述">概述</a></li>
+      <li><a href="#6-1-skills-与-plugin">6.1 Skills 与 Plugin</a></li>
+      <li><a href="#6-2-本章小结">6.2 本章小结</a></li>
+    </ul>
+  </nav>
+</div>
+<button id="back-to-top">↑</button>
+<script src="assets/script.js"></script>
 </body>
 </html>

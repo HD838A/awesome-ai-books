@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 2 章 · 系统架构设计</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html" class="active">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-2-章-系统架构设计">第 2 章 · 系统架构设计</h1>
+      <section>
+        <h2 id="整体架构">2.1 整体架构</h2>
+        <p>Superpowers 采用三层架构设计：</p>
+        <pre><code>AI 编程助手 → Platform Adapter → Context Injection → Skills System</code></pre>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>层级</th><th>职责</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Platform Adapter</strong></td><td>处理不同 AI 平台的差异</td></tr>
+              <tr><td><strong>Context Injection</strong></td><td>在会话启动时注入上下文</td></tr>
+              <tr><td><strong>Skills System</strong></td><td>提供可组合的工作技能</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="平台适配层">2.2 平台适配层</h2>
+        <p>不同 AI 编程助手有不同的工具接口。Platform Adapter 层统一这些差异。</p>
+        <h3 id="支持的平台">支持的平台</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>平台</th><th>工具映射</th></tr></thead>
+            <tbody>
+              <tr><td>Claude Code</td><td><code>Read</code>, <code>Write</code>, <code>Edit</code>, <code>Bash</code>, <code>Skill</code></td></tr>
+              <tr><td>Copilot CLI</td><td><code>view</code>, <code>create</code>, <code>edit</code>, <code>bash</code>, <code>skill</code></td></tr>
+              <tr><td>Gemini CLI</td><td><code>activate_skill</code>, 原生工具</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="上下文注入层">2.3 上下文注入层</h2>
+        <p>Context Injection 在会话启动时注入 Bootstrap Context，包含：</p>
+        <ul>
+          <li>可用的技能列表</li>
+          <li>触发条件映射</li>
+          <li>默认行为规则</li>
+        </ul>
+        <h3 id="bootstrap-context">Bootstrap Context</h3>
+        <p>Bootstrap Context 是一段特殊的上下文，告诉 AI：</p>
+        <ul>
+          <li>它有了"超能力"</li>
+          <li>什么时候应该使用哪个技能</li>
+          <li>如何调用技能</li>
+        </ul>
+      </section>
+      <section>
+        <h2 id="技能系统层">2.4 技能系统层</h2>
+        <p>Skills System 是 Superpowers 的核心。它包含：</p>
+        <ul>
+          <li>Skill 定义文件（SKILL.md）</li>
+          <li>辅助脚本</li>
+          <li>测试场景</li>
+        </ul>
+        <h3 id="目录结构">目录结构</h3>
+        <pre><code>skills/
+├── brainstorming/
+│   ├── SKILL.md
+│   ├── spec-document-reviewer-prompt.md
+│   └── visual-companion.md
+├── subagent-driven-development/
+│   ├── SKILL.md
+│   ├── implementer-prompt.md
+│   └── spec-reviewer-prompt.md
+└── ...</code></pre>
+      </section>
+      <section>
+        <h2 id="数据流">2.5 数据流</h2>
+        <p>用户发送消息 → Hook 注入 Bootstrap Context → AI 检查适用技能 → Skill 返回技能指导 → AI 遵循技能执行</p>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch01.html">← 第 1 章</a>
+        <span></span>
+        <a href="ch03.html">第 3 章 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#整体架构">2.1 整体架构</a></li>
+        <li><a href="#平台适配层">2.2 平台适配层</a></li>
+        <li><a href="#上下文注入层">2.3 上下文注入层</a></li>
+        <li><a href="#技能系统层">2.4 技能系统层</a></li>
+        <li><a href="#数据流">2.5 数据流</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

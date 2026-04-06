@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 9 章 · 多平台适配</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html" class="active">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-9-章-多平台适配">第 9 章 · 多平台适配</h1>
+      <section>
+        <h2 id="核心原则-1-规则">9.1 核心原则：1% 规则</h2>
+        <blockquote>
+          <p>"If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill."</p>
+        </blockquote>
+        <p><strong>翻译</strong>：只要有 1% 的可能性技能适用，就必须调用技能来检查。</p>
+        <h3 id="red-flags-理性化警示">RED FLAGS（理性化警示）</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>想法</th><th>真相</th></tr></thead>
+            <tbody>
+              <tr><td>"这只是简单的问题"</td><td>问题即任务。检查技能。</td></tr>
+              <tr><td>"我记得这个技能"</td><td>技能会演进。读取当前版本。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="指令优先级">9.2 指令优先级</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>优先级</th><th>指令类型</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>用户的明确指令（最高）</td></tr>
+              <tr><td>2</td><td>Superpowers 技能</td></tr>
+              <tr><td>3</td><td>默认系统提示（最低）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="工具映射">9.3 工具映射</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Claude Code</th><th>Copilot CLI</th><th>用途</th></tr></thead>
+            <tbody>
+              <tr><td><code>Read</code></td><td><code>view</code></td><td>读取文件</td></tr>
+              <tr><td><code>Write</code></td><td><code>create</code></td><td>创建文件</td></tr>
+              <tr><td><code>Skill</code></td><td><code>skill</code></td><td>调用技能</td></tr>
+              <tr><td><code>Task</code></td><td><code>task</code></td><td>分派子代理</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="技能优先级">9.4 技能优先级</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>优先级</th><th>技能类型</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>流程技能（brainstorming、debugging）</td></tr>
+              <tr><td>2</td><td>实现技能（frontend-design、mcp-builder）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch08.html">← 第 8 章</a>
+        <span></span>
+        <a href="ch10.html">第 10 章 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#核心原则-1-规则">9.1 核心原则：1% 规则</a></li>
+        <li><a href="#指令优先级">9.2 指令优先级</a></li>
+        <li><a href="#工具映射">9.3 工具映射</a></li>
+        <li><a href="#技能优先级">9.4 技能优先级</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

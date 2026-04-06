@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 8 章 · Test-Driven Development</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html" class="active">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-8-章-test-driven-development">第 8 章 · Test-Driven Development</h1>
+      <section>
+        <h2 id="铁律">8.1 铁律</h2>
+        <blockquote>
+          <p>NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST</p>
+        </blockquote>
+        <p><strong>翻译</strong>：没有失败的测试，就不能写生产代码。</p>
+        <h3 id="核心原则">核心原则</h3>
+        <blockquote>
+          <p>"If you didn't watch the test fail, you don't know if it tests the right thing."</p>
+        </blockquote>
+      </section>
+      <section>
+        <h2 id="红-绿-重构循环">8.2 红-绿-重构循环</h2>
+        <p>🔴 RED（写失败的测试）→ 验证失败正确？→ 🟢 GREEN（最小代码）→ 验证全部通过？→ 🔵 REFACTOR（清理）</p>
+      </section>
+      <section>
+        <h2 id="常见借口及真相">8.3 常见借口及真相</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>借口</th><th>真相</th></tr></thead>
+            <tbody>
+              <tr><td>"太简单不需要测试"</td><td>简单代码也会坏</td></tr>
+              <tr><td>"我之后再测试"</td><td>测试立即通过证明不了什么</td></tr>
+              <tr><td>"手动测试就够了"</td><td>手动 ≠ 系统</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="red-flags-停止并重新开始">8.4 RED FLAGS — 停止并重新开始</h2>
+        <ul>
+          <li>❌ 代码在测试之前</li>
+          <li>❌ 测试立即通过</li>
+          <li>❌ "就这一次"</li>
+          <li>❌ "我已经手动测试了"</li>
+        </ul>
+        <p><strong>所有这些意味着：删除代码。从 TDD 重新开始。</strong></p>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch07.html">← 第 7 章</a>
+        <span></span>
+        <a href="ch09.html">第 9 章 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#铁律">8.1 铁律</a></li>
+        <li><a href="#红-绿-重构循环">8.2 红-绿-重构循环</a></li>
+        <li><a href="#常见借口及真相">8.3 常见借口及真相</a></li>
+        <li><a href="#red-flags-停止并重新开始">8.4 RED FLAGS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

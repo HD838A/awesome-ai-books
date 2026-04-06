@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 6 章 · 其他核心技能</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html" class="active">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-6-章-其他核心技能">第 6 章 · 其他核心技能</h1>
+      <section>
+        <h2 id="技能协作概览">6.1 技能协作概览</h2>
+        <p>brainstorming → writing-plans → subagent-driven-development / executing-plans → finishing-a-development-branch</p>
+      </section>
+      <section>
+        <h2 id="writing-plans-实现计划编写">6.2 writing-plans — 实现计划编写</h2>
+        <h3 id="计划结构">计划结构</h3>
+        <pre><code># [Feature] Implementation Plan
+
+**Goal:** [一句话]
+
+---
+
+### Task N: [组件名]
+
+- [ ] Step 1: Write failing test
+- [ ] Step 2: Run test (verify fails)
+- [ ] Step 3: Write minimal code
+- [ ] Step 4: Run test (verify passes)
+- [ ] Step 5: Commit</code></pre>
+      </section>
+      <section>
+        <h2 id="receiving-code-review-接收代码审查">6.3 receiving-code-review — 接收代码审查</h2>
+        <h3 id="响应模式">响应模式</h3>
+        <ol>
+          <li><strong>READ</strong>: Complete feedback without reacting</li>
+          <li><strong>UNDERSTAND</strong>: Restate in own words</li>
+          <li><strong>VERIFY</strong>: Check against codebase reality</li>
+          <li><strong>EVALUATE</strong>: Technically sound?</li>
+          <li><strong>RESPOND</strong>: Technical acknowledgment or pushback</li>
+          <li><strong>IMPLEMENT</strong>: One at a time, test each</li>
+        </ol>
+        <h3 id="禁止的响应">禁止的响应</h3>
+        <ul>
+          <li>❌ "You're absolutely right!"</li>
+          <li>❌ "Great point!"</li>
+          <li>❌ "Let me implement that now"</li>
+        </ul>
+      </section>
+      <section>
+        <h2 id="finishing-a-development-branch-完成开发分支">6.4 finishing-a-development-branch — 完成开发分支</h2>
+        <h3 id="个选项">4 个选项</h3>
+        <ol>
+          <li>本地合并</li>
+          <li>创建 Pull Request</li>
+          <li>保留分支</li>
+          <li>丢弃工作</li>
+        </ol>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch05.html">← 第 5 章</a>
+        <span></span>
+        <a href="ch07.html">第 7 章 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#技能协作概览">6.1 技能协作概览</a></li>
+        <li><a href="#writing-plans-实现计划编写">6.2 writing-plans</a></li>
+        <li><a href="#receiving-code-review-接收代码审查">6.3 receiving-code-review</a></li>
+        <li><a href="#finishing-a-development-branch-完成开发分支">6.4 finishing-a-development-branch</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>

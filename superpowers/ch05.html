@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 5 章 · Subagent-Driven Development</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <div id="layout">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Superpowers 源码解析</div>
+        <div class="sidebar-subtitle">从 AI 编程助手到超级开发者</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html">📖 目录</a>
+        <a href="ch01.html">第 1 章 · Superpowers 概述与快速上手</a>
+        <a href="ch02.html">第 2 章 · 系统架构设计</a>
+        <a href="ch03.html">第 3 章 · Skills 系统实现</a>
+        <a href="ch04.html">第 4 章 · Brainstorming 技能</a>
+        <a href="ch05.html" class="active">第 5 章 · Subagent-Driven Development</a>
+        <a href="ch06.html">第 6 章 · 其他核心技能</a>
+        <a href="ch07.html">第 7 章 · Systematic Debugging</a>
+        <a href="ch08.html">第 8 章 · Test-Driven Development</a>
+        <a href="ch09.html">第 9 章 · 多平台适配</a>
+        <a href="ch10.html">第 10 章 · 高级主题与生态</a>
+        <a href="appendix.html">附录 · 快速参考</a>
+      </div>
+    </nav>
+    <main id="main">
+      <h1 id="第-5-章-subagent-driven-development">第 5 章 · Subagent-Driven Development</h1>
+      <section>
+        <h2 id="核心原则">5.1 核心原则</h2>
+        <blockquote>
+          <p>"Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration"</p>
+        </blockquote>
+        <h3 id="为什么使用子代理">为什么使用子代理？</h3>
+        <p><strong>隔离上下文是关键。</strong> 每个子代理不继承主会话的上下文，保持专注。</p>
+      </section>
+      <section>
+        <h2 id="两阶段审查">5.2 两阶段审查</h2>
+        <h3 id="第一阶段-规范合规审查">第一阶段：规范合规审查</h3>
+        <p><strong>关键原则</strong>：<strong>不相信报告</strong></p>
+        <p>必须独立验证代码，而不是相信实现者的报告。</p>
+        <h3 id="第二阶段-代码质量审查">第二阶段：代码质量审查</h3>
+        <p>仅在规范合规审查通过<strong>之后</strong>进行。</p>
+      </section>
+      <section>
+        <h2 id="模型选择策略">5.3 模型选择策略</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>任务类型</th><th>模型</th><th>信号</th></tr></thead>
+            <tbody>
+              <tr><td>机械实现</td><td>快速、便宜的模型</td><td>1-2 个文件，清晰规范</td></tr>
+              <tr><td>集成和判断</td><td>标准模型</td><td>多文件协调</td></tr>
+              <tr><td>架构和设计</td><td>最强模型</td><td>需要设计判断</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2 id="red-flags-禁止事项">5.4 RED FLAGS（禁止事项）</h2>
+        <blockquote>
+          <p><strong>Never:</strong></p>
+          <ul style="margin-bottom:0">
+            <li>Start implementation on main/master branch without explicit user consent</li>
+            <li>Skip reviews (spec compliance OR code quality)</li>
+            <li>Dispatch multiple implementation subagents in parallel (conflicts)</li>
+            <li>Start code quality review before spec compliance is ✅</li>
+          </ul>
+        </blockquote>
+      </section>
+      <div class="chapter-nav">
+        <a href="ch04.html">← 第 4 章</a>
+        <span></span>
+        <a href="ch06.html">第 6 章 →</a>
+      </div>
+    </main>
+    <nav id="toc-right">
+      <div class="toc-title">本章目录</div>
+      <ul class="toc-list">
+        <li><a href="#核心原则">5.1 核心原则</a></li>
+        <li><a href="#两阶段审查">5.2 两阶段审查</a></li>
+        <li><a href="#模型选择策略">5.3 模型选择策略</a></li>
+        <li><a href="#red-flags-禁止事项">5.4 RED FLAGS（禁止事项）</a></li>
+      </ul>
+    </nav>
+  </div>
+  <button id="back-to-top">↑</button>
+  <script src="assets/script.js"></script>
+</body>
+</html>
