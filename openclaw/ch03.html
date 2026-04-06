@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 3 章 · 配置系统与认证管理</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="chapter-header">
+      <span class="chapter-number">第 3 章</span>
+      <h1>配置系统与认证管理</h1>
+      <span class="review-status">✅ 审查通过</span>
+    </header>
+    <nav class="toc-nav"><a href="index.html">← 返回目录</a></nav>
+    <main class="content">
+      <section class="overview">
+        <h2>概述</h2>
+        <p>本章深入探讨 OpenClaw 的配置系统和认证管理机制。配置系统是 OpenClaw 的核心基础设施之一。</p>
+      </section>
+      <section>
+        <h2>3.1 配置层次结构</h2>
+        <table class="comparison-table">
+          <thead><tr><th>层级</th><th>来源</th><th>优先级</th></tr></thead>
+          <tbody>
+            <tr><td>默认值</td><td>代码中的默认值</td><td>最低</td></tr>
+            <tr><td>用户配置</td><td>openclaw.yaml</td><td>中</td></tr>
+            <tr><td>环境变量</td><td>${VAR_NAME}</td><td>高</td></tr>
+            <tr><td>命令行参数</td><td>--config</td><td>最高</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h2>3.2 密钥管理</h2>
+        <pre><code>// src/config/secrets.ts
+export function resolveSecret(value: string): string | undefined {
+  if (value.startsWith("${") && value.endsWith("}")) {
+    const envVar = value.slice(2, -1);
+    return process.env[envVar];
+  }
+  return value;
+}</code></pre>
+      </section>
+      <section>
+        <h2>3.3 本章小结</h2>
+        <table class="summary-table">
+          <tr><th>概念</th><th>关键点</th></tr>
+          <tr><td>配置层级</td><td>默认 < 用户 < 环境 < 命令行</td></tr>
+          <tr><td>密钥管理</td><td>${VAR} 语法注入环境变量</td></tr>
+          <tr><td>认证</td><td>OAuth、API Key 等多种方式</td></tr>
+        </table>
+      </section>
+    </main>
+    <footer class="chapter-footer">
+      <p>本章审查通过 · 版本 1.0.0 · 2026-04-06</p>
+      <nav class="chapter-nav">
+        <a href="ch02.html">← 第 2 章</a>
+        <a href="index.html">目录</a>
+        <a href="ch04.html">第 4 章 →</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 11 章 · 插件系统</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="chapter-header">
+      <span class="chapter-number">第 11 章</span>
+      <h1>插件系统</h1>
+      <span class="review-status">✅ 审查通过</span>
+    </header>
+    <nav class="toc-nav"><a href="index.html">← 返回目录</a></nav>
+    <main class="content">
+      <section class="overview">
+        <h2>概述</h2>
+        <p>本章深入探讨 OpenClaw 的插件系统，了解如何通过插件扩展系统能力。</p>
+      </section>
+      <section>
+        <h2>11.1 插件 SDK</h2>
+        <pre><code>export type OpenClawPluginDefinition = {
+  id: string;
+  name?: string;
+  tools?: OpenClawPluginToolDefinition[];
+  providers?: OpenClawPluginProviderDefinition[];
+};</code></pre>
+        <div class="analogy">
+          💡 <strong>类比</strong>：插件系统类似于 iOS 的 <strong>App Extension</strong> 架构，提供标准化的扩展点。
+        </div>
+      </section>
+      <section>
+        <h2>11.2 生命周期</h2>
+        <pre><code>Bootstrap → Runtime → Dispose</code></pre>
+      </section>
+    </main>
+    <footer class="chapter-footer">
+      <p>本章审查通过 · 版本 1.0.0 · 2026-04-06</p>
+      <nav class="chapter-nav">
+        <a href="ch10.html">← 第 10 章</a>
+        <a href="index.html">目录</a>
+        <a href="ch12.html">第 12 章 →</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

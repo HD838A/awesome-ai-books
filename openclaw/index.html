@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClaw 源码解析：面向 iOS 开发者的 AI Agent 编程指南</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #fafafa;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+      padding: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      color: white;
+    }
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 16px;
+    }
+    .header p {
+      font-size: 1.2em;
+      opacity: 0.9;
+    }
+    .toc {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 40px;
+    }
+    .toc h2 {
+      font-size: 1.8em;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .toc ul {
+      list-style: none;
+    }
+    .toc li {
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .toc li:last-child {
+      border-bottom: none;
+    }
+    .toc a {
+      text-decoration: none;
+      color: #667eea;
+      font-size: 1.1em;
+    }
+    .toc a:hover {
+      text-decoration: underline;
+    }
+    .batch {
+      margin: 30px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    .batch h3 {
+      color: #764ba2;
+      margin-bottom: 15px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 40px;
+    }
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .stat-card .number {
+      font-size: 2.5em;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .stat-card .label {
+      color: #666;
+      margin-top: 8px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 60px;
+      padding: 30px;
+      color: #666;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📚 OpenClaw 源码解析</h1>
+    <p>面向 iOS 开发者的 AI Agent 编程指南</p>
+  </div>
+
+  <div class="toc">
+    <h2>📖 目录</h2>
+    
+    <div class="batch">
+      <h3>第一部分：基础入门</h3>
+      <ul>
+        <li><a href="ch01.html">第 1 章 · OpenClaw 概览与核心概念</a></li>
+      </ul>
+    </div>
+
+    <div class="batch">
+      <h3>第二部分：配置与通信</h3>
+      <ul>
+        <li><a href="ch02.html">第 2 章 · ACP 协议 - Agent 通信基础</a></li>
+        <li><a href="ch03.html">第 3 章 · 配置系统与认证管理</a></li>
+      </ul>
+    </div>
+
+    <div class="batch">
+      <h3>第三部分：Agent 管理</h3>
+      <ul>
+        <li><a href="ch04.html">第 4 章 · Agent 生命周期管理</a></li>
+        <li><a href="ch05.html">第 5 章 · 沙箱隔离与执行环境</a></li>
+        <li><a href="ch06.html">第 6 章 · Skills 系统与插件架构</a></li>
+      </ul>
+    </div>
+
+    <div class="batch">
+      <h3>第四部分：智能与记忆</h3>
+      <ul>
+        <li><a href="ch07.html">第 7 章 · 记忆系统</a></li>
+        <li><a href="ch08.html">第 8 章 · 上下文管理</a></li>
+        <li><a href="ch09.html">第 9 章 · 工具系统</a></li>
+      </ul>
+    </div>
+
+    <div class="batch">
+      <h3>第五部分：网络与扩展</h3>
+      <ul>
+        <li><a href="ch10.html">第 10 章 · 网络与通信</a></li>
+        <li><a href="ch11.html">第 11 章 · 插件系统</a></li>
+        <li><a href="ch12.html">第 12 章 · 扩展与生态</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="number">12</div>
+      <div class="label">完整章节</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">~320</div>
+      <div class="label">页数估算</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">150+</div>
+      <div class="label">代码示例</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">60+</div>
+      <div class="label">iOS 类比</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>🎉 本书由 AI 助手辅助编写 | OpenClaw 开源项目源码解析</p>
+    <p>版本 1.0.0 | 2026-04-06</p>
+  </div>
+</body>
+</html>
