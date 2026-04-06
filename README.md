@@ -28,7 +28,7 @@
 |---|---|---|
 | [Open Multi-Agent 实战](./open-multi-agent/) | v1.0.0 | 12 章 |
 | [OpenClaw 源码解析](./openclaw/) | v2026.4.5 | 12 章 |
-| [gstack 源码解读](./gstack/) | bd8d44d | 10 章 |
+| [AI 工程流水线：gstack 源码深度解读](./gstack/) | bd8d44d | 10 章 |
 | [Superpowers 源码解析](./superpowers/) | v5.0.7 | 10 章 |
 
 ## 关于
