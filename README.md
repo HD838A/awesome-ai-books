@@ -6,6 +6,9 @@
 
 ## 书籍列表
 
+### [openclaw](./openclaw/)
+解读 `openclaw` — 12 章，配套 HTML 版本。
+
 ### [gstack](./gstack/)
 解读 `gstack` — 10 章，配套 HTML 版本。
 
