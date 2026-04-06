@@ -10,7 +10,7 @@ body {
   background: #FEFCF8;
   color: #2C2C2C;
   font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.7;
 }
 #layout { display: flex; min-height: 100vh; }
@@ -31,7 +31,7 @@ body {
 #sidebar { display: flex; flex-direction: column; }
 .sidebar-nav a {
   display: block; padding: 5px 10px; border-radius: 5px;
-  color: #444; font-size: 0.8em; text-decoration: none;
+  color: #444; font-size: 0.9em; text-decoration: none;
   line-height: 1.4; margin-bottom: 2px; word-break: break-all;
   transition: background 0.15s, color 0.15s;
 }
@@ -73,7 +73,7 @@ body {
 }
 .chapter-list li:hover { border-color: #C7553A; }
 .chapter-list li a {
-  color: #444; font-size: 0.78em; text-decoration: none;
+  color: #444; font-size: 0.9em; text-decoration: none;
   display: block; padding: 4px 10px; white-space: nowrap;
 }
 .chapter-list li a:hover { color: #C7553A; }
@@ -94,19 +94,19 @@ body {
     <div class="sidebar-nav">
       <a href="#" class="active">📖 全部书籍</a>
       <a href="open-multi-agent/">
-        <span style="display:block;font-weight:600">《open-multi-agent》</span>
+        <span style="display:block;font-weight:600">《Open Multi-Agent 实战》</span>
         <span style="display:block;font-size:0.75em;color:#aaa">open-multi-agent v1.0.0</span>
       </a>
       <a href="openclaw/">
-        <span style="display:block;font-weight:600">《openclaw》</span>
+        <span style="display:block;font-weight:600">《OpenClaw 源码解析》</span>
         <span style="display:block;font-size:0.75em;color:#aaa">openclaw v2026.4.5</span>
       </a>
       <a href="gstack/">
-        <span style="display:block;font-weight:600">《gstack》</span>
+        <span style="display:block;font-weight:600">《gstack 源码解读》</span>
         <span style="display:block;font-size:0.75em;color:#aaa">gstack bd8d44d</span>
       </a>
       <a href="superpowers/">
-        <span style="display:block;font-weight:600">《superpowers》</span>
+        <span style="display:block;font-weight:600">《Superpowers 源码解析》</span>
         <span style="display:block;font-size:0.75em;color:#aaa">superpowers v5.0.7</span>
       </a>
     </div>
@@ -121,14 +121,14 @@ body {
 
 <div class="intro">
   <h3>关于这些框架</h3>
-  <p><strong><a href="open-multi-agent/" style="color:#1A1A1A;text-decoration:none">open-multi-agent</a></strong> — TypeScript 生态最缺的多代理协作框架。把 Claude Code 最核心的多代理编排系统从零重写，只用 3 个依赖、27 个文件，就实现了大目标自动拆解、带依赖的并行调度、消息总线与共享内存协作。一行代码搞定复杂任务，填补了 JS/TS 轻量多代理框架的核心空白。支持 Claude、GPT、Grok、Ollama 等任意模型，全程单进程运行。</p>
+  <p><strong><a href="open-multi-agent/" style="color:#1A1A1A;text-decoration:none">Open Multi-Agent</a></strong> — TypeScript 生态最缺的多代理协作框架。把 Claude Code 最核心的多代理编排系统从零重写，只用 3 个依赖、27 个文件，就实现了大目标自动拆解、带依赖的并行调度、消息总线与共享内存协作。一行代码搞定复杂任务，填补了 JS/TS 轻量多代理框架的核心空白。支持 Claude、GPT、Grok、Ollama 等任意模型，全程单进程运行。</p>
   <p><strong><a href="gstack/" style="color:#1A1A1A;text-decoration:none">gstack</a></strong> — 亮点是 YC 的知识和评判标准，适合产品和 idea 的深度打磨，AI 会对你进行灵魂拷问。未来版本支持知识沉淀，适合大工程的架构设计阶段。</p>
-  <p><strong><a href="superpowers/" style="color:#1A1A1A;text-decoration:none">superpower</a></strong> — 强调流程纪律：spec → plan → 拆解 → 执行 → 测试 review → 提交。流程控制好，适合进入执行阶段时的任务推进。</p>
+  <p><strong><a href="superpowers/" style="color:#1A1A1A;text-decoration:none">Superpowers</a></strong> — 强调流程纪律：spec → plan → 拆解 → 执行 → 测试 review → 提交。流程控制好，适合进入执行阶段时的任务推进。</p>
   <p class="tagline">大工程用 gstack 做产品和 idea 打磨，superpower 来执行。</p>
 </div>
 
 <div class="book-section">
-  <h2>open-multi-agent</h2>
+  <h2>Open Multi-Agent 实战</h2>
   <p class="book-desc">把 Claude Code 最核心的多代理协作编排系统完整提炼出来，TypeScript 从零重写，3 个依赖、27 个文件，一行代码搞定复杂任务自动调度。填补了 JS/TS 生态轻量多代理框架的核心空白。</p>
   <ul class="chapter-list">
     <li><a href="open-multi-agent/ch01.html">第 1 章 · 认识多智能体系统</a></li>
@@ -147,7 +147,7 @@ body {
 </div>
 
 <div class="book-section">
-  <h2>openclaw</h2>
+  <h2>OpenClaw 源码解析</h2>
   <p class="book-desc">本地 AI 助手平台，模块化架构连接各类 AI 模型与服务</p>
   <ul class="chapter-list">
     <li><a href="openclaw/ch01.html">第 1 章 · OpenClaw 概览与核心概念</a></li>
@@ -166,7 +166,7 @@ body {
 </div>
 
 <div class="book-section">
-  <h2>gstack</h2>
+  <h2>gstack 源码解读</h2>
   <p class="book-desc">AI 辅助编程工具，持久化浏览器 + SKILL.md 模板 + 多 Host 适配</p>
   <ul class="chapter-list">
     <li><a href="gstack/ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a></li>
@@ -183,7 +183,7 @@ body {
 </div>
 
 <div class="book-section">
-  <h2>superpowers</h2>
+  <h2>Superpowers 源码解析</h2>
   <p class="book-desc">AI 编程助手如何赋予开发者超能力</p>
   <ul class="chapter-list">
     <li><a href="superpowers/ch01.html">第 1 章 · Superpowers 概述与快速上手</a></li>
