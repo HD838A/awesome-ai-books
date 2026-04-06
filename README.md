@@ -13,7 +13,7 @@
 解读 `gstack` — 10 章，配套 HTML 版本。
 
 ### [superpowers](./superpowers/)
-解读 `superpowers` — 配套 HTML + Markdown 版本。
+解读 `superpowers` — 10 章，配套 HTML 版本。
 
 ## 关于
 
