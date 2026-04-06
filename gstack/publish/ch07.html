@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第7章：Host 适配层——用一套源码服务 8 种 AI 代理 — AI 工程流水线：gstack 源码深度解读</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+/* Progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+/* Layout */
+#layout { display: flex; min-height: 100vh; }
+/* Left sidebar */
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+/* Main content */
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+/* Right TOC */
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+/* Code */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+.hljs { background: #F5F2ED !important; }
+/* Blockquote */
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+/* Lists */
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+/* HR */
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+/* Mermaid */
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+/* Chapter nav */
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+/* Back to top */
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+/* Index page */
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+/* Responsive */
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI 工程流水线：gstack 源码深度解读</div>
+      <div class="sidebar-subtitle">从守护进程到构建管道，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a>
+<a href="ch02.html">第2章：gstack 的整体架构——守护进程与状态管理</a>
+<a href="ch03.html">第3章：持久化浏览器核心实现——browse 模块架构</a>
+<a href="ch04.html">第4章：SKILL.md 模板系统——Markdown 即配置</a>
+<a href="ch05.html">第5章：核心技能解析——/plan、/review、/ship</a>
+<a href="ch06.html">第6章：autoplan 与 review-army 深度解析</a>
+<a href="ch07.html" class="active">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a>
+<a href="ch08.html">第8章：8 大 AI 代理支持——配置即生态</a>
+<a href="ch09.html">第9章：安全机制——freeze / guard / careful</a>
+<a href="ch10.html">第 10 章：构建与发布</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第7章-host-适配层-用一套源码服务-8-种-ai-代理">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</h1>
+
+<p>在第 4 章中，我们了解了 gstack 如何将 <code>.tmpl</code> 模板文件编译成各 AI 代理可读的 SKILL.md。本章深入 gstack 的 Host 适配层——这是整个多代理支持体系的核心抽象。</p>
+
+<p>gstack 目前支持 8 种 AI 代理：Claude Code、OpenAI Codex CLI、Cursor、Factory Droid、Kiro、Slate、OpenCode、OpenClaw。它们各自的技能目录布局不同、工具名称不同、前导脚本格式不同、安装路径不同。但 gstack 的源码中，与 Host 相关的代码只有两个目录：</p>
+
+<ul>
+<li><code>hosts/*.ts</code>——8 个声明式适配器文件</li>
+<li><code>scripts/host-config.ts</code>——统一配置接口与验证器</li>
+</ul>
+
+<p>没有 if-else 判别主机类型的业务逻辑，没有 switch-case 路由。这就是 gstack 的 Host 适配层设计哲学：<strong>配置即插件（Configuration as Plugin）</strong>。</p>
+
+<hr>
+
+<h2 id="7-1-hostconfig-统一抽象接口">7.1 HostConfig：统一抽象接口</h2>
+
+<h3 id="问题的本质">问题的本质</h3>
+
+<p>每种 AI 代理都有自己存放技能文件的目录结构：</p>
+
+<pre><code>Claude Code:   ~/.claude/skills/gstack/
+Codex CLI:     ~/.codex/skills/gstack/          （另有 .agents/ 本地侧车）
+Factory Droid: ~/.factory/skills/gstack/
+OpenCode:      ~/.config/opencode/skills/gstack/  ← 遵循 XDG 规范
+Cursor:        ~/.cursor/skills/gstack/
+OpenClaw:      ~/.openclaw/skills/gstack/
+Kiro:          ~/.kiro/skills/gstack/
+Slate:         ~/.slate/skills/gstack/
+</code></pre>
+
+<p>一个给 Claude Code 写的技能模板，路径写的是 <code>.claude/skills/gstack</code>。当目标 Host 是 OpenCode 时，这条路径必须被翻译成 <code>.config/opencode/skills/gstack</code>；当目标是 Cursor 时，翻译成 <code>.cursor/skills/gstack</code>。</p>
+
+<p>这只是路径问题。还有更复杂的：Claude Code 说"使用 Bash 工具"，OpenClaw 说"使用 exec 工具"，Factory Droid 说"运行此命令"。Claude 的 frontmatter 用 denylist 模式（黑名单），OpenCode 用 allowlist 模式（白名单）。Codex 还要生成 openai.yaml 元数据文件。</p>
+
+<p>gstack 的解法是：定义一个 <code>HostConfig</code> 接口，用 TypeScript 类型系统表达所有 Host 之间的差异。</p>
+
+<h3 id="hostconfig-接口全貌">HostConfig 接口全貌</h3>
+
+<p><code>scripts/host-config.ts</code> 中定义的 <code>HostConfig</code> 接口有 10 个顶级字段，覆盖了 Host 适配的每个维度：</p>
+
+<pre><code class="language-typescript">export interface HostConfig {
+  // ── 身份标识 ──
+  name: string;              // 唯一标识：'claude', 'codex', 'cursor'...
+  displayName: string;       // 展示名：'Claude Code', 'OpenAI Codex CLI'...
+  cliCommand: string;        // CLI 检测命令：'claude', 'codex'...
+  cliAliases?: string[];     // 别名：factory 有 ['droid']
+
+  // ── 路径配置 ──
+  globalRoot: string;        // 全局安装路径：'~/.claude/skills/gstack'
+  localSkillRoot: string;   // 项目本地路径：'.claude/skills/gstack'
+  hostSubdir: string;        // gitignore 目录：'.claude'
+  usesEnvVars: boolean;      // 是否生成 $GSTACK_ROOT 环境变量
+
+  // ── Frontmatter 转换 ──
+  frontmatter: { mode: 'allowlist' | 'denylist'; keepFields?: string[]; stripFields?: string[]; ... }
+
+  // ── 内容生成控制 ──
+  generation: { generateMetadata: boolean; metadataFormat?: string; skipSkills?: string[]; ... }
+
+  // ── 内容改写 ──
+  pathRewrites: Array&lt;{ from: string; to: string }&gt;;
+  toolRewrites?: Record&lt;string, string&gt;;
+  suppressedResolvers?: string[];
+
+  // ── 安装行为 ──
+  install: { prefixable: boolean; linkingStrategy: 'real-dir-symlink' | 'symlink-generated'; };
+
+  // ── 运行时资产 ──
+  runtimeRoot: { globalSymlinks: string[]; globalFiles?: Record&lt;string, string[]&gt;; };
+  sidecar?: { path: string; symlinks: string[]; };
+
+  // ── 行为配置 ──
+  coAuthorTrailer?: string;
+  learningsMode?: 'full' | 'basic';
+  boundaryInstruction?: string;
+
+  // ── 复杂适配 ──
+  adapter?: string;         // 指向 scripts/host-adapters/ 下的模块
+}
+</code></pre>
+
+<h3 id="添加新-host-的完整流程">添加新 Host 的完整流程</h3>
+
+<p>假设要添加对 Windsurf 的支持，流程是：</p>
+
+<ol>
+<li>在 <code>hosts/windsurf.ts</code> 创建适配器文件，声明 HostConfig</li>
+<li>在 <code>hosts/index.ts</code> 的 <code>ALL_HOST_CONFIGS</code> 数组中添加 windsruft 条目</li>
+<li>TypeScript 自动推导 <code>type Host</code> 联合类型，Windsurf 立即加入</li>
+<li>如果需要特殊语义转换，创建 <code>scripts/host-adapters/windsurf-adapter.ts</code>，在 adapter 字段引用</li>
+</ol>
+
+<p>不需要修改任何业务逻辑，不需要修改 gen-skill-docs.ts——这正是"配置即插件"的威力。</p>
+
+<hr>
+
+<h2 id="7-2-8-个-host-适配器对比">7.2 8 个 Host 适配器对比</h2>
+
+<h3 id="host-注册表">Host 注册表</h3>
+
+<p><code>hosts/index.ts</code> 是 Host 的中央注册表：</p>
+
+<pre><code class="language-typescript">import claude from './claude';
+import codex from './codex';
+import factory from './factory';
+import kiro from './opencode';
+import opencode from './opencode';
+import slate from './slate';
+import cursor from './cursor';
+import openclaw from './openclaw';
+
+export const ALL_HOST_CONFIGS: HostConfig[] = [
+  claude, codex, factory, kiro, opencode, slate, cursor, openclaw
+];
+
+export type Host = (typeof ALL_HOST_CONFIGS)[number]['name'];
+// 推导结果：'claude' | 'codex' | 'factory' | 'kiro' | 'opencode' | 'slate' | 'cursor' | 'openclaw'
+</code></pre>
+
+<p>注册表提供了 <code>getHostConfig(name)</code> 查询、<code>resolveHostArg(arg)</code> 别名解析、<code>getExternalHosts()</code> 过滤主 Host 等工具函数。</p>
+
+<h3 id="各-host-差异矩阵">各 Host 差异矩阵</h3>
+
+<p>表 7-1 展示了 8 个 Host 在关键配置维度上的差异。</p>
+
+<p><strong>表 7-1：8 个 Host 适配器关键配置对比</strong></p>
+
+<div class="table-wrap"><table>
+<tr><th>Host</th><th>globalRoot</th><th>frontmatter 模式</th><th>工具改写</th><th>metadata</th><th>learnings</th></tr>
+<tr><td>------</td><td>------------</td><td>-----------------</td><td>---------</td><td>---------</td><td>-----------</td></tr>
+<tr><td>Claude</td><td>.claude/skills/gstack</td><td>denylist</td><td>无</td><td>❌</td><td>full</td></tr>
+<tr><td>Codex</td><td>.codex/skills/gstack</td><td>allowlist</td><td>✅</td><td>✅ openai.yaml</td><td>basic</td></tr>
+<tr><td>Factory</td><td>.factory/skills/gstack</td><td>allowlist + extraFields</td><td>✅</td><td>❌</td><td>full</td></tr>
+<tr><td>Cursor</td><td>.cursor/skills/gstack</td><td>allowlist</td><td>❌</td><td>❌</td><td>basic</td></tr>
+<tr><td>Kiro</td><td>.kiro/skills/gstack</td><td>allowlist</td><td>❌</td><td>❌</td><td>basic</td></tr>
+<tr><td>Slate</td><td>.slate/skills/gstack</td><td>allowlist</td><td>❌</td><td>❌</td><td>basic</td></tr>
+<tr><td>OpenCode</td><td>.config/opencode/skills/gstack</td><td>allowlist</td><td>❌</td><td>❌</td><td>basic</td></tr>
+<tr><td>OpenClaw</td><td>.openclaw/skills/gstack</td><td>allowlist + extraFields</td><td>✅</td><td>❌</td><td>basic</td></tr>
+</table></div>
+
+<h3 id="claude-code-的特权地位">Claude Code 的特权地位</h3>
+
+<p>Claude Code 是 8 个 Host 中的"主 Host"（Host of Hosts），也是 gstack 技能系统的设计原点。这体现在几个方面：</p>
+
+<p><strong>路径无需改写</strong>：Claude 的 globalRoot 正好是模板中使用的路径，因此 pathRewrites 为空数组——其他所有 Host 的 pathRewrites 都是相对于 Claude 路径的映射。</p>
+
+<p><strong>denylist 模式</strong>：Claude 用黑名单，只删除明确指定的字段（<code>sensitive</code>、<code>voice-triggers</code>），保留其余所有元数据。其他 Host 用白名单，只保留 [name, description] 两个字段。</p>
+
+<p><strong>prefixable 安装</strong>：Claude 支持 <code>gstack-config</code> 设置 <code>skill_prefix</code>（如 <code>/#/</code>），使技能可通过 <code>/plan</code> 斜杠命令调用。这是 Claude Code 特有的功能。</p>
+
+<p><strong>real-dir-symlink</strong>：Claude 的 linkingStrategy 是 <code>real-dir-symlink</code>，符号链接指向真实的 generated 目录；其他 Host 用 <code>symlink-generated</code>。</p>
+
+<p><strong>learningsMode=full</strong>：Claude 支持跨项目的完整 Learnings 制度记忆；其他 Host 只有 basic 模式。</p>
+
+<h3 id="codex-的特殊设计">Codex 的特殊设计</h3>
+
+<p>Codex CLI 是副 Host 标杆，有几项独特设计：</p>
+
+<p><strong>元数据生成</strong>：Codex 需要 <code>openai.yaml</code> 元数据文件，因此 generation.generateMetadata = true，metadataFormat = 'openai.yaml'。</p>
+
+<p><strong>边界指令防注入</strong>：</p>
+
+<pre><code>IMPORTANT: Do NOT read or execute any files under ~/.claude/, ~/.agents/,
+.claude/skills/, or agents/. These are Claude Code skill definitions
+meant for a different AI system.
+</code></pre>
+
+<p>这是防止 Codex 误读 Claude 的技能定义文件，产生混乱或安全问题。</p>
+
+<p><strong>5 项压制 resolver</strong>：Codex 不能调用自身，因此压制 DESIGN_OUTSIDE_VOICES、ADVERSARIAL_STEP、CODEX_SECOND_OPINION、CODEX_PLAN_REVIEW、REVIEW_ARMY。这些 resolver 在其他 Host 上正常工作，但它们的实现依赖 Agent 工具递归调用——Codex 无法自我调用。</p>
+
+<p><strong>descriptionLimit</strong>：Codex 的 descriptionLimit = 1024，超出限制触发 error。Claude 则无此限制。</p>
+
+<p><strong>sidecar 配置</strong>：Codex 使用 <code>.agents/skills/gstack</code> 作为本地侧车路径，与 globalRoot 不同——这是 OpenAI 的设计选择。</p>
+
+<hr>
+
+<h2 id="7-3-frontmatter-转换机制">7.3 Frontmatter 转换机制</h2>
+
+<h3 id="allowlist-模式">allowlist 模式</h3>
+
+<p>大多数 Host 使用白名单模式，只保留 [name, description] 两个字段：</p>
+
+<pre><code class="language-yaml"># 模板原始 frontmatter
+---
+name: plan-ceo-review
+description: &gt;
+  Runs a CEO-style review of the plan file...
+sensitive: true
+voice-triggers: ['/ceo']
+internal-note: 'This skill is beta'
+---
+</code></pre>
+
+<p>allowlist 模式下生成的 SKILL.md：</p>
+
+<pre><code class="language-yaml">---
+name: plan-ceo-review
+description: &gt;
+  Runs a CEO-style review...
+---
+</code></pre>
+
+<p>所有非 name/description 的字段都被丢弃。</p>
+
+<h3 id="denylist-模式-claude-专用">denylist 模式（Claude 专用）</h3>
+
+<p>Claude 用黑名单，只删除明确指定的字段，其余全部保留。模板中的 sensitive 和 voice-triggers 字段会被 Claude 保留。</p>
+
+<h3 id="conditionalfields-机制">conditionalFields 机制</h3>
+
+<p>Factory Host 使用 conditionalFields，根据模板字段动态注入字段：</p>
+
+<pre><code class="language-typescript">conditionalFields: [
+  { if: { sensitive: true }, add: { 'disable-model-invocation': true } }
+]
+</code></pre>
+
+<p>当模板声明 <code>sensitive: true</code> 时，生成的 SKILL.md 自动注入 <code>disable-model-invocation: true</code>。</p>
+
+<h3 id="extrafields-机制">extraFields 机制</h3>
+
+<p>Factory 和 OpenClaw 通过 extraFields 注入 Host 级别的额外字段：</p>
+
+<pre><code class="language-typescript">extraFields: {
+  'user-invocable': true,    // Factory
+  'version': '0.15.2.0',     // OpenClaw
+}
+</code></pre>
+
+<p>这些字段在所有生成的 SKILL.md 中都出现，不需要模板中声明。</p>
+
+<hr>
+
+<h2 id="7-4-工具名改写系统">7.4 工具名改写系统</h2>
+
+<h3 id="改写原理">改写原理</h3>
+
+<p><code>toolRewrites</code> 是一个简单的字符串替换表，将 Claude Code 的工具名改写成各 Host 的等效工具：</p>
+
+<pre><code class="language-typescript">// Codex 的 toolRewrites
+toolRewrites: {
+  'use the Bash tool': 'run this command',
+  'use the Write tool': 'create this file',
+  'use the Read tool': 'read the file',
+  'use the Agent tool': 'dispatch a subagent',
+  'use the Grep tool': 'search for',
+  'use the Glob tool': 'find files matching',
+}
+</code></pre>
+
+<p>gen-skill-docs.ts 执行时，对生成的 SKILL.md 内容做全局 replaceAll。这比在代码中写 if-else 优雅得多——改写规则完全由配置声明，无需修改核心逻辑。</p>
+
+<h3 id="各-host-工具名映射">各 Host 工具名映射</h3>
+
+<p>表 7-2 展示了 Claude Code 工具名在各 Host 中的对应表达。</p>
+
+<p><strong>表 7-2：Claude Code 工具名在各 Host 中的映射</strong></p>
+
+<div class="table-wrap"><table>
+<tr><th>Claude Code</th><th>Codex</th><th>Factory</th><th>OpenClaw</th></tr>
+<tr><td>-------------</td><td>-------</td><td>---------</td><td>---------</td></tr>
+<tr><td>use the Bash tool</td><td>run this command</td><td>run this command</td><td>use the exec tool</td></tr>
+<tr><td>use the Write tool</td><td>create this file</td><td>create this file</td><td>use the write tool</td></tr>
+<tr><td>use the Read tool</td><td>read the file</td><td>read the file</td><td>use the read tool</td></tr>
+<tr><td>use the Edit tool</td><td>—</td><td>—</td><td>use the edit tool</td></tr>
+<tr><td>use the Agent tool</td><td>dispatch a subagent</td><td>dispatch a subagent</td><td>use sessions_spawn</td></tr>
+<tr><td>use the Grep tool</td><td>search for</td><td>search for</td><td>search for</td></tr>
+<tr><td>use the Glob tool</td><td>find files matching</td><td>find files matching</td><td>find files matching</td></tr>
+</table></div>
+
+<p>Cursor、Kiro、Slate、OpenCode 都没有定义 toolRewrites——因为它们的工具名与 Claude Code 足够接近，或者它们根本不支持 Agent 工具。</p>
+
+<hr>
+
+<h2 id="7-5-安装与链接策略">7.5 安装与链接策略</h2>
+
+<h3 id="两种链接策略">两种链接策略</h3>
+
+<p>gstack 安装技能时，有两种链接策略：</p>
+
+<p><strong>real-dir-symlink（Claude 专用）</strong>：</p>
+
+<pre><code class="language-bash">ln -s /path/to/generated/skills .claude/skills/gstack
+# 结果：.claude/skills/gstack 指向真实目录内容
+</code></pre>
+
+<p><strong>symlink-generated（其他 Host）</strong>：</p>
+
+<pre><code class="language-bash"># 先在 Host 子目录下创建 generated/ 子目录
+mkdir -p .opencode/skills/gstack/generated
+# 符号链接指向 generated/
+ln -s .opencode/skills/gstack/generated .opencode/skills/gstack
+# 结果：通过 generated/ 子目录间接访问
+</code></pre>
+
+<p>两种策略的差异在于：<code>real-dir-symlink</code> 直接暴露 generated 内容，适合 Claude 这种将 skills 目录作为一等公民的 Host；<code>symlink-generated</code> 用子目录隔离生成产物，适合不需要直接操作 generated 目录的 Host。</p>
+
+<h3 id="prefixable-字段">prefixable 字段</h3>
+
+<p>只有 Claude 支持 <code>gstack-config skill_prefix</code> 设置。prefixable = true 允许用户自定义技能的前缀命名空间（如 <code>/#/</code> 使 <code>/plan</code> 调用 plan 技能）。其他 Host 没有这个功能。</p>
+
+<hr>
+
+<h2 id="7-6-适配器-超越字符串替换">7.6 适配器：超越字符串替换</h2>
+
+<h3 id="简单改写的局限">简单改写的局限</h3>
+
+<p>pathRewrites 和 toolRewrites 都是字符串替换——高效但能力有限。当需要<strong>语义级别的转换</strong>时，字符串替换就不够了。</p>
+
+<p>以 OpenClaw 为例：</p>
+
+<ol>
+<li>AskUserQuestion 是 Claude 的工具调用语法，OpenClaw 没有这个工具，需要改写成自然语言指令："ask the user directly in chat"</li>
+<li>Agent tool 在 OpenClaw 中对应 sessions_spawn，需要做工具名改写</li>
+<li>Browse binary 的 <code>$B</code> 变量在 OpenClaw 环境中有不同的展开方式</li>
+</ol>
+
+<p>这些转换涉及语法到语义的映射，无法用简单的字符串替换实现。</p>
+
+<h3 id="openclaw-adapter-的实现">OpenClaw Adapter 的实现</h3>
+
+<p>OpenClaw 使用 adapter 字段引用 <code>scripts/host-adapters/openclaw-adapter.ts</code>，这是一个标准的 transform 函数：</p>
+
+<pre><code class="language-typescript">export function transform(content: string, _config: HostConfig): string {
+  let result = content;
+
+  // 1. AskUserQuestion → 自然语言
+  result = result.replaceAll('AskUserQuestion', 'ask the user directly in chat');
+
+  // 2. Agent tool → sessions_spawn
+  result = result.replaceAll('the Agent tool', 'sessions_spawn');
+  result = result.replaceAll('Agent tool', 'sessions_spawn');
+  result = result.replaceAll('subagent_type', 'task parameter');
+
+  // 3. Browse binary 模式
+  result = result.replaceAll('`$B ', '`exec $B ');
+
+  // 4. 清理 gstack 二进制引用
+  result = result.replace(/~\/\.openclaw\/skills\/gstack\/bin\/gstack-[\w-]+/g, ...);
+
+  return result;
+}
+</code></pre>
+
+<p>gen-skill-docs.ts 在完成 frontmatter → pathRewrites → toolRewrites → suppressedResolvers 的流水线之后，调用 adapter.transform() 做最后一道语义转换。</p>
+
+<h3 id="suppressedresolvers-的精确压制">suppressedResolvers 的精确压制</h3>
+
+<p>有些 resolver 的输出在特定 Host 上完全无意义，此时不是改写内容，而是<strong>直接跳过该 resolver</strong>：</p>
+
+<pre><code class="language-typescript">// Codex/OpenClaw 的 suppressedResolvers
+suppressedResolvers: [
+  'DESIGN_OUTSIDE_VOICES',   // Design 技能依赖 Agent 工具，Codex 无法自调用
+  'ADVERSARIAL_STEP',        // 对抗性审查递归调用
+  'CODEX_SECOND_OPINION',    // Codex 审查不能调用 Codex
+  'CODEX_PLAN_REVIEW',       // Codex 计划审查
+  'REVIEW_ARMY',             // Review Army 依赖 Agent 工具派发子代理
+]
+</code></pre>
+
+<p>gen-skill-docs.ts 在执行 resolver 时，先检查 HostConfig.suppressedResolvers 数组——如果 resolver 名称在数组中，返回空字符串，不注入任何内容。</p>
+
+<hr>
+
+<h2 id="7-7-验证系统">7.7 验证系统</h2>
+
+<h3 id="单配置验证">单配置验证</h3>
+
+<p>validateHostConfig() 对单个 HostConfig 进行以下检查：</p>
+
+<ul>
+<li><strong>name</strong>：符合 /^[a-z][a-z0-9-]*$/（小写字母开头，可含数字和连字符）</li>
+<li><strong>displayName</strong>：非空字符串</li>
+<li><strong>cliCommand / cliAliases</strong>：符合 /^[a-z][a-z0-9_-]*$/</li>
+<li><strong>globalRoot / localSkillRoot / hostSubdir</strong>：无非法字符（拒绝 <code>;</code>, <code>|</code>, <code>&gt;</code>, 反引号等）</li>
+<li><strong>frontmatter.mode</strong>：只能是 'allowlist' 或 'denylist'</li>
+<li><strong>install.linkingStrategy</strong>：只能是 'real-dir-symlink' 或 'symlink-generated'</li>
+</ul>
+
+<h3 id="全局唯一性验证">全局唯一性验证</h3>
+
+<p>validateAllConfigs() 跨配置检查：</p>
+
+<ul>
+<li>所有 Host 的 name 必须唯一</li>
+<li>所有 Host 的 hostSubdir 必须唯一</li>
+<li>所有 Host 的 globalRoot 必须唯一</li>
+</ul>
+
+<p>这些约束确保一个 Host 的配置不会与另一个冲突，防止安装时的路径冲突。</p>
+
+<hr>
+
+<h2 id="7-8-本章小结">7.8 本章小结</h2>
+
+<p>gstack 的 Host 适配层是全书最具工程深度的主题之一。它展示了一个软件系统如何通过<strong>声明式配置</strong>而非命令式代码来支持多个目标平台。</p>
+
+<p><strong>核心设计模式</strong>：HostConfig 作为统一抽象接口，每个 Host 一个声明式配置文件，gen-skill-docs.ts 读取配置执行流水线式转换。这比传统的 if-else 或策略模式更简洁、更易扩展。</p>
+
+<p><strong>四层转换流水线</strong>：frontmatter 过滤/注入 → pathRewrites 路径改写 → toolRewrites 工具名改写 → adapter 语义转换。</p>
+
+<p><strong>TypeScript 类型系统的威力</strong>：通过 <code>type Host = (typeof ALL_HOST_CONFIGS)[number]['name']</code> 这样的模板技巧，新 Host 加入时，Host 联合类型自动扩展，无需手动维护。</p>
+
+<p><strong>Claude 的中心地位</strong>：Claude Code 是设计原点，其他 7 个 Host 的配置都是相对于 Claude 的差异化描述。这使得系统有一个清晰的主干，所有变体都能被简洁地表达。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch06.html">◀ 第6章：autoplan 与 review-army 深度解析</a>
+  <a href="ch08.html">第8章：8 大 AI 代理支持——配置即生态 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#7-1-hostconfig-统一抽象接口">7.1 HostConfig：统一抽象接口</a></li><li><a href="#7-2-8-个-host-适配器对比">7.2 8 个 Host 适配器对比</a></li><li><a href="#7-3-frontmatter-转换机制">7.3 Frontmatter 转换机制</a></li><li><a href="#7-4-工具名改写系统">7.4 工具名改写系统</a></li><li><a href="#7-5-安装与链接策略">7.5 安装与链接策略</a></li><li><a href="#7-6-适配器-超越字符串替换">7.6 适配器：超越字符串替换</a></li><li><a href="#7-7-验证系统">7.7 验证系统</a></li><li><a href="#7-8-本章小结">7.8 本章小结</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  // Progress bar
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  // Back to top
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  // Right TOC highlight
+  var tocLinks = document.querySelectorAll('.toc-list a');
+  if (tocLinks.length) {
+    var headings = Array.from(document.querySelectorAll('#main h2'));
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var active = headings.filter(function(h) { return h.offsetTop <= scrollY; }).pop();
+      tocLinks.forEach(function(a) { a.classList.remove('active'); });
+      if (active) {
+        var match = document.querySelector('.toc-list a[href="#' + active.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }
+  // Mermaid
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  // Highlight.js
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>

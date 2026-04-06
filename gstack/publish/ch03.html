@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第3章：持久化浏览器核心实现——browse 模块架构 — AI 工程流水线：gstack 源码深度解读</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+/* Progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+/* Layout */
+#layout { display: flex; min-height: 100vh; }
+/* Left sidebar */
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+/* Main content */
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+/* Right TOC */
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+/* Code */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+.hljs { background: #F5F2ED !important; }
+/* Blockquote */
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+/* Lists */
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+/* HR */
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+/* Mermaid */
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+/* Chapter nav */
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+/* Back to top */
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+/* Index page */
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+/* Responsive */
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI 工程流水线：gstack 源码深度解读</div>
+      <div class="sidebar-subtitle">从守护进程到构建管道，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a>
+<a href="ch02.html">第2章：gstack 的整体架构——守护进程与状态管理</a>
+<a href="ch03.html" class="active">第3章：持久化浏览器核心实现——browse 模块架构</a>
+<a href="ch04.html">第4章：SKILL.md 模板系统——Markdown 即配置</a>
+<a href="ch05.html">第5章：核心技能解析——/plan、/review、/ship</a>
+<a href="ch06.html">第6章：autoplan 与 review-army 深度解析</a>
+<a href="ch07.html">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a>
+<a href="ch08.html">第8章：8 大 AI 代理支持——配置即生态</a>
+<a href="ch09.html">第9章：安全机制——freeze / guard / careful</a>
+<a href="ch10.html">第 10 章：构建与发布</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第3章-持久化浏览器核心实现-browse-模块架构">第3章：持久化浏览器核心实现——browse 模块架构</h1>
+
+<p>第2章我们了解了 gstack 的整体架构。本章我们将深入 <strong>browse 模块</strong> 的核心实现：CLI 如何工作、服务器如何调度命令、浏览器如何管理、Ref 系统如何让 AI 操作页面元素。</p>
+
+<hr>
+
+<h2 id="概述">概述</h2>
+
+<p>本章我们将探索：</p>
+
+<ul>
+<li><strong>CLI 入口</strong>：瘦包装器如何启动和管理服务器</li>
+<li><strong>HTTP 服务器</strong>：Bun.serve 的路由和命令调度</li>
+<li><strong>浏览器管理器</strong>：Chromium 生命周期、页面/标签页管理</li>
+<li><strong>Ref 系统</strong>：ARIA 树解析和 Locator 构建</li>
+<li><strong>环形缓冲区</strong>：O(1) 日志存储的实现</li>
+</ul>
+
+<p>读完本章，你会理解 <code>$B</code> 命令的完整执行路径。</p>
+
+<hr>
+
+<h2 id="3-1-cli-入口-瘦包装器设计">3.1 CLI 入口：瘦包装器设计</h2>
+
+<h3 id="cli-的职责">CLI 的职责</h3>
+
+<p>CLI 不是真正的浏览器控制中心。它是一个<strong>瘦包装器</strong>：</p>
+
+<pre><code class="language-typescript">// cli.ts — 核心职责
+async function main() {
+  // 1. 读取状态文件
+  const state = readState();
+
+  // 2. 检查服务器是否存活
+  if (!await isServerHealthy(state.port)) {
+    await killServer(state.pid);
+    await spawnServer();
+  }
+
+  // 3. 发送命令
+  const result = await fetchCommand(cmd, args, state);
+
+  // 4. 打印结果
+  console.log(result);
+}
+</code></pre>
+
+<h3 id="状态文件读取">状态文件读取</h3>
+
+<pre><code class="language-typescript">interface ServerState {
+  pid: number;        // 服务器进程 ID
+  port: number;        // 监听端口
+  token: string;       // Bearer token
+  startedAt: string;   // 启动时间
+  binaryVersion: string; // 二进制版本
+}
+
+function readState(): ServerState | null {
+  try {
+    const data = fs.readFileSync('.gstack/browse.json', 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return null;  // 文件不存在或解析失败
+  }
+}
+</code></pre>
+
+<h3 id="服务器健康检查">服务器健康检查</h3>
+
+<pre><code class="language-typescript">async function isServerHealthy(port: number): Promise&lt;boolean&gt; {
+  try {
+    const resp = await fetch(`http://127.0.0.1:${port}/health`, {
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!resp.ok) return false;
+    const health = await resp.json();
+    return health.status === 'healthy';
+  } catch {
+    return false;
+  }
+}
+</code></pre>
+
+<p><strong>为什么用 HTTP 健康检查而不是进程 ID 检查？</strong></p>
+<ul>
+<li>HTTP 检查是<strong>确定性证明</strong>：服务器不仅活着，还在响应</li>
+<li>进程 ID 在 Windows 上不可靠（Bun 编译二进制无法发送信号）</li>
+</ul>
+
+<h3 id="启动流程">启动流程</h3>
+
+<pre><code>CLI 首次调用: $B goto https://example.com
+    │
+    ├─→ 读取 .gstack/browse.json
+    │       │
+    │       ├─→ 文件不存在 → 启动服务器
+    │       ├─→ 进程死亡 → 杀死并重启
+    │       └─→ 版本不匹配 → 杀死并重启
+    │
+    └─→ 等待服务器就绪（最多 8 秒）
+            │
+            └─→ 发送 POST /command
+                    │
+                    └─→ 打印响应
+</code></pre>
+
+<h3 id="进程存活检测">进程存活检测</h3>
+
+<div class="table-wrap"><table>
+<tr><th>平台</th><th>检测方式</th></tr>
+<tr><td>------</td><td>----------</td></tr>
+<tr><td>Unix</td><td><code>process.kill(pid, 0)</code> — 发送信号 0</td></tr>
+<tr><td>Windows</td><td><code>tasklist /FI "PID eq N"</code> — 列出进程</td></tr>
+</table></div>
+
+<pre><code class="language-typescript">function isProcessAlive(pid: number): boolean {
+  if (IS_WINDOWS) {
+    // Windows: 慢速，仅用于一次性调用
+    const result = Bun.spawnSync(['tasklist', '/FI', `PID eq ${pid}`]);
+    return result.stdout.includes(`"${pid}"`);
+  }
+  // Unix: 快速
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+</code></pre>
+
+<hr>
+
+<h2 id="3-2-http-服务器-bun-serve-路由设计">3.2 HTTP 服务器：Bun.serve 路由设计</h2>
+
+<h3 id="服务器职责">服务器职责</h3>
+
+<ul>
+<li>HTTP 监听（localhost + 随机端口）</li>
+<li>命令调度（READ/WRITE/META）</li>
+<li>状态文件写入</li>
+<li>自动关闭定时器</li>
+</ul>
+
+<h3 id="路由结构">路由结构</h3>
+
+<pre><code class="language-typescript">Bun.serve({
+  port: config.port,
+  hostname: 'localhost',
+
+  routes: {
+    'GET /health': handleHealth,
+    'GET /tabs': handleTabs,
+    'GET /state': handleState,
+    'POST /command': handleCommand,
+    'POST /shutdown': handleShutdown,
+  },
+});
+</code></pre>
+
+<h3 id="认证中间件">认证中间件</h3>
+
+<pre><code class="language-typescript">const AUTH_TOKEN = crypto.randomUUID();  // 服务器启动时生成
+
+function validateAuth(req: Request): boolean {
+  const header = req.headers.get('authorization');
+  return header === `Bearer ${AUTH_TOKEN}`;
+}
+
+async function handleCommand(req: Request): Promise&lt;Response&gt; {
+  if (!validateAuth(req)) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  const body = await req.json();
+  const { cmd, args } = body;
+  // 处理命令...
+}
+</code></pre>
+
+<h3 id="命令调度">命令调度</h3>
+
+<pre><code class="language-typescript">async function handleCommand(req: Request): Promise&lt;Response&gt; {
+  const { cmd, args } = await req.json();
+
+  if (READ_COMMANDS.has(cmd)) {
+    return handleReadCommand(cmd, args, browserManager);
+  }
+
+  if (WRITE_COMMANDS.has(cmd)) {
+    return handleWriteCommand(cmd, args, browserManager);
+  }
+
+  if (META_COMMANDS.has(cmd)) {
+    return handleMetaCommand(cmd, args, browserManager, shutdown);
+  }
+
+  throw new Error(`Unknown command: ${cmd}`);
+}
+</code></pre>
+
+<h3 id="自动关闭定时器">自动关闭定时器</h3>
+
+<pre><code class="language-typescript">const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 分钟
+
+let idleTimer = setTimeout(shutdown, IDLE_TIMEOUT_MS);
+
+// 每次命令重置定时器
+async function handleCommand(...) {
+  resetIdleTimer();
+  // 处理命令...
+}
+</code></pre>
+
+<hr>
+
+<h2 id="3-3-浏览器管理器-生命周期与页面管理">3.3 浏览器管理器：生命周期与页面管理</h2>
+
+<h3 id="browsermanager-核心职责">BrowserManager 核心职责</h3>
+
+<pre><code class="language-typescript">class BrowserManager {
+  private browser: Browser | null = null;
+  private context: BrowserContext | null = null;
+  private pages: Map&lt;number, Page&gt; = new Map();
+  private activeTabId: number = 0;
+  private refMap: Map&lt;string, RefEntry&gt; = new Map();
+}
+</code></pre>
+
+<h3 id="启动参数">启动参数</h3>
+
+<pre><code class="language-typescript">async launch() {
+  const launchArgs: string[] = [];
+
+  // Docker/CI: 禁用沙箱
+  if (process.env.CI || process.env.CONTAINER) {
+    launchArgs.push('--no-sandbox');
+  }
+
+  // 扩展支持（GStack Browser）
+  if (extensionsDir) {
+    launchArgs.push(
+      `--disable-extensions-except=${extensionsDir}`,
+      `--load-extension=${extensionsDir}`,
+    );
+  }
+
+  this.browser = await chromium.launch({
+    headless: true,
+    args: launchArgs,
+  });
+
+  // 崩溃监听
+  this.browser.on('disconnected', () =&gt; {
+    console.error('[browse] Chromium crashed. Server exiting.');
+    process.exit(1);  // 服务器退出，CLI 会自动重启
+  });
+}
+</code></pre>
+
+<h3 id="崩溃处理哲学">崩溃处理哲学</h3>
+
+<pre><code class="language-typescript">browser.on('disconnected', () =&gt; {
+  // 不尝试自我修复——直接退出
+  process.exit(1);
+});
+
+// CLI 检测到服务器死亡
+if (!await isServerHealthy(port)) {
+  await spawnNewServer();  // 自动重启
+}
+</code></pre>
+
+<p><strong>设计原则：</strong> 简单比聪明好。尝试重新连接半死的浏览器往往导致更多问题。</p>
+
+<h3 id="页面管理">页面管理</h3>
+
+<pre><code class="language-typescript">class BrowserManager {
+  // 创建新标签页
+  async newTab(url?: string): Promise&lt;number&gt; {
+    const tabId = this.nextTabId++;
+    const page = await this.context.newPage();
+    this.pages.set(tabId, page);
+
+    if (url) {
+      await page.goto(url);
+    }
+
+    return tabId;
+  }
+
+  // 关闭标签页
+  async closeTab(tabId: number): Promise&lt;void&gt; {
+    const page = this.pages.get(tabId);
+    if (page) {
+      await page.close();
+      this.pages.delete(tabId);
+    }
+  }
+
+  // 切换标签页
+  async switchTab(tabId: number): Promise&lt;void&gt; {
+    if (!this.pages.has(tabId)) {
+      throw new Error(`Tab ${tabId} not found`);
+    }
+    this.activeTabId = tabId;
+  }
+
+  // 获取当前页面
+  getPage(): Page {
+    return this.pages.get(this.activeTabId);
+  }
+}
+</code></pre>
+
+<h3 id="标签页操作命令">标签页操作命令</h3>
+
+<div class="table-wrap"><table>
+<tr><th>命令</th><th>功能</th></tr>
+<tr><td>------</td><td>------</td></tr>
+<tr><td><code>tabs</code></td><td>列出所有打开的标签页</td></tr>
+<tr><td><code>tab &lt;id&gt;</code></td><td>切换到指定标签页</td></tr>
+<tr><td><code>newtab [url]</code></td><td>打开新标签页</td></tr>
+<tr><td><code>closetab [id]</code></td><td>关闭标签页</td></tr>
+</table></div>
+
+<hr>
+
+<h2 id="3-4-ref-系统-让-ai-操作元素的艺术">3.4 Ref 系统：让 AI 操作元素的艺术</h2>
+
+<h3 id="为什么需要-ref">为什么需要 Ref？</h3>
+
+<p>传统方式让 AI 操作元素：</p>
+
+<pre><code class="language-typescript">// AI 需要记住这个脆弱的选择器
+await page.click('button[data-testid="submit-form-123"]');
+// 问题：页面重构后失效
+// 问题：AI 不知道页面上有什么
+</code></pre>
+
+<p>gstack 的方式：</p>
+
+<pre><code>Agent:  $B snapshot -i
+Server: 返回带 @e1, @e2... 标注的 ARIA 树
+        @e1 [button] "Submit Form"
+        @e2 [textbox] "Email"
+        @e3 [link] "Forgot password?"
+
+Agent:  $B click @e1
+Server: 查找 @e1 → Locator.click()
+</code></pre>
+
+<h3 id="快照流程">快照流程</h3>
+
+<pre><code class="language-typescript">async function handleSnapshot(args: string[]): Promise&lt;string&gt; {
+  // 1. 解析参数
+  const opts = parseSnapshotArgs(args);
+
+  // 2. 获取 ARIA 树
+  const page = browserManager.getPage();
+  const ariaText = await page.locator('body').ariaSnapshot();
+
+  // 3. 解析每行，分配 refs
+  const lines = ariaText.split('\n');
+  const refMap = new Map&lt;string, RefEntry&gt;();
+  let refCounter = 1;
+
+  // 4. 统计 role+name 用于 nth() 去重
+  const roleNameCounts = countRoles(lines);
+
+  // 5. 第二遍：分配 refs，构建 Locators
+  for (const line of lines) {
+    const node = parseLine(line);
+    if (!node) continue;
+
+    // 过滤非交互元素
+    if (opts.interactive &amp;&amp; !isInteractive(node.role)) {
+      continue;
+    }
+
+    // 分配 ref
+    const ref = `e${refCounter++}`;
+
+    // 构建 Locator
+    let locator = page.getByRole(node.role, { name: node.name });
+    if (roleNameCounts.get(key) &gt; 1) {
+      locator = locator.nth(nth);  // 去重
+    }
+
+    refMap.set(ref, { locator, role: node.role, name: node.name });
+  }
+
+  // 6. 存储 ref map
+  browserManager.setRefMap(refMap);
+
+  // 7. 返回带标注的文本
+  return formatOutput(lines, refMap);
+}
+</code></pre>
+
+<h3 id="aria-树解析">ARIA 树解析</h3>
+
+<p>ARIA 快照格式：</p>
+
+<pre><code>- heading "Test" [level=1]
+- link "Link A":
+  - /url: /a
+- textbox "Name"
+- paragraph: Some text
+</code></pre>
+
+<p>解析正则：</p>
+
+<pre><code class="language-typescript">const match = line.match(
+  /^(\s*)-\s+(\w+)        // 缩进 + 角色
+  (?:\s+"([^"]*)")?       // 名称（可选）
+  (?:\s+(\[.*?\]))?\s*    // 属性（可选）
+  (?::\s*(.*))?$/         // 内联文本（可选）
+);
+</code></pre>
+
+<h3 id="nth-去重">nth() 去重</h3>
+
+<p>同一角色+名称可能多次出现：</p>
+
+<pre><code class="language-html">&lt;div role="listbox"&gt;
+  &lt;div role="option"&gt;Apple&lt;/div&gt;
+  &lt;div role="option"&gt;Apple&lt;/div&gt;  &lt;!-- 重名 --&gt;
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-typescript">const key = `${node.role}:${node.name || ''}`;
+const count = roleNameCounts.get(key);  // 2
+const nth = roleNameSeen.get(key) || 0; // 0, 1
+roleNameSeen.set(key, nth + 1);
+
+// 构建 Locator
+let locator = page.getByRole('option', { name: 'Apple' });
+if (count &gt; 1) {
+  locator = locator.nth(nth);  // 区分同名元素
+}
+</code></pre>
+
+<h3 id="快照标志">快照标志</h3>
+
+<div class="table-wrap"><table>
+<tr><th>标志</th><th>功能</th></tr>
+<tr><td>------</td><td>------</td></tr>
+<tr><td><code>-i --interactive</code></td><td>仅交互元素（按钮、链接、输入框）</td></tr>
+<tr><td><code>-c --compact</code></td><td>紧凑输出（无空结构节点）</td></tr>
+<tr><td><code>-d --depth</code></td><td>限制树深度</td></tr>
+<tr><td><code>-s --selector</code></td><td>限定 CSS 选择器范围</td></tr>
+<tr><td><code>-D --diff</code></td><td>与上次快照对比</td></tr>
+<tr><td><code>-a --annotate</code></td><td>带标注的截图</td></tr>
+<tr><td><code>-C --cursor-interactive</code></td><td>扫描 cursor:pointer 等</td></tr>
+</table></div>
+
+<hr>
+
+<h2 id="3-5-命令注册表-集中式命令定义">3.5 命令注册表：集中式命令定义</h2>
+
+<h3 id="命令分类">命令分类</h3>
+
+<pre><code class="language-typescript">export const READ_COMMANDS = new Set([
+  'text', 'html', 'links', 'forms', 'accessibility',
+  'js', 'eval', 'css', 'attrs',
+  'console', 'network', 'cookies', 'storage', 'perf',
+  'dialog', 'is', 'inspect',
+]);
+
+export const WRITE_COMMANDS = new Set([
+  'goto', 'back', 'forward', 'reload',
+  'click', 'fill', 'select', 'hover', 'type', 'press', 'scroll', 'wait',
+  'viewport', 'cookie', 'cookie-import', 'cookie-import-browser',
+  'header', 'useragent',
+  'upload', 'dialog-accept', 'dialog-dismiss',
+  'style', 'cleanup', 'prettyscreenshot',
+]);
+
+export const META_COMMANDS = new Set([
+  'tabs', 'tab', 'newtab', 'closetab',
+  'status', 'stop', 'restart',
+  'screenshot', 'pdf', 'responsive',
+  'chain', 'diff',
+  'url', 'snapshot',
+  'handoff', 'resume',
+  'connect', 'disconnect', 'focus',
+  'inbox', 'watch', 'state', 'frame',
+]);
+</code></pre>
+
+<h3 id="命令描述表">命令描述表</h3>
+
+<pre><code class="language-typescript">export const COMMAND_DESCRIPTIONS: Record&lt;string, {
+  category: string;
+  description: string;
+  usage?: string;
+}&gt; = {
+  'goto': {
+    category: 'Navigation',
+    description: 'Navigate to URL',
+    usage: 'goto &lt;url&gt;',
+  },
+  'snapshot': {
+    category: 'Snapshot',
+    description: 'Accessibility tree with @e refs for element selection',
+    usage: 'snapshot [flags]',
+  },
+  // ... 全部命令
+};
+</code></pre>
+
+<h3 id="不信任内容边界">不信任内容边界</h3>
+
+<pre><code class="language-typescript">export function wrapUntrustedContent(result: string, url: string): string {
+  // 防止通过 URL 注入边界标记
+  const safeUrl = url.replace(/[\n\r]/g, '').slice(0, 200);
+
+  // 防止内容中包含边界标记
+  const safeResult = result.replace(
+    /--- (BEGIN|END) UNTRUSTED EXTERNAL CONTENT/g,
+    '--- $1 UNTRUSTED EXTERNAL C\u200BONTENT'
+  );
+
+  return `--- BEGIN UNTRUSTED EXTERNAL CONTENT (source: ${safeUrl}) ---
+${safeResult}
+--- END UNTRUSTED EXTERNAL CONTENT ---`;
+}
+</code></pre>
+
+<hr>
+
+<h2 id="3-6-环形缓冲区-o-1-日志存储">3.6 环形缓冲区：O(1) 日志存储</h2>
+
+<h3 id="为什么需要环形缓冲区">为什么需要环形缓冲区？</h3>
+
+<p>传统列表追加：</p>
+
+<pre><code class="language-typescript">const logs: LogEntry[] = [];
+logs.push(entry);  // O(1)
+
+// 但内存无限增长！
+</code></pre>
+
+<p>环形缓冲区：</p>
+
+<pre><code class="language-typescript">class CircularBuffer&lt;T&gt; {
+  private buffer: (T | undefined)[];
+  private head: number = 0;    // 最早元素位置
+  private _size: number = 0;
+
+  push(entry: T): void {
+    const index = (this.head + this._size) % this.capacity;
+    this.buffer[index] = entry;
+
+    if (this._size &lt; this.capacity) {
+      this._size++;
+    } else {
+      // 缓冲区满，头指针前移（覆盖最旧）
+      this.head = (this.head + 1) % this.capacity;
+    }
+  }
+}
+</code></pre>
+
+<h3 id="内存布局">内存布局</h3>
+
+<pre><code>容量=6, head=4, size=5
+
+┌───┬───┬───┬───┬───┬───┐
+│ 3 │ 4 │ 5 │   │ 1 │ 2 │
+└───┴───┴───┴───┴─▲─┴───┘
+                  │
+                head (最旧)
+                size=5 (3,4,5,1,2)
+</code></pre>
+
+<h3 id="api">API</h3>
+
+<pre><code class="language-typescript">const buffer = new CircularBuffer&lt;LogEntry&gt;(50000);
+
+// 插入
+buffer.push({ timestamp: Date.now(), level: 'log', text: 'Hello' });
+
+// 获取全部（按插入顺序）
+const all = buffer.toArray();
+
+// 获取最近 N 条
+const recent = buffer.last(100);
+
+// 长度
+buffer.length;        // 当前元素数
+buffer.totalAdded;    // 总插入次数
+</code></pre>
+
+<h3 id="三种日志缓冲区">三种日志缓冲区</h3>
+
+<div class="table-wrap"><table>
+<tr><th>缓冲区</th><th>类型</th><th>用途</th></tr>
+<tr><td>--------</td><td>------</td><td>------</td></tr>
+<tr><td>consoleBuffer</td><td>LogEntry</td><td>控制台消息</td></tr>
+<tr><td>networkBuffer</td><td>NetworkEntry</td><td>网络请求/响应</td></tr>
+<tr><td>dialogBuffer</td><td>DialogEntry</td><td>对话框事件</td></tr>
+</table></div>
+
+<hr>
+
+<h2 id="3-7-完整命令执行路径">3.7 完整命令执行路径</h2>
+
+<p>让我们追踪 <code>$B click @e3</code> 的完整路径：</p>
+
+<pre><code>1. CLI (cli.ts)
+   ├─→ 读取 .gstack/browse.json
+   ├─→ HTTP POST /command
+   │   { cmd: 'click', args: ['@e3'] }
+   │
+2. Server (server.ts)
+   ├─→ validateAuth() — 验证 Bearer token
+   ├─→ READ/WRITE/META 分类
+   │   'click' ∈ WRITE_COMMANDS
+   ├─→ handleWriteCommand('click', ['@e3'], browserManager)
+   │
+3. BrowserManager (browser-manager.ts)
+   ├─→ refMap.get('e3') → RefEntry { locator, role, name }
+   ├─→ refEntry.locator.click()
+   │
+4. 返回
+   ├─→ JSON 响应 → CLI stdout
+</code></pre>
+
+<hr>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>CLI 设计</strong>：瘦包装器，职责清晰——读状态、查健康、发请求</li>
+<li><strong>HTTP 服务器</strong>：Bun.serve 路由 + 命令分类调度 + 自动关闭</li>
+<li><strong>浏览器管理器</strong>：Chromium 生命周期 + 页面/标签页 + 崩溃即退出</li>
+<li><strong>Ref 系统</strong>：ARIA 树 → 解析 → nth() 去重 → Locator 映射</li>
+<li><strong>命令注册表</strong>：集中式定义 + 分类调度 + 不信任内容边界</li>
+<li><strong>环形缓冲区</strong>：O(1) 追加 + 有界内存 + 覆盖最旧</li>
+</ol>
+
+<hr>
+
+<h2 id="预告">预告</h2>
+
+<p>第4章我们将深入 <strong>SKILL 系统</strong>：SKILL.md 模板如何工作？Preamble 如何统一技能行为？Review Army 如何协调多个专家？</p>
+
+
+
+
+<nav class="chapter-nav">
+  <a href="ch02.html">◀ 第2章：gstack 的整体架构——守护进程与状态管理</a>
+  <a href="ch04.html">第4章：SKILL.md 模板系统——Markdown 即配置 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#概述">概述</a></li><li><a href="#3-1-cli-入口-瘦包装器设计">3.1 CLI 入口：瘦包装器设计</a></li><li><a href="#3-2-http-服务器-bun-serve-路由设计">3.2 HTTP 服务器：Bun.serve 路由设计</a></li><li><a href="#3-3-浏览器管理器-生命周期与页面管理">3.3 浏览器管理器：生命周期与页面管理</a></li><li><a href="#3-4-ref-系统-让-ai-操作元素的艺术">3.4 Ref 系统：让 AI 操作元素的艺术</a></li><li><a href="#3-5-命令注册表-集中式命令定义">3.5 命令注册表：集中式命令定义</a></li><li><a href="#3-6-环形缓冲区-o-1-日志存储">3.6 环形缓冲区：O(1) 日志存储</a></li><li><a href="#3-7-完整命令执行路径">3.7 完整命令执行路径</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#预告">预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  // Progress bar
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  // Back to top
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  // Right TOC highlight
+  var tocLinks = document.querySelectorAll('.toc-list a');
+  if (tocLinks.length) {
+    var headings = Array.from(document.querySelectorAll('#main h2'));
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var active = headings.filter(function(h) { return h.offsetTop <= scrollY; }).pop();
+      tocLinks.forEach(function(a) { a.classList.remove('active'); });
+      if (active) {
+        var match = document.querySelector('.toc-list a[href="#' + active.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }
+  // Mermaid
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  // Highlight.js
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>

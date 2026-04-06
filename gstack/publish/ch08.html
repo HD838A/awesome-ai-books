@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第8章：8 大 AI 代理支持——配置即生态 — AI 工程流水线：gstack 源码深度解读</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+/* Progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+/* Layout */
+#layout { display: flex; min-height: 100vh; }
+/* Left sidebar */
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+/* Main content */
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+/* Right TOC */
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+/* Code */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+.hljs { background: #F5F2ED !important; }
+/* Blockquote */
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+/* Lists */
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+/* HR */
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+/* Mermaid */
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+/* Chapter nav */
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+/* Back to top */
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+/* Index page */
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+/* Responsive */
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI 工程流水线：gstack 源码深度解读</div>
+      <div class="sidebar-subtitle">从守护进程到构建管道，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a>
+<a href="ch02.html">第2章：gstack 的整体架构——守护进程与状态管理</a>
+<a href="ch03.html">第3章：持久化浏览器核心实现——browse 模块架构</a>
+<a href="ch04.html">第4章：SKILL.md 模板系统——Markdown 即配置</a>
+<a href="ch05.html">第5章：核心技能解析——/plan、/review、/ship</a>
+<a href="ch06.html">第6章：autoplan 与 review-army 深度解析</a>
+<a href="ch07.html">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a>
+<a href="ch08.html" class="active">第8章：8 大 AI 代理支持——配置即生态</a>
+<a href="ch09.html">第9章：安全机制——freeze / guard / careful</a>
+<a href="ch10.html">第 10 章：构建与发布</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第8章-8-大-ai-代理支持-配置即生态">第8章：8 大 AI 代理支持——配置即生态</h1>
+
+<p>第 7 章讲解了 HostConfig 接口的定义和声明——这是静态的配置层。本章深入 gstack 的运行时集成——这些配置如何在构建、检测、安装、执行各环节被消费。两条线交织在一起，构成了 gstack 完整的多代理生态。</p>
+
+<p>gstack 目前正式支持 8 种 AI 代理（按加入时间排序）：</p>
+
+<pre><code>Claude Code → OpenAI Codex CLI → Cursor → OpenCode → Factory Droid
+→ Kiro → Slate → OpenClaw
+</code></pre>
+
+<p>每种代理都有独特的工具模型、目录布局和使用场景。本章逐一解析它们与 gstack 的集成方式，以及 gstack 的工具链如何围绕 HostConfig 统一运作。</p>
+
+<hr>
+
+<h2 id="8-1-运行时配置消费-preamble-的两条路径">8.1 运行时配置消费：preamble 的两条路径</h2>
+
+<h3 id="usesenvvars-的本质">usesEnvVars 的本质</h3>
+
+<p>第 7 章提到，所有非 Claude Host 都设置 <code>usesEnvVars: true</code>。这个字段不是装饰性的——它直接影响 preamble.ts 生成的 Bash 前导脚本内容。</p>
+
+<p><strong>Claude 模式（usesEnvVars = false）</strong>：</p>
+
+<pre><code class="language-bash">mkdir -p ~/.claude/skills/gstack/bin
+~/.claude/skills/gstack/bin/gstack-update-check
+</code></pre>
+
+<p><strong>其他 Host 模式（usesEnvVars = true）</strong>：</p>
+
+<pre><code class="language-bash">_ROOT=$(git rev-parse --show-toplevel 2&gt;/dev/null)
+GSTACK_ROOT="$HOME/.opencode/skills/gstack"
+[ -n "$_ROOT" ] &amp;&amp; [ -d "$_ROOT/.opencode/skills/gstack" ] &amp;&amp; GSTACK_ROOT="$_ROOT/.opencode/skills/gstack"
+GSTACK_BIN="$GSTACK_ROOT/bin"
+GSTACK_BROWSE="$GSTACK_ROOT/browse/dist"
+GSTACK_DESIGN="$GSTACK_ROOT/design/dist"
+</code></pre>
+
+<p>这解释了为什么 Claude 的 pathRewrites 是空数组——Claude 直接用 literal <code>~/.claude/</code> 路径，不需要环境变量替换。其他 7 个 Host 则依赖 <code>$GSTACK_ROOT</code> 动态计算，pathRewrites 把模板中的 <code>.claude/skills/gstack</code> 替换成各 Host 的实际子目录。</p>
+
+<h3 id="全局-symlink-资产的-host-一致性">全局 Symlink 资产的 Host 一致性</h3>
+
+<p>一个值得注意的设计决策：所有 Host 的 <code>runtimeRoot.globalSymlinks</code> 完全相同：</p>
+
+<pre><code class="language-typescript">runtimeRoot: {
+  globalSymlinks: ['bin', 'browse/dist', 'browse/bin', 'gstack-upgrade', 'ETHOS.md'],
+  globalFiles: { 'review': ['checklist.md', 'TODOS-format.md'] }
+}
+</code></pre>
+
+<p>这意味着 bin/（gstack 工具集）、browse/（浏览器工具）、gstack-upgrade（升级脚本）、ETHOS.md（工程伦理文档）在所有 Host 上都以相同的方式被链接安装。gstack 的工具链对所有 Host 一视同仁——差异只在路径映射层。</p>
+
+<hr>
+
+<h2 id="8-2-host-检测与平台发现">8.2 Host 检测与平台发现</h2>
+
+<h3 id="gstack-platform-detect">gstack-platform-detect</h3>
+
+<p><code>bin/gstack-platform-detect</code> 是 gstack 的"主机发现"工具，用纯 Bash 编写，读取 host-config-export.ts 的输出：</p>
+
+<pre><code class="language-bash">for host in $(bun run host-config-export.ts list 2&gt;/dev/null); do
+  cmd=$(bun run host-config-export.ts get "$host" cliCommand)
+  root=$(bun run host-config-export.ts get "$host" globalRoot)
+  spath="$HOME/$root"
+
+  if command -v "$cmd" &gt;/dev/null 2&gt;&amp;1; then
+    ver=$("$cmd" --version 2&gt;/dev/null | head -1 || echo "unknown")
+    if [ -d "$spath" ] || [ -L "$spath" ]; then
+      status="INSTALLED"
+    else
+      status="NOT INSTALLED"
+    fi
+    printf "%-16s %-10s %-40s %s\n" "$host" "$ver" "$spath" "$status"
+  fi
+done
+</code></pre>
+
+<p>运行效果：</p>
+
+<pre><code>Agent            Version     Skill Path                              gstack
+-----            -------     ----------                              ------
+claude           1.0.42      ~/.claude/skills/gstack                 INSTALLED
+codex            0.18.2      ~/.codex/skills/gstack                  INSTALLED
+cursor           0.42.1      ~/.cursor/skills/gstack                 NOT INSTALLED
+factory          2.1.0       ~/.factory/skills/gstack                INSTALLED
+</code></pre>
+
+<p>这个脚本不需要硬编码任何 Host 信息——它通过 host-config-export.ts 动态获取所有 Host 的 cliCommand 和 globalRoot。如果添加了新 Host，脚本自动包含它，无需修改。</p>
+
+<h3 id="host-config-export-ts-四命令工具">host-config-export.ts：四命令工具</h3>
+
+<p><code>scripts/host-config-export.ts</code> 是 Host 配置的导出层，提供 4 个命令：</p>
+
+<pre><code class="language-bash">bun run host-config-export.ts list       # 列出所有 Host 名称
+bun run host-config-export.ts get &lt;host&gt; &lt;field&gt;  # 查询字段值
+bun run host-config-export.ts detect     # 检测已安装的 Host
+bun run host-config-export.ts validate    # 验证所有配置
+</code></pre>
+
+<p><code>detect</code> 命令遍历 ALL_HOST_CONFIGS，对每个 Host 执行 <code>command -v cliCommand</code>，找到 PATH 上存在的二进制：</p>
+
+<pre><code class="language-typescript">case 'detect': {
+  for (const config of ALL_HOST_CONFIGS) {
+    const commands = [config.cliCommand, ...(config.cliAliases || [])];
+    for (const cmd of commands) {
+      try {
+        execSync(`command -v ${shellEscape(cmd)}`, { stdio: 'pipe' });
+        console.log(config.name);
+        break;
+      } catch { /* 尝试下一个别名 */ }
+    }
+  }
+  break;
+}
+</code></pre>
+
+<p>注意 Factory 的 <code>cliAliases: ['droid']</code>——即使用户安装的是 <code>droid</code> 二进制，检测也能找到 <code>factory</code>。</p>
+
+<h3 id="配置验证-构建时质量门">配置验证：构建时质量门</h3>
+
+<p><code>validate</code> 命令在构建阶段确保配置质量：</p>
+
+<pre><code class="language-bash">bun run host-config-export.ts validate
+# → All 8 configs valid
+</code></pre>
+
+<p>如果开发者添加了一个 Host 但忘了更新 ALL_HOST_CONFIGS 数组，validate 会报告"配置未注册"。如果两个 Host 使用了相同的 hostSubdir，validate 会报告"全局唯一性冲突"。</p>
+
+<hr>
+
+<h2 id="8-3-多-host-浏览工具发现">8.3 多 Host 浏览工具发现</h2>
+
+<h3 id="find-browse-的三层架构">find-browse 的三层架构</h3>
+
+<p><code>browse/bin/find-browse</code> 是 gstack 浏览工具的发现 shim，分三层寻找浏览二进制：</p>
+
+<pre><code class="language-bash"># Layer 1: 编译二进制（workspace-local build）
+DIR="$(cd "$(dirname "$0")/.." &amp;&amp; pwd)/dist"
+if test -x "$DIR/find-browse"; then
+  exec "$DIR/find-browse" "$@"
+fi
+
+# Layer 2: 遍历所有 Host 目录
+ROOT=$(git rev-parse --show-toplevel 2&gt;/dev/null)
+for MARKER in .codex .agents .claude; do
+  if [ -n "$ROOT" ] &amp;&amp; [ -x "$ROOT/$MARKER/skills/gstack/browse/dist/browse" ]; then
+    echo "$ROOT/$MARKER/skills/gstack/browse/dist/browse"; exit 0
+  fi
+  if [ -x "$HOME/$MARKER/skills/gstack/browse/dist/browse" ]; then
+    echo "$HOME/$MARKER/skills/gstack/browse/dist/browse"; exit 0
+  fi
+done
+
+# Layer 3: 报错
+echo "ERROR: browse binary not found." &gt;&amp;2; exit 1
+</code></pre>
+
+<p>Layer 2 硬编码了 <code>.codex</code> 和 <code>.agents</code> 两个标记——这是因为 Codex 使用 <code>.agents/</code> 作为本地侧车路径（见第 7 章）。当 browse/dist/browse 存在于任意一个 Host 的技能目录下时，find-browse 就能找到它。</p>
+
+<h3 id="skill-md-中的-browse-setup">SKILL.md 中的 Browse Setup</h3>
+
+<p>browse.ts 的 <code>generateBrowseSetup()</code> 生成 SKILL.md 中的运行时检查脚本，使用相同的优先级策略：项目内本地路径优先于全局路径：</p>
+
+<pre><code class="language-bash">_ROOT=$(git rev-parse --show-toplevel 2&gt;/dev/null)
+B=""
+[ -n "$_ROOT" ] &amp;&amp; [ -x "$_ROOT/.opencode/skills/gstack/browse/dist/browse" ] &amp;&amp; B="$_ROOT/.opencode/skills/gstack/browse/dist/browse"
+[ -z "$B" ] &amp;&amp; B=$HOME/.opencode/skills/gstack/browse/dist/browse
+if [ -x "$B" ]; then
+  echo "READY: $B"
+else
+  echo "NEEDS_SETUP"
+fi
+</code></pre>
+
+<p>如果输出 <code>NEEDS_SETUP</code>，技能会提示用户运行 <code>cd &lt;SKILL_DIR&gt; &amp;&amp; ./setup</code> 来构建浏览工具。</p>
+
+<hr>
+
+<h2 id="8-4-resolver-注册表与动态分发">8.4 Resolver 注册表与动态分发</h2>
+
+<h3 id="41-个-resolver-的领域划分">41 个 Resolver 的领域划分</h3>
+
+<p><code>scripts/resolvers/index.ts</code> 定义了 gstack 的全部 resolver，形成一个查找表：</p>
+
+<pre><code class="language-typescript">export const RESOLVERS: Record&lt;string, ResolverFn&gt; = {
+  // Slug 与标识（2）
+  SLUG_EVAL: generateSlugEval,
+  SLUG_SETUP: generateSlugSetup,
+
+  // 浏览工具（3）
+  COMMAND_REFERENCE: generateCommandReference,
+  SNAPSHOT_FLAGS: generateSnapshotFlags,
+  BROWSE_SETUP: generateBrowseSetup,
+
+  // Preamble（2）
+  PREAMBLE: generatePreamble,
+  TEST_FAILURE_TRIAGE: generateTestFailureTriage,
+
+  // 设计审查（8）
+  DESIGN_METHODOLOGY: generateDesignMethodology,
+  DESIGN_HARD_RULES: generateDesignHardRules,
+  DESIGN_OUTSIDE_VOICES: generateDesignOutsideVoices,
+  DESIGN_REVIEW_LITE: generateDesignReviewLite,
+  DESIGN_SKETCH: generateDesignSketch,
+  DESIGN_SETUP: generateDesignSetup,
+  DESIGN_MOCKUP: generateDesignMockup,
+  DESIGN_SHOTGUN_LOOP: generateDesignShotgunLoop,
+
+  // 测试（4）
+  TEST_BOOTSTRAP: generateTestBootstrap,
+  TEST_COVERAGE_AUDIT_PLAN: generateTestCoverageAuditPlan,
+  TEST_COVERAGE_AUDIT_SHIP: generateTestCoverageAuditShip,
+  TEST_COVERAGE_AUDIT_REVIEW: generateTestCoverageAuditReview,
+
+  // 审查（11）
+  REVIEW_DASHBOARD: generateReviewDashboard,
+  PLAN_FILE_REVIEW_REPORT: generatePlanFileReviewReport,
+  SPEC_REVIEW_LOOP: generateSpecReviewLoop,
+  CODEX_SECOND_OPINION: generateCodexSecondOpinion,
+  ADVERSARIAL_STEP: generateAdversarialStep,
+  SCOPE_DRIFT: generateScopeDrift,
+  CODEX_PLAN_REVIEW: generateCodexPlanReview,
+  PLAN_COMPLETION_AUDIT_SHIP: generatePlanCompletionAuditShip,
+  PLAN_COMPLETION_AUDIT_REVIEW: generatePlanCompletionAuditReview,
+  PLAN_VERIFICATION_EXEC: generatePlanVerificationExec,
+  BENEFITS_FROM: generateBenefitsFrom,
+
+  // 运维与学习（8）
+  DEPLOY_BOOTSTRAP: generateDeployBootstrap,
+  BASE_BRANCH_DETECT: generateBaseBranchDetect,
+  QA_METHODOLOGY: generateQAMethodology,
+  CO_AUTHOR_TRAILER: generateCoAuthorTrailer,
+  CHANGELOG_WORKFLOW: generateChangelogWorkflow,
+  LEARNINGS_SEARCH: generateLearningsSearch,
+  LEARNINGS_LOG: generateLearningsLog,
+  CONFIDENCE_CALIBRATION: generateConfidenceCalibration,
+
+  // 编排（3）
+  INVOKE_SKILL: generateInvokeSkill,
+  REVIEW_ARMY: generateReviewArmy,
+  DX_FRAMEWORK: generateDxFramework,
+};
+</code></pre>
+
+<h3 id="resolver-的-suppression-机制">Resolver 的 Suppression 机制</h3>
+
+<p>gen-skill-docs.ts 执行 resolver 时，先查 HostConfig.suppressedResolvers——如果 resolver 名称在数组中，返回空字符串，跳过注入：</p>
+
+<pre><code>PREGEN: 解析 {{DESIGN_OUTSIDE_VOICES}}
+PREGEN: Host codex — suppressedResolvers 包含 DESIGN_OUTSIDE_VOICES → skip
+PREGEN: 输出: (空)
+</code></pre>
+
+<p>resolver 函数本身不知道哪个 Host 调用了它——完全解耦。这是良好的关注点分离设计：resolver 负责内容生成，Host 适配层负责内容过滤。</p>
+
+<hr>
+
+<h2 id="8-5-8-大-ai-代理集成详解">8.5 8 大 AI 代理集成详解</h2>
+
+<h3 id="claude-code-主-host">Claude Code：主 Host</h3>
+
+<p>Claude Code 是 gstack 的设计原点，所有其他 Host 的配置都是相对于 Claude 的差异化描述。集成特点：</p>
+
+<ul>
+<li>工具：Agent tool（原生支持）</li>
+<li>Skills 路径：<code>~/.claude/skills/gstack/</code></li>
+<li>前导脚本：无 GSTACK_ROOT 环境变量，使用 literal 路径</li>
+<li>安装：<code>real-dir-symlink</code>，符号链接直接指向 generated 内容</li>
+<li>安装前缀：<code>prefixable = true</code>（支持 <code>gstack-config skill_prefix</code>）</li>
+</ul>
+
+<h3 id="openai-codex-cli-副标杆">OpenAI Codex CLI：副标杆</h3>
+
+<p>Codex 是测试最严格的目标，有几项独特设计：</p>
+
+<ul>
+<li>工具：dispatch subagent（通过 <code>subagent_type: "general-purpose"</code> 调用子代理）</li>
+<li>Skills 路径：<code>~/.codex/skills/gstack/</code>，另有 <code>.agents/</code> 本地侧车</li>
+<li>前导脚本：使用 <code>$GSTACK_ROOT</code> 环境变量</li>
+<li>元数据：生成 <code>openai.yaml</code></li>
+<li>边界指令：防止误读 Claude 技能文件</li>
+</ul>
+
+<h3 id="cursor-ide-集成">Cursor：IDE 集成</h3>
+
+<p>Cursor 的 Skills 目录布局与 Claude Code 高度相似，因此配置最简洁：</p>
+
+<ul>
+<li>工具：原生（无 Agent tool）</li>
+<li>Skills 路径：<code>~/.cursor/skills/gstack/</code></li>
+<li>前导脚本：使用 <code>$GSTACK_ROOT</code></li>
+<li>无 toolRewrites（工具名与 Claude 足够接近）</li>
+<li>无 suppressedResolvers（无递归调用场景）</li>
+</ul>
+
+<h3 id="opencode-xdg-规范">OpenCode：XDG 规范</h3>
+
+<p>OpenCode 遵循 XDG Base Directory 规范，Skills 放在配置目录而非主目录：</p>
+
+<ul>
+<li>Skills 路径：<code>~/.config/opencode/skills/gstack/</code></li>
+<li>这也是它与 Claude 差异最大的路径——需要完整的 pathRewrites</li>
+</ul>
+
+<h3 id="factory-droid-github-内嵌">Factory Droid：GitHub 内嵌</h3>
+
+<p>Factory Droid 运行在 GitHub 内部，coAuthorTrailer 指向 GitHub 的 co-author 格式：</p>
+
+<ul>
+<li><code>coAuthorTrailer: 'Co-Authored-By: Factory Droid &lt;droid@users.noreply.github.com&gt;'</code></li>
+<li>CLI 别名：<code>droid</code>（通过 <code>codex agents droid</code> 调用）</li>
+<li>learningsMode：<code>full</code>（支持跨项目学习）</li>
+<li>使用 conditionalFields：根据 <code>sensitive: true</code> 自动注入 <code>disable-model-invocation</code></li>
+</ul>
+
+<h3 id="kiro-aws-生态">Kiro：AWS 生态</h3>
+
+<p>Kiro 的独特之处在于 pathRewrites 同时覆盖 Claude 和 Codex 的路径：</p>
+
+<pre><code class="language-typescript">pathRewrites: [
+  { from: '~/.claude/skills/gstack', to: '~/.kiro/skills/gstack' },
+  { from: '~/.codex/skills/gstack', to: '~/.kiro/skills/gstack' },
+]
+</code></pre>
+
+<p>这使 Kiro 能同时读取 Claude 和 Codex 生态中已有的 gstack 安装。</p>
+
+<h3 id="slate-random-labs">Slate：Random Labs</h3>
+
+<p>Slate 的配置最为简洁——几乎所有字段都是默认值，无特殊设计。Random Labs 的 Slate 编辑器目前处于早期集成阶段。</p>
+
+<h3 id="openclaw-编排器架构">OpenClaw：编排器架构</h3>
+
+<p>OpenClaw 是 8 个 Host 中最复杂的一个，同时使用两套集成机制：</p>
+
+<p><strong>机制一：HostConfig 适配</strong>（与普通 Host 相同）：</p>
+<ul>
+<li>pathRewrites、toolRewrites、suppressedResolvers 全部生效</li>
+<li>suppressedResolvers 有 5 项（与 Codex 相同）</li>
+</ul>
+
+<p><strong>机制二：CLAUDE.md 注入</strong>（OpenClaw 独有）：</p>
+
+<pre><code>openclaw/
+├── gstack-plan-CLAUDE.md    # 完整审查方案
+├── gstack-lite-CLAUDE.md    # 精简版
+└── gstack-full-CLAUDE.md    # 全功能版
+</code></pre>
+
+<p>gstack-plan-CLAUDE.md 揭示了 OpenClaw 的编排流程：</p>
+
+<pre><code>1. 读取 CLAUDE.md 理解项目上下文
+2. 运行 /office-hours 产生设计文档
+3. 运行 /autoplan 执行完整审查
+4. 保存审查结果到 plans/&lt;slug&gt;-plan-&lt;date&gt;.md
+5. 报告给父会话（orchestrator）
+</code></pre>
+
+<p>这是<strong>编排器模式</strong>——OpenClaw 作为父会话，gstack 技能作为被调用的子任务。OpenClaw 负责高层决策，gstack 负责具体执行。</p>
+
+<hr>
+
+<h2 id="8-6-添加新-host-端到端流程">8.6 添加新 Host：端到端流程</h2>
+
+<p><code>docs/ADDING_A_HOST.md</code> 提供了完整的 6 步指南。假设要为 Windsurf 添加支持：</p>
+
+<h3 id="步骤-1-创建配置文件">步骤 1：创建配置文件</h3>
+
+<p>复制 <code>hosts/opencode.ts</code> 为 <code>hosts/windsurf.ts</code>，声明 HostConfig。关键是设置正确的 pathRewrites：</p>
+
+<pre><code class="language-typescript">pathRewrites: [
+  { from: '~/.claude/skills/gstack', to: '~/.windsurf/skills/gstack' },
+  { from: '.claude/skills/gstack', to: '.windsurf/skills/gstack' },
+  { from: '.claude/skills', to: '.windsurf/skills' },
+]
+</code></pre>
+
+<h3 id="步骤-2-注册到-index-ts">步骤 2：注册到 index.ts</h3>
+
+<pre><code class="language-typescript">import windsurf from './windsurf';
+export const ALL_HOST_CONFIGS = [..., windsurf];
+export { ..., windsurf };
+</code></pre>
+
+<p>TypeScript 的 <code>type Host = (typeof ALL_HOST_CONFIGS)[number]['name']</code> 联合类型自动扩展。</p>
+
+<h3 id="步骤-3-加入-gitignore">步骤 3：加入 .gitignore</h3>
+
+<pre><code class="language-bash">echo ".windsurf/" &gt;&gt; .gitignore
+</code></pre>
+
+<h3 id="步骤-4-生成与验证">步骤 4：生成与验证</h3>
+
+<pre><code class="language-bash">bun run gen:skill-docs --host windsurf
+grep -r ".claude/skills" .windsurf/skills/  # 应为空
+bun run host-config-export.ts validate       # 应通过
+</code></pre>
+
+<h3 id="步骤-5-运行测试">步骤 5：运行测试</h3>
+
+<pre><code class="language-bash">bun test test/gen-skill-docs.test.ts
+bun test test/host-config.test.ts
+</code></pre>
+
+<p>参数化烟雾测试自动覆盖新 Host——<code>gen-skill-docs.test.ts</code> 遍历 ALL_HOST_CONFIGS，逐一验证每个 Host 的生成产物。无需编写任何新测试代码。</p>
+
+<h3 id="步骤-6-更新文档">步骤 6：更新文档</h3>
+
+<p>在 README.md 添加 Windsurf 的安装说明段。</p>
+
+<hr>
+
+<h2 id="8-7-本章小结">8.7 本章小结</h2>
+
+<p>gstack 的 8 大 AI 代理支持体系展示了一个清晰的分层架构：</p>
+
+<p><strong>配置层</strong>（第 7 章）：HostConfig 接口声明，pathRewrites / toolRewrites / suppressedResolvers 定义</p>
+
+<p><strong>工具链层</strong>（本章）：host-config-export.ts（4 命令）、gstack-platform-detect、find-browse shim</p>
+
+<p><strong>resolver 层</strong>（本章）：41 个 resolver 注册表，动态分发与 suppression 机制</p>
+
+<p><strong>集成层</strong>（本章）：各 Host 的运行时集成差异，CLAUDE.md 注入（OpenClaw 独有）</p>
+
+<p>这个分层架构的核心价值是<strong>零业务代码修改</strong>添加新 Host。新 Host 的所有信息都在一个 HostConfig 声明中，工具链自动适配，无需修改任何核心逻辑。烟雾测试的自动化覆盖则确保了新 Host 的质量下限。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch07.html">◀ 第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a>
+  <a href="ch09.html">第9章：安全机制——freeze / guard / careful ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#8-1-运行时配置消费-preamble-的两条路径">8.1 运行时配置消费：preamble 的两条路径</a></li><li><a href="#8-2-host-检测与平台发现">8.2 Host 检测与平台发现</a></li><li><a href="#8-3-多-host-浏览工具发现">8.3 多 Host 浏览工具发现</a></li><li><a href="#8-4-resolver-注册表与动态分发">8.4 Resolver 注册表与动态分发</a></li><li><a href="#8-5-8-大-ai-代理集成详解">8.5 8 大 AI 代理集成详解</a></li><li><a href="#8-6-添加新-host-端到端流程">8.6 添加新 Host：端到端流程</a></li><li><a href="#8-7-本章小结">8.7 本章小结</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  // Progress bar
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  // Back to top
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  // Right TOC highlight
+  var tocLinks = document.querySelectorAll('.toc-list a');
+  if (tocLinks.length) {
+    var headings = Array.from(document.querySelectorAll('#main h2'));
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var active = headings.filter(function(h) { return h.offsetTop <= scrollY; }).pop();
+      tocLinks.forEach(function(a) { a.classList.remove('active'); });
+      if (active) {
+        var match = document.querySelector('.toc-list a[href="#' + active.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }
+  // Mermaid
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  // Highlight.js
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>

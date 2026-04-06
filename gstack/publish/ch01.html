@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第1章：gstack 是什么——AI 工程流水线的愿景 — AI 工程流水线：gstack 源码深度解读</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+/* Progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+/* Layout */
+#layout { display: flex; min-height: 100vh; }
+/* Left sidebar */
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+/* Main content */
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+/* Right TOC */
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+/* Code */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+.hljs { background: #F5F2ED !important; }
+/* Blockquote */
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+/* Lists */
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+/* HR */
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+/* Mermaid */
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+/* Chapter nav */
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+/* Back to top */
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+/* Index page */
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+/* Responsive */
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI 工程流水线：gstack 源码深度解读</div>
+      <div class="sidebar-subtitle">从守护进程到构建管道，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html" class="active">第1章：gstack 是什么——AI 工程流水线的愿景</a>
+<a href="ch02.html">第2章：gstack 的整体架构——守护进程与状态管理</a>
+<a href="ch03.html">第3章：持久化浏览器核心实现——browse 模块架构</a>
+<a href="ch04.html">第4章：SKILL.md 模板系统——Markdown 即配置</a>
+<a href="ch05.html">第5章：核心技能解析——/plan、/review、/ship</a>
+<a href="ch06.html">第6章：autoplan 与 review-army 深度解析</a>
+<a href="ch07.html">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a>
+<a href="ch08.html">第8章：8 大 AI 代理支持——配置即生态</a>
+<a href="ch09.html">第9章：安全机制——freeze / guard / careful</a>
+<a href="ch10.html">第 10 章：构建与发布</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第1章-gstack-是什么-ai-工程流水线的愿景">第1章：gstack 是什么——AI 工程流水线的愿景</h1>
+
+<blockquote><p>"I don't think I've typed like a line of code probably since December, basically, which is an extremely large change."</p></blockquote>
+<blockquote><p>— Andrej Karpathy，No Priors podcast，2026年3月</p></blockquote>
+
+<p>2026年3月，Karpathy 在播客中说出这番话时，整个科技圈都在追问：<strong>一个人怎么可能不写代码，却能持续交付？</strong></p>
+
+<p>Garry Tan——Y Combinator 的掌舵人——也在思考这个问题。答案是 <strong>gstack</strong>：一个把 AI 编程工具变成"虚拟工程团队"的框架。</p>
+
+<hr>
+
+<h2 id="概述">概述</h2>
+
+<p>本章我们将了解：</p>
+<ul>
+<li>gstack 试图解决什么根本问题</li>
+<li>它如何用"交响乐团"模型重构 AI 编程</li>
+<li>37个技能 + 8个工具的完整地图</li>
+<li>30秒安装体验</li>
+</ul>
+
+<p>读完本章，你会理解为什么 gstack 不只是一个工具集合，而是一种<strong>工作方式的转变</strong>。</p>
+
+<hr>
+
+<h2 id="1-1-问题的本质-传统-ai-编程的四大困境">1.1 问题的本质：传统 AI 编程的四大困境</h2>
+
+<p>让我们先承认一个事实：大多数 AI 编程工具，本质上是一个<strong>更聪明的代码补全器</strong>。</p>
+
+<p>你给 Copilot 一段代码，它补全下一行。你给 Claude Code 一个提示，它生成一个文件。<strong>但然后呢？</strong></p>
+
+<p>传统 AI 编程面临四大困境：</p>
+
+<h3 id="无状态之痛">无状态之痛</h3>
+
+<p>每次对话，AI 都是从零开始。变量、上下文、登录状态——全部丢失。测试环境要重新配，Cookie 要重新导，浏览器要重新开。</p>
+
+<h3 id="万能之惑">万能之惑</h3>
+
+<p>一个 AI 回答所有问题：写代码、审代码、做架构、测功能、发布上线。<strong>但没有人是全能的，AI 也不例外。</strong> 让同一个模型同时扮演 CTO 和 QA 工程师，结果往往是两边都不够深入。</p>
+
+<h3 id="质量之漏">质量之漏</h3>
+
+<p>AI 生成的代码通过了语法检查，但可能在生产环境崩溃。竞态条件、SQL 注入、边界情况——这些问题需要专业视角，但通用 AI 往往视而不见。</p>
+
+<h3 id="流程之断">流程之断</h3>
+
+<p>代码写完就结束。没有审查、没有测试、没有发布流程、没有文档更新。一切靠人工串联，AI 只负责"写代码"这一环。</p>
+
+<h3 id="传统工具的尴尬">传统工具的尴尬</h3>
+
+<div class="table-wrap"><table>
+<tr><th>困境</th><th>Copilot</th><th>Claude Code</th><th>gstack</th></tr>
+<tr><td>------</td><td>---------</td><td>-------------</td><td>--------</td></tr>
+<tr><td>无状态</td><td>❌ 每次补全独立</td><td>❌ 每次会话独立</td><td>✅ 有状态（通过文件）</td></tr>
+<tr><td>专业分工</td><td>❌ 无</td><td>❌ 无</td><td>✅ 37个专业技能</td></tr>
+<tr><td>质量门禁</td><td>❌ 无</td><td>❌ 基础检查</td><td>✅ 多阶段审查</td></tr>
+<tr><td>完整流程</td><td>❌ 无</td><td>❌ 你自己串联</td><td>✅ 内置编排</td></tr>
+</table></div>
+
+<hr>
+
+<h2 id="1-2-交响乐团模型-gstack-的核心隐喻">1.2 交响乐团模型：gstack 的核心隐喻</h2>
+
+<p>gstack 的设计灵感来自<strong>交响乐团</strong>。</p>
+
+<p>想象你走进一个排练厅，发现只有一个人在演奏所有乐器——钢琴、小提琴、鼓、长号。这听起来很荒谬，但大多数人的 AI 编程体验就是这样：<strong>一个模型同时扮演 CEO、工程师、设计师、QA。</strong></p>
+
+<p>交响乐团的智慧在于：<strong>专业化分工 + 统一指挥</strong>。</p>
+
+<ul>
+<li>作曲家写乐谱（相当于产品需求）</li>
+<li>指挥家协调全局（相当于产品经理）</li>
+<li>每个乐手专注自己的乐器（相当于专业技能）</li>
+</ul>
+
+<p><strong>gstack 就是你的 AI 交响乐团指挥家。</strong> 你不需要自己演奏（写代码），你只需要在关键时刻给出节拍。</p>
+
+<h3 id="这个比喻的关键特征">这个比喻的关键特征</h3>
+
+<div class="table-wrap"><table>
+<tr><th>乐团特征</th><th>gstack 对应</th></tr>
+<tr><td>----------</td><td>------------</td></tr>
+<tr><td>指挥家</td><td>你，用户</td></tr>
+<tr><td>乐手</td><td>37个专业技能</td></tr>
+<tr><td>乐谱</td><td>SKILL.md（技能定义）</td></tr>
+<tr><td>演奏</td><td>AI Agent 执行技能</td></tr>
+<tr><td>演出</td><td>从想法到发布的完整流程</td></tr>
+</table></div>
+
+<p><strong>重要区分：</strong> 指挥家不需要会拉小提琴，但必须懂音乐。<strong>使用 gstack，你不需要懂 CDP 协议，但你需要知道 <code>/review</code> 能找 bug。</strong></p>
+
+<hr>
+
+<h2 id="1-3-完整技能地图">1.3 完整技能地图</h2>
+
+<p>gstack 包含 <strong>37个技能</strong>，覆盖从"想法构思"到"发布回顾"的完整生命周期。</p>
+
+<h3 id="规划阶段-从模糊到清晰">规划阶段：从模糊到清晰</h3>
+
+<div class="table-wrap"><table>
+<tr><th>技能</th><th>角色</th><th>核心功能</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>/office-hours</code></td><td>YC 导师</td><td>六问法重构产品想法，挑战你的前提假设</td></tr>
+<tr><td><code>/plan-ceo-review</code></td><td>CEO</td><td>找到10星产品，挑战需求范围</td></tr>
+<tr><td><code>/plan-eng-review</code></td><td>工程经理</td><td>锁定架构、数据流、测试计划</td></tr>
+<tr><td><code>/plan-design-review</code></td><td>资深设计师</td><td>评分设计维度，解释"10分是什么样"</td></tr>
+<tr><td><code>/plan-devex-review</code></td><td>DX 负责人</td><td>开发者体验审查，TTHW 基准测试</td></tr>
+</table></div>
+
+<h3 id="构建阶段-从计划到代码">构建阶段：从计划到代码</h3>
+
+<div class="table-wrap"><table>
+<tr><th>技能</th><th>角色</th><th>核心功能</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>/autoplan</code></td><td>审查编排</td><td>一键运行 CEO→设计→工程完整审查</td></tr>
+<tr><td><code>/design-consultation</code></td><td>设计伙伴</td><td>从零构建设计系统</td></tr>
+<tr><td><code>/design-shotgun</code></td><td>设计探索</td><td>生成多设计变体，打开对比板</td></tr>
+<tr><td><code>/design-html</code></td><td>设计工程</td><td>生产级 HTML 生成（Pretext）</td></tr>
+</table></div>
+
+<h3 id="审查阶段-质量门禁">审查阶段：质量门禁</h3>
+
+<div class="table-wrap"><table>
+<tr><th>技能</th><th>角色</th><th>核心功能</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>/review</code></td><td>高级工程师</td><td>找 CI 测不出的 bug，自动修复明显问题</td></tr>
+<tr><td><code>/investigate</code></td><td>调试专家</td><td>系统性根因分析，禁止无调查的修复</td></tr>
+<tr><td><code>/devex-review</code></td><td>DX 测试</td><td>真实体验审计，实际运行入门流程</td></tr>
+<tr><td><code>/codex</code></td><td>第二意见</td><td>OpenAI Codex 独立审查</td></tr>
+</table></div>
+
+<h3 id="测试阶段-真实验证">测试阶段：真实验证</h3>
+
+<div class="table-wrap"><table>
+<tr><th>技能</th><th>角色</th><th>核心功能</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>/qa</code></td><td>QA 主管</td><td>真浏览器测试 + 修复 + 回归测试</td></tr>
+<tr><td><code>/qa-only</code></td><td>QA 报告</td><td>仅报告 bug，不做修改</td></tr>
+<tr><td><code>/benchmark</code></td><td>性能工程师</td><td>页面加载、CWV、资源大小基准</td></tr>
+<tr><td><code>/canary</code></td><td>SRE</td><td>部署后监控，错误率/性能回归</td></tr>
+</table></div>
+
+<h3 id="发布阶段-从代码到用户">发布阶段：从代码到用户</h3>
+
+<div class="table-wrap"><table>
+<tr><th>技能</th><th>角色</th><th>核心功能</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>/ship</code></td><td>发行工程师</td><td>同步 + 测试 + 推送 + PR</td></tr>
+<tr><td><code>/land-and-deploy</code></td><td>发行工程师</td><td>合并 + 等待 CI + 验证生产</td></tr>
+<tr><td><code>/document-release</code></td><td>技术写作</td><td>自动更新所有项目文档</td></tr>
+</table></div>
+
+<h3 id="浏览器-给-ai-一双眼睛">浏览器：给 AI 一双眼睛</h3>
+
+<div class="table-wrap"><table>
+<tr><th>技能</th><th>角色</th><th>核心功能</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>/browse</code></td><td>QA 工程师</td><td>无头浏览器，~100ms/命令</td></tr>
+<tr><td><code>/open-gstack-browser</code></td><td>全栈浏览器</td><td>侧边栏 AI + 反爬 + Cookie 导入</td></tr>
+<tr><td><code>/setup-browser-cookies</code></td><td>会话管理</td><td>从真实浏览器导入 Cookie</td></tr>
+</table></div>
+
+<h3 id="工具类-安全与效率">工具类：安全与效率</h3>
+
+<div class="table-wrap"><table>
+<tr><th>技能</th><th>核心功能</th></tr>
+<tr><td>------</td><td>----------</td></tr>
+<tr><td><code>/retro</code></td><td>每周回顾，团队分析，发布趋势</td></tr>
+<tr><td><code>/learn</code></td><td>跨会话记忆管理，项目知识积累</td></tr>
+<tr><td><code>/careful</code></td><td>破坏性命令警告（rm -rf 等）</td></tr>
+<tr><td><code>/freeze</code></td><td>目录编辑锁定，硬约束</td></tr>
+<tr><td><code>/guard</code></td><td>careful + freeze 双重保护</td></tr>
+<tr><td><code>/unfreeze</code></td><td>解除冻结</td></tr>
+<tr><td><code>/gstack-upgrade</code></td><td>自动升级到最新版本</td></tr>
+</table></div>
+
+<hr>
+
+<h2 id="1-4-典型工作流-从想法到发布">1.4 典型工作流：从想法到发布</h2>
+
+<p>让我们看一个真实场景。用户说：</p>
+
+<blockquote><p>"I want to build a daily briefing app for my calendar."</p></blockquote>
+
+<h3 id="第一拍-office-hours">第一拍：/office-hours</h3>
+
+<p>AI 不会直接开始写代码。它会问：</p>
+
+<ul>
+<li>你有多少个日历？</li>
+<li>信息多久更新一次？</li>
+<li>"结果不够好"具体是指什么？</li>
+</ul>
+
+<p>用户回答后，AI 说：</p>
+
+<blockquote><p>"你说的是'日历应用'，但你实际描述的是一个<strong>个人首席助理 AI</strong>。让我重新理解你的需求..."</p></blockquote>
+
+<p><strong>关键洞察：</strong> AI 倾听的是<strong>痛点</strong>，不是<strong>功能请求</strong>。用户说"日历应用"，AI 说"你在构建首席助理"。</p>
+
+<h3 id="第二拍-规划审查">第二拍：规划审查</h3>
+
+<pre><code>/plan-ceo-review   →  挑战范围，生成3种实现方案
+/plan-eng-review   →  锁定架构、测试矩阵、安全考虑
+</code></pre>
+
+<p>规划阶段产出：</p>
+<ul>
+<li>5个用户没意识到的能力需求</li>
+<li>4个被挑战的前提假设</li>
+<li>3种实现方案及工作量估算</li>
+</ul>
+
+<h3 id="第三拍-实现">第三拍：实现</h3>
+
+<p>用户批准计划后，Claude Code 自动写代码。<strong>注意：用户不参与这个阶段。</strong></p>
+
+<h3 id="第四拍-review">第四拍：/review</h3>
+
+<pre><code>/review
+[AUTO-FIXED] 2 issues
+[ASK] Race condition detected — you approve fix?
+</code></pre>
+
+<p>审查阶段自动修复明显问题，标记需要人工判断的问题。</p>
+
+<h3 id="第五拍-qa">第五拍：/qa</h3>
+
+<pre><code>/qa https://staging.myapp.com
+[I SEE THE ISSUE] Form validation missing on mobile
+[FIXED] Added mobile validation with atomic commit
+[REGRESSION TEST] Added test case for mobile validation
+</code></pre>
+
+<p>QA 阶段打开真实浏览器，测试真实用户流程。</p>
+
+<h3 id="第六拍-ship">第六拍：/ship</h3>
+
+<pre><code>/ship
+Tests: 42 → 51 (+9 new)
+Coverage: 67% → 78%
+PR: github.com/you/app/pull/42
+</code></pre>
+
+<p>发布阶段：同步主分支、运行测试、推送代码、创建 PR。</p>
+
+<h3 id="完整流程">完整流程</h3>
+
+<div class="mermaid">graph LR
+    A[想法] --> B[/office-hours]
+    B --> C[/plan-ceo-review]
+    C --> D[/plan-eng-review]
+    D --> E[写代码]
+    E --> F[/review]
+    F --> G[/qa]
+    G --> H[/ship]
+    H --> I[PR 已创建]</div>
+
+<hr>
+
+<h2 id="1-5-安装与快速体验">1.5 安装与快速体验</h2>
+
+<h3 id="30秒安装">30秒安装</h3>
+
+<p>gstack 的安装简单到令人惊讶：</p>
+
+<pre><code class="language-bash"># 打开 Claude Code，粘贴这行命令
+git clone --single-branch --depth 1 \
+  https://github.com/garrytan/gstack.git \
+  ~/.claude/skills/gstack &amp;&amp; \
+  cd ~/.claude/skills/gstack &amp;&amp; ./setup
+</code></pre>
+
+<p><strong>Claude 会自动完成剩余步骤。</strong></p>
+
+<h3 id="多-agent-支持">多 Agent 支持</h3>
+
+<p>gstack 不只支持 Claude Code。目前支持 8 种 AI 编程工具：</p>
+
+<div class="table-wrap"><table>
+<tr><th>Agent</th><th>安装路径</th></tr>
+<tr><td>-------</td><td>----------</td></tr>
+<tr><td>Claude Code</td><td><code>~/.claude/skills/</code></td></tr>
+<tr><td>OpenAI Codex CLI</td><td><code>~/.codex/skills/</code></td></tr>
+<tr><td>Cursor</td><td><code>~/.cursor/skills/</code></td></tr>
+<tr><td>OpenCode</td><td><code>~/.config/opencode/skills/</code></td></tr>
+<tr><td>Factory Droid</td><td><code>~/.factory/skills/</code></td></tr>
+<tr><td>Slate</td><td><code>~/.slate/skills/</code></td></tr>
+<tr><td>Kiro</td><td><code>~/.kiro/skills/</code></td></tr>
+<tr><td>OpenClaw</td><td><code>~/.openclaw/skills/</code></td></tr>
+</table></div>
+
+<p>每个 Agent 都有专门的适配层（见第7-8章）。</p>
+
+<h3 id="安装后验证">安装后验证</h3>
+
+<p>安装完成后，你会在 Claude Code 中看到 <code>/</code> 命令提示。试着运行：</p>
+
+<pre><code>/office-hours
+</code></pre>
+
+<p>按照提示回答问题，体验 gstack 的交互方式。</p>
+
+<hr>
+
+<h2 id="1-6-为什么是-流水线-而不是-工具集合">1.6 为什么是"流水线"而不是"工具集合"？</h2>
+
+<p>区分两个概念很重要：<strong>工具集合</strong> vs <strong>流水线编排</strong>。</p>
+
+<h3 id="工具集合">工具集合</h3>
+
+<pre><code>工具 A → 工具 B → 工具 C
+</code></pre>
+
+<p>你负责串联，工具之间没有数据流。</p>
+
+<h3 id="gstack-流水线">gstack 流水线</h3>
+
+<pre><code>/office-hours 的输出 → /plan-ceo-review 的输入
+/plan-eng-review 的测试计划 → /qa 的测试用例
+/review 的修复建议 → /ship 的提交信息
+</code></pre>
+
+<p><strong>技能之间有数据流。</strong> 上一阶段的产出自动成为下一阶段的输入。</p>
+
+<h3 id="关键设计原则">关键设计原则</h3>
+
+<ol>
+<li><strong>文件即状态</strong>：所有状态存储在文件系统，Agent 无状态</li>
+<li><strong>Markdown 即配置</strong>：SKILL.md 是技能定义，<code>.tmpl</code> 是模板</li>
+<li><strong>零侵入</strong>：安装在 <code>~/.claude/</code>，不污染 PATH</li>
+<li><strong>自动生成</strong>：文档从模板生成，永不过时</li>
+</ol>
+
+<hr>
+
+<h2 id="1-7-目标读者-谁应该使用-gstack">1.7 目标读者：谁应该使用 gstack？</h2>
+
+<h3 id="创业者-技术-ceo">创业者 / 技术 CEO</h3>
+
+<p><strong>痛点：</strong> 想保持技术视野，但没时间深入每一行代码。</p>
+
+<p><strong>gstack 如何帮助：</strong></p>
+<ul>
+<li><code>/plan-ceo-review</code> 让你快速理解技术决策</li>
+<li><code>/review</code> 帮你审查代码质量</li>
+<li><code>/ship</code> 自动化发布流程</li>
+</ul>
+
+<p><strong>你不需要：</strong> 懂 CDP 协议、OWASP 漏洞、Playwright API。</p>
+
+<h3 id="claude-code-新手">Claude Code 新手</h3>
+
+<p><strong>痛点：</strong> 面对空白提示，不知道怎么开始。</p>
+
+<p><strong>gstack 如何帮助：</strong></p>
+<ul>
+<li><code>/office-hours</code> 引导你思考产品问题</li>
+<li>结构化流程替代空白提示</li>
+<li>每个技能都有明确目标</li>
+</ul>
+
+<p><strong>你不需要：</strong> 记住所有最佳实践，技能会引导你。</p>
+
+<h3 id="tech-lead-staff-engineer">Tech Lead / Staff Engineer</h3>
+
+<p><strong>痛点：</strong> 团队代码质量参差不齐，审查耗时。</p>
+
+<p><strong>gstack 如何帮助：</strong></p>
+<ul>
+<li><code>/review</code> 自动化代码审查</li>
+<li><code>/qa</code> 真浏览器测试</li>
+<li><code>/ship</code> 标准化发布流程</li>
+</ul>
+
+<p><strong>你不需要：</strong> 每次都手动审查所有 PR。</p>
+
+<hr>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>gstack 解决的根本问题</strong>：让 AI 从"万能工具"变成"专业团队"</li>
+</ol>
+
+<ol>
+<li><strong>核心隐喻</strong>：交响乐团指挥家——你指挥，AI 执行专业任务</li>
+</ol>
+
+<ol>
+<li><strong>37个技能覆盖完整生命周期</strong>：规划→构建→审查→测试→发布→回顾</li>
+</ol>
+
+<ol>
+<li><strong>技能之间有数据流</strong>：上一阶段的产出自动流入下一阶段</li>
+</ol>
+
+<ol>
+<li><strong>30秒安装，多 Agent 支持</strong>：不只 Claude Code，8种工具通用</li>
+</ol>
+
+<hr>
+
+<h2 id="预告">预告</h2>
+
+<p>第2章我们将深入 <strong>gstack 的守护进程架构</strong>：为什么需要一个持久化的浏览器进程？状态文件如何工作？版本自动重启机制是如何实现的？</p>
+
+
+
+
+<nav class="chapter-nav">
+  <a href="index.html">◀ 目录</a>
+  <a href="ch02.html">第2章：gstack 的整体架构——守护进程与状态管理 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#概述">概述</a></li><li><a href="#1-1-问题的本质-传统-ai-编程的四大困境">1.1 问题的本质：传统 AI 编程的四大困境</a></li><li><a href="#1-2-交响乐团模型-gstack-的核心隐喻">1.2 交响乐团模型：gstack 的核心隐喻</a></li><li><a href="#1-3-完整技能地图">1.3 完整技能地图</a></li><li><a href="#1-4-典型工作流-从想法到发布">1.4 典型工作流：从想法到发布</a></li><li><a href="#1-5-安装与快速体验">1.5 安装与快速体验</a></li><li><a href="#1-6-为什么是-流水线-而不是-工具集合">1.6 为什么是"流水线"而不是"工具集合"？</a></li><li><a href="#1-7-目标读者-谁应该使用-gstack">1.7 目标读者：谁应该使用 gstack？</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#预告">预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  // Progress bar
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  // Back to top
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  // Right TOC highlight
+  var tocLinks = document.querySelectorAll('.toc-list a');
+  if (tocLinks.length) {
+    var headings = Array.from(document.querySelectorAll('#main h2'));
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var active = headings.filter(function(h) { return h.offsetTop <= scrollY; }).pop();
+      tocLinks.forEach(function(a) { a.classList.remove('active'); });
+      if (active) {
+        var match = document.querySelector('.toc-list a[href="#' + active.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }
+  // Mermaid
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  // Highlight.js
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>

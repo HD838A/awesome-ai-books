@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第2章：gstack 的整体架构——守护进程与状态管理 — AI 工程流水线：gstack 源码深度解读</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+/* Progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+/* Layout */
+#layout { display: flex; min-height: 100vh; }
+/* Left sidebar */
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+/* Main content */
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+/* Right TOC */
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+/* Code */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+.hljs { background: #F5F2ED !important; }
+/* Blockquote */
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+/* Lists */
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+/* HR */
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+/* Mermaid */
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+/* Chapter nav */
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+/* Back to top */
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+/* Index page */
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+/* Responsive */
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI 工程流水线：gstack 源码深度解读</div>
+      <div class="sidebar-subtitle">从守护进程到构建管道，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a>
+<a href="ch02.html" class="active">第2章：gstack 的整体架构——守护进程与状态管理</a>
+<a href="ch03.html">第3章：持久化浏览器核心实现——browse 模块架构</a>
+<a href="ch04.html">第4章：SKILL.md 模板系统——Markdown 即配置</a>
+<a href="ch05.html">第5章：核心技能解析——/plan、/review、/ship</a>
+<a href="ch06.html">第6章：autoplan 与 review-army 深度解析</a>
+<a href="ch07.html">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a>
+<a href="ch08.html">第8章：8 大 AI 代理支持——配置即生态</a>
+<a href="ch09.html">第9章：安全机制——freeze / guard / careful</a>
+<a href="ch10.html">第 10 章：构建与发布</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第2章-gstack-的整体架构-守护进程与状态管理">第2章：gstack 的整体架构——守护进程与状态管理</h1>
+
+<p>上一章我们看到 gstack 把 AI 变成了虚拟工程团队。但这个团队需要一个<strong>共享的大脑和眼睛</strong>——持久化的浏览器进程和可靠的状态管理。</p>
+
+<p>本章我们将揭开 gstack 的架构内幕：为什么选择守护进程模型？为什么选择 Bun？状态文件如何工作？Ref 系统如何让 AI 精准操作页面元素？</p>
+
+<hr>
+
+<h2 id="概述">概述</h2>
+
+<p>本章我们将深入：</p>
+
+<ul>
+<li><strong>守护进程模型</strong>：为什么需要一个长生命周期的浏览器进程</li>
+<li><strong>Bun 运行时</strong>：编译二进制、原生 SQLite、零配置</li>
+<li><strong>状态管理</strong>：文件即状态，原子写入，版本自动重启</li>
+<li><strong>安全模型</strong>：localhost only + Bearer token + Cookie 安全</li>
+<li><strong>Ref 系统</strong>：让 AI 用 @e1 而不是 CSS selector 操作元素</li>
+<li><strong>日志架构</strong>：O(1) 环形缓冲区，有界内存</li>
+</ul>
+
+<p>读完本章，你会理解 gstack 的每个架构决策背后的权衡。</p>
+
+<hr>
+
+<h2 id="2-1-守护进程模型-为什么需要持久化浏览器">2.1 守护进程模型：为什么需要持久化浏览器？</h2>
+
+<h3 id="传统方案的困境">传统方案的困境</h3>
+
+<p>大多数 AI 编程工具遇到浏览器时，采用的是"按需启动"模式：</p>
+
+<pre><code class="language-typescript">// 每次命令都这样
+const browser = await chromium.launch();
+const page = await browser.newPage();
+await page.goto('https://example.com');
+// ... 操作 ...
+await browser.close();
+</code></pre>
+
+<p><strong>问题一：启动延迟</strong></p>
+
+<p>Playwright 启动 Chromium 需要 ~2-3 秒。如果一次 QA 会话有 20 个命令，这就是 40-60 秒的纯启动开销。</p>
+
+<p><strong>问题二：状态丢失</strong></p>
+
+<div class="table-wrap"><table>
+<tr><th>状态类型</th><th>按需启动</th><th>守护进程</th></tr>
+<tr><td>----------</td><td>----------</td><td>----------</td></tr>
+<tr><td>登录 Cookie</td><td>每次丢失</td><td>持久化</td></tr>
+<tr><td>打开的标签页</td><td>每次丢失</td><td>保持打开</td></tr>
+<tr><td>localStorage</td><td>每次丢失</td><td>持久化</td></tr>
+<tr><td>用户会话</td><td>每次丢失</td><td>持久化</td></tr>
+</table></div>
+
+<p>想象你正在测试一个需要 MFA 认证的页面。每次命令都要重新登录验证码，你还愿意用这个工具吗？</p>
+
+<h3 id="守护进程模型的优势">守护进程模型的优势</h3>
+
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                     gstack 架构                             │
+├─────────────────────────────────────────────────────────────┤
+│  Claude Code                                                │
+│  ──────────                      gstack                     │
+│                             ┌──────────────────────┐        │
+│  Tool call: $B snapshot -i  │  CLI (compiled binary)│        │
+│  ─────────────────────────→ │  • reads state file   │        │
+│                             │  • POST /command      │        │
+│                             └──────────┬───────────┘        │
+│                                        │ HTTP               │
+│                             ┌──────────▼───────────┐        │
+│                             │  Server (Bun.serve)   │        │
+│                             │  • dispatches command │        │
+│                             │  • talks to Chromium  │        │
+│                             └──────────┬───────────┘        │
+│                                        │ CDP                 │
+│                             ┌──────────▼───────────┐        │
+│                             │  Chromium (headless)  │        │
+│                             │  • persistent tabs    │        │
+│                             │  • cookies carry over │        │
+│                             └──────────────────────┘        │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+
+<p><strong>关键指标：</strong></p>
+<ul>
+<li>首次调用启动时间：~3秒</li>
+<li>后续每次调用：<strong>~100-200ms</strong></li>
+</ul>
+
+<p><strong>性能差距：20 倍。</strong></p>
+
+<h3 id="守护进程生命周期">守护进程生命周期</h3>
+
+<pre><code>1. CLI 首次调用
+   ↓
+2. 检查 ~/.gstack/browse.json
+   ↓ (文件不存在)
+3. 启动服务器（随机端口 10000-60000）
+   ↓
+4. 写入状态文件（PID、端口、token、版本）
+   ↓
+5. HTTP 请求循环
+   ↓
+6. 30 分钟空闲
+   ↓
+7. 服务器自动关闭
+</code></pre>
+
+<p><strong>用户体验：</strong> 零配置，零进程管理。首次使用自动启动，空闲自动关闭。</p>
+
+<hr>
+
+<h2 id="2-2-为什么选择-bun">2.2 为什么选择 Bun？</h2>
+
+<h3 id="不是-node-js-不好-而是-bun-更适合">不是 Node.js 不好，而是 Bun 更适合</h3>
+
+<div class="table-wrap"><table>
+<tr><th>维度</th><th>Node.js</th><th>Bun</th><th>gstack 为什么需要</th></tr>
+<tr><td>------</td><td>---------</td><td>-----</td><td>------------------</td></tr>
+<tr><td>运行时</td><td>V8</td><td>JavaScriptCore</td><td>无所谓</td></tr>
+<tr><td>包管理器</td><td>npm</td><td>内置</td><td>无所谓</td></tr>
+<tr><td><strong>编译二进制</strong></td><td>需 pkg/nexe</td><td><code>bun build --compile</code></td><td><strong>必须</strong></td></tr>
+<tr><td><strong>原生 SQLite</strong></td><td>需 better-sqlite3</td><td>内置</td><td><strong>必须</strong></td></tr>
+<tr><td><strong>原生 TypeScript</strong></td><td>需 ts-node</td><td><code>bun run</code></td><td>方便</td></tr>
+<tr><td><strong>内置 HTTP</strong></td><td>需 Express</td><td><code>Bun.serve()</code></td><td>够用</td></tr>
+</table></div>
+
+<h3 id="编译成二进制-零配置运行">编译成二进制：零配置运行</h3>
+
+<p>gstack 安装到 <code>~/.claude/skills/</code>——这是用户不希望管理 Node.js 项目的目录。</p>
+
+<pre><code class="language-bash"># Node.js 方式
+~/.claude/skills/gstack/
+├── package.json
+├── node_modules/
+│   ├── playwright/
+│   └── better-sqlite3/
+├── bun.lockb
+└── tsconfig.json
+
+# Bun 方式
+~/.claude/skills/gstack/
+└── gstack  ← 单文件可执行，~58MB
+</code></pre>
+
+<p>用户双击就能运行，不需要安装 Node.js，不需要跑 <code>npm install</code>。</p>
+
+<h3 id="原生-sqlite-cookie-导入的关键">原生 SQLite：Cookie 导入的关键</h3>
+
+<p>gstack 的 Cookie 导入功能需要读取 Chromium 的 SQLite 数据库：</p>
+
+<pre><code class="language-typescript">// Bun 方式（原生支持）
+const db = new Database('/path/to/cookies');
+const cookies = db.query('SELECT * FROM cookies').all();
+
+// Node.js 方式
+const Database = require('better-sqlite3'); // 需要编译 native addon
+</code></pre>
+
+<p>Native addon 在不同机器上可能编译失败。<strong>Bun 的内置支持消除了这个风险。</strong></p>
+
+<h3 id="性能数据">性能数据</h3>
+
+<div class="table-wrap"><table>
+<tr><th>操作</th><th>Node.js</th><th>Bun</th></tr>
+<tr><td>------</td><td>---------</td><td>-----</td></tr>
+<tr><td>二进制启动</td><td>~100ms</td><td>~1ms</td></tr>
+<tr><td>HTTP 服务器吞吐量</td><td>基准</td><td>更快</td></tr>
+<tr><td>SQLite 查询</td><td>需要插件</td><td>内置</td></tr>
+</table></div>
+
+<p>瓶颈永远是 Chromium，不是 CLI 或服务器。Bun 的 ~1ms 启动是锦上添花，真正的价值是编译二进制和原生 SQLite。</p>
+
+<hr>
+
+<h2 id="2-3-状态管理-文件即状态">2.3 状态管理：文件即状态</h2>
+
+<h3 id="状态文件结构">状态文件结构</h3>
+
+<p><code>.gstack/browse.json</code> 存储会话信息：</p>
+
+<pre><code class="language-json">{
+  "pid": 12345,
+  "port": 34567,
+  "token": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "startedAt": "2024-01-15T10:30:00.000Z",
+  "binaryVersion": "v2.3.1-abc1234"
+}
+</code></pre>
+
+<h3 id="原子写入-防止读取不完整状态">原子写入：防止读取不完整状态</h3>
+
+<pre><code class="language-typescript">// 写入流程
+const tmpPath = '.gstack/.browse.json.tmp';
+const finalPath = '.gstack/browse.json';
+
+// 1. 写入临时文件
+await writeFile(tmpPath, JSON.stringify(state));
+
+// 2. 原子重命名
+fs.renameSync(tmpPath, finalPath);
+
+// 3. 设置权限（仅所有者可读写）
+fs.chmodSync(finalPath, 0o600);
+</code></pre>
+
+<p><strong>为什么需要原子写入？</strong> 如果写入过程中另一个进程读取文件，可能得到不完整的状态。原子重命名保证要么全部成功，要么全部失败。</p>
+
+<h3 id="端口选择-支持多工作区">端口选择：支持多工作区</h3>
+
+<pre><code class="language-typescript">const MIN_PORT = 10000;
+const MAX_PORT = 60000;
+const RETRY_COUNT = 5;
+
+// 随机选择，避免端口冲突
+const port = MIN_PORT + Math.floor(Math.random() * (MAX_PORT - MIN_PORT));
+</code></pre>
+
+<p><strong>结果：</strong> 10 个 Claude Code 工作区可以同时运行，各自独立，零配置。</p>
+
+<h3 id="版本自动重启-消灭过时二进制-bug">版本自动重启：消灭过时二进制 bug</h3>
+
+<pre><code class="language-typescript">// 构建时：写入版本信息
+// $ git rev-parse HEAD &gt; browse/dist/.version
+
+// 运行时：检查版本
+const runningVersion = readVersionFromServer();
+const binaryVersion = readVersionFromFile();
+
+if (runningVersion !== binaryVersion) {
+  // 版本不匹配：杀死旧服务器，启动新服务器
+  kill(runningPid);
+  spawnNewServer();
+}
+</code></pre>
+
+<p><strong>解决的问题：</strong> 开发者重新构建二进制后，下次命令自动使用新版本。不会出现"我明明更新了，但工具还在用旧版本"的困惑。</p>
+
+<hr>
+
+<h2 id="2-4-安全模型-三层防护">2.4 安全模型：三层防护</h2>
+
+<h3 id="localhost-only-不暴露到网络">localhost only：不暴露到网络</h3>
+
+<pre><code class="language-typescript">// 服务器绑定 localhost，不是 0.0.0.0
+Bun.serve({
+  hostname: 'localhost',  // ← 只监听本机
+  port: 34567,
+  // ...
+});
+</code></pre>
+
+<p>即使服务器有漏洞，也无法被远程利用。</p>
+
+<h3 id="bearer-token-防止同机器其他进程访问">Bearer Token：防止同机器其他进程访问</h3>
+
+<pre><code>1. 服务器启动 → 生成随机 UUID token
+2. 写入 .gstack/browse.json（mode 0o600）
+3. 每个 HTTP 请求必须包含：
+   Authorization: Bearer a1b2c3d4-e5f6-7890-abcd-ef1234567890
+4. 不匹配 → 返回 401 Unauthorized
+</code></pre>
+
+<p><strong>例外：</strong> <code>/health</code> 和 Cookie picker UI 无需 token——它们是 localhost only 且不执行命令。</p>
+
+<h3 id="cookie-安全-处理最敏感的数据">Cookie 安全：处理最敏感的数据</h3>
+
+<div class="table-wrap"><table>
+<tr><th>安全措施</th><th>说明</th></tr>
+<tr><td>----------</td><td>------</td></tr>
+<tr><td>Keychain 需用户批准</td><td>macOS 对话框首次导入时弹出，用户必须点击"允许"</td></tr>
+<tr><td>内存解密</td><td>Cookie 值在进程中解密，加载到 Playwright，从不写磁盘</td></tr>
+<tr><td>数据库只读</td><td>复制到临时文件打开，避免锁定真实浏览器数据</td></tr>
+<tr><td>Key 仅会话缓存</td><td>服务器关闭时所有密钥清空</td></tr>
+<tr><td>日志不含 Cookie</td><td>console/network/dialog 从不记录 Cookie 值</td></tr>
+</table></div>
+
+<hr>
+
+<h2 id="2-5-ref-系统-让-ai-操作元素的艺术">2.5 Ref 系统：让 AI 操作元素的艺术</h2>
+
+<h3 id="传统方式的问题">传统方式的问题</h3>
+
+<pre><code class="language-typescript">// AI 需要记住这个脆弱的选择器
+await page.click('button[data-testid="submit-form-123"]');
+
+// 问题：页面重构后选择器失效
+// 问题：AI 不知道页面上有什么元素
+// 问题：选择器不语义化，难以理解意图
+</code></pre>
+
+<h3 id="ref-系统工作原理">Ref 系统工作原理</h3>
+
+<p><strong>第一步：获取页面元素</strong></p>
+
+<pre><code>Agent:  $B snapshot -i
+
+Server:
+1. 调用 Playwright page.accessibility.snapshot()
+2. 遍历 ARIA 树，分配序号 @e1, @e2, @e3...
+3. 为每个 ref 构建 Playwright Locator
+4. 返回带标注的纯文本树
+
+返回示例：
+@e1 [button] "Submit Form"
+@e2 [textbox] "Email address"
+@e3 [link] "Forgot password?"
+</code></pre>
+
+<p><strong>第二步：使用元素</strong></p>
+
+<pre><code>Agent:  $B click @e1
+
+Server:
+1. 解析 @e1 → Locator
+2. 执行 locator.click()
+3. 返回结果
+</code></pre>
+
+<h3 id="为什么用-locator-而不是-dom-注入">为什么用 Locator 而不是 DOM 注入？</h3>
+
+<div class="table-wrap"><table>
+<tr><th>方案</th><th>DOM 注入</th><th>Locator（gstack）</th></tr>
+<tr><td>------</td><td>----------</td><td>-------------------</td></tr>
+<tr><td>CSP 阻止</td><td>❌ 很多站点阻止 DOM 修改</td><td>✅ 外部查询，无 DOM 改动</td></tr>
+<tr><td>框架冲突</td><td>❌ React/Vue 可能剥离属性</td><td>✅ 无框架冲突</td></tr>
+<tr><td>Shadow DOM</td><td>❌ 无法穿透 shadow root</td><td>✅ 可以处理</td></tr>
+</table></div>
+
+<pre><code class="language-typescript">// DOM 注入方式（会失败）
+await page.evaluate(() =&gt; {
+  element.dataset.ref = 'e1';  // 可能被 CSP 阻止
+});
+
+// Locator 方式（正确）
+const locator = page.getByRole('button', { name: 'Submit Form' });
+await locator.click();  // 使用 ARIA 树查询
+</code></pre>
+
+<h3 id="ref-生命周期管理">Ref 生命周期管理</h3>
+
+<p><strong>清除时机：</strong> 主框架 navigation（URL 改变）</p>
+
+<pre><code class="language-typescript">// 页面导航时清除所有 refs
+browser.on('framenavigated', () =&gt; {
+  refMap.clear();
+});
+</code></pre>
+
+<p><strong>为什么？</strong> navigation 后所有 locators 都失效了。让它们大声失败比悄悄点击错误元素好。</p>
+
+<h3 id="失效检测-防止陈旧引用">失效检测：防止陈旧引用</h3>
+
+<p>SPAs（单页应用）可能在不触发 navigation 的情况下改变页面内容：</p>
+
+<ul>
+<li>React Router 切换</li>
+<li>Tab 切换</li>
+<li>Modal 打开/关闭</li>
+</ul>
+
+<pre><code class="language-typescript">async function resolveRef(ref: string): Promise&lt;Locator&gt; {
+  const entry = refMap.get(ref);
+  const count = await entry.locator.count();
+
+  if (count === 0) {
+    throw new Error(
+      `Ref @${ref} is stale — element no longer exists. ` +
+      `Run 'snapshot' to get fresh refs.`
+    );
+  }
+
+  return entry.locator;
+}
+</code></pre>
+
+<p><strong>性能：</strong> count() 检查只需 ~5ms，而不是等待 30 秒超时。</p>
+
+<h3 id="cursor-interactive-refs-c">Cursor-interactive refs (@c)</h3>
+
+<p>有些可点击元素不在 ARIA 树中：</p>
+
+<ul>
+<li>用 <code>cursor: pointer</code> 样式化的元素</li>
+<li>有 <code>onclick</code> 属性的元素</li>
+<li>自定义 <code>tabindex</code> 组件</li>
+</ul>
+
+<pre><code class="language-bash"># 找到 ARIA 树内元素 + 树外可点击元素
+$B snapshot -C
+
+返回：
+@e1 [button] "Submit Form"
+@e2 [textbox] "Email"
+@c1 [div] "Custom dropdown trigger"  ← cursor-interactive
+@c2 [span] "Click me"               ← cursor-interactive
+</code></pre>
+
+<hr>
+
+<h2 id="2-6-日志架构-o-1-环形缓冲区">2.6 日志架构：O(1) 环形缓冲区</h2>
+
+<h3 id="三个独立缓冲区">三个独立缓冲区</h3>
+
+<pre><code>控制台消息 ──→ CircularBuffer #1 (50,000 条)
+网络请求  ──→ CircularBuffer #2 (50,000 条)
+对话框事件 ──→ CircularBuffer #3 (50,000 条)
+</code></pre>
+
+<h3 id="环形缓冲区特性">环形缓冲区特性</h3>
+
+<div class="table-wrap"><table>
+<tr><th>特性</th><th>说明</th></tr>
+<tr><td>------</td><td>------</td></tr>
+<tr><td>O(1) 插入</td><td>无论缓冲区多满，插入时间恒定</td></tr>
+<tr><td>有界内存</td><td>50K × 3 = 150K 条目上限，不会无限增长</td></tr>
+<tr><td>自动覆盖</td><td>写满后从头覆盖，不丢数据（除非关注的是被覆盖的旧数据）</td></tr>
+</table></div>
+
+<h3 id="异步刷新-从不阻塞请求">异步刷新：从不阻塞请求</h3>
+
+<pre><code class="language-typescript">// 每秒刷新一次
+setInterval(() =&gt; {
+  flushToDisk(buffer, '.gstack/console.log');
+  flushToDisk(buffer, '.gstack/network.log');
+  flushToDisk(buffer, '.gstack/dialog.log');
+}, 1000);
+
+// HTTP 请求处理函数从不等待磁盘 I/O
+async function handleCommand(req) {
+  buffer.push(logEntry);  // 只写内存，毫秒级
+  return executeCommand();
+}
+</code></pre>
+
+<p><strong>结果：</strong></p>
+<ul>
+<li>请求处理不被磁盘 I/O 阻塞</li>
+<li>服务器崩溃最多丢失 1 秒数据</li>
+<li>磁盘文件追加写入，可被外部工具读取</li>
+</ul>
+
+<h3 id="命令读取路径">命令读取路径</h3>
+
+<pre><code class="language-bash"># console/network/dialog 命令从内存读取
+$B console   → 读取内存缓冲区 → 返回最新日志
+$B network  → 读取内存缓冲区 → 返回网络请求
+</code></pre>
+
+<p>磁盘文件用于事后调试，实时交互用内存。</p>
+
+<hr>
+
+<h2 id="2-7-skill-md-模板系统-文档与代码同步">2.7 SKILL.md 模板系统：文档与代码同步</h2>
+
+<h3 id="问题-文档与代码漂移">问题：文档与代码漂移</h3>
+
+<p>手工维护 SKILL.md 时常遇到：</p>
+
+<pre><code>1. 开发者添加了新命令
+2. 忘了更新文档
+3. Agent 执行时遇到未知命令
+4. 用户困惑：文档说有这个功能，为什么报错？
+</code></pre>
+
+<h3 id="解决方案-模板-自动生成">解决方案：模板 + 自动生成</h3>
+
+<pre><code>SKILL.md.tmpl          （人工编写的工作流 + 提示）
+       ↓
+gen-skill-docs.ts      （读取源码元数据）
+       ↓
+SKILL.md               （提交版本，含自动生成部分）
+</code></pre>
+
+<h3 id="占位符系统">占位符系统</h3>
+
+<div class="table-wrap"><table>
+<tr><th>占位符</th><th>生成内容</th></tr>
+<tr><td>--------</td><td>----------</td></tr>
+<tr><td><code>{{COMMAND_REFERENCE}}</code></td><td>按类别分类的命令表（从 commands.ts）</td></tr>
+<tr><td><code>{{SNAPSHOT_FLAGS}}</code></td><td>标志参考 + 示例（从 snapshot.ts）</td></tr>
+<tr><td><code>{{PREAMBLE}}</code></td><td>更新检查、会话追踪、ELI16 模式</td></tr>
+<tr><td><code>{{BROWSE_SETUP}}</code></td><td>二进制发现 + 安装说明</td></tr>
+<tr><td><code>{{QA_METHODOLOGY}}</code></td><td>/qa 和 /qa-only 共享 QA 方法论</td></tr>
+</table></div>
+
+<h3 id="构建时验证">构建时验证</h3>
+
+<pre><code class="language-bash"># CI 检查：生成结果是否与源码同步
+bun run gen:skill-docs --dry-run
+git diff --exit-code  # 有变更则失败
+</code></pre>
+
+<h3 id="为什么提交生成结果">为什么提交生成结果？</h3>
+
+<ol>
+<li><strong>Claude 读取时机</strong>：SKILL.md 在技能加载时读取，无构建步骤</li>
+<li><strong>CI 可验证</strong>：<code>git diff</code> 捕获未同步的文档</li>
+<li><strong>Git blame 可追溯</strong>：可看到命令添加时间和提交</li>
+</ol>
+
+<hr>
+
+<h2 id="2-8-命令调度-读写分离">2.8 命令调度：读写分离</h2>
+
+<h3 id="三类命令">三类命令</h3>
+
+<div class="table-wrap"><table>
+<tr><th>类别</th><th>特点</th><th>命令示例</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><strong>READ</strong></td><td>无变更，可安全重试</td><td>text, html, links, console, cookies</td></tr>
+<tr><td><strong>WRITE</strong></td><td>变更页面状态，非幂等</td><td>goto, click, fill, press</td></tr>
+<tr><td><strong>META</strong></td><td>服务器级操作</td><td>snapshot, screenshot, tabs, chain</td></tr>
+</table></div>
+
+<h3 id="调度实现">调度实现</h3>
+
+<pre><code class="language-typescript">if (READ_COMMANDS.has(cmd)) {
+  return handleReadCommand(cmd, args, browserManager);
+}
+
+if (WRITE_COMMANDS.has(cmd)) {
+  return handleWriteCommand(cmd, args, browserManager);
+}
+
+if (META_COMMANDS.has(cmd)) {
+  return handleMetaCommand(cmd, args, browserManager, shutdown);
+}
+</code></pre>
+
+<p><strong>分类的价值：</strong> READ 命令可以幂等重试，WRITE 命令需要警告用户重试后果。</p>
+
+<hr>
+
+<h2 id="2-9-错误哲学-错误为-ai-而设计">2.9 错误哲学：错误为 AI 而设计</h2>
+
+<h3 id="传统错误-vs-gstack-错误">传统错误 vs gstack 错误</h3>
+
+<div class="table-wrap"><table>
+<tr><th>传统错误</th><th>gstack 改进</th></tr>
+<tr><td>----------</td><td>-------------</td></tr>
+<tr><td>"Element not found"</td><td>"Element not found or not interactable. Run <code>snapshot -i</code> to see available elements."</td></tr>
+<tr><td>"Timeout"</td><td>"Navigation timed out after 30s. The page may be slow or the URL may be wrong."</td></tr>
+<tr><td>"No cookie found"</td><td>"No cookie found for 'session_id'. Run <code>setup-browser-cookies</code> to import cookies from your browser."</td></tr>
+</table></div>
+
+<p><strong>原则：</strong> 每个错误都告诉 AI <strong>下一步该做什么</strong>。</p>
+
+<h3 id="崩溃恢复-不尝试自我修复">崩溃恢复：不尝试自我修复</h3>
+
+<pre><code class="language-typescript">// Chromium 崩溃时
+browser.on('disconnected', () =&gt; {
+  server.exit(1);  // 直接退出，不尝试重连
+});
+
+// CLI 检测到服务器死亡
+if (!await healthCheck()) {
+  spawnNewServer();  // 启动新服务器
+}
+</code></pre>
+
+<p><strong>设计理念：</strong> 比尝试重新连接半死进程更简单可靠的是直接重启。</p>
+
+<hr>
+
+<h2 id="本章小结">本章小结</h2>
+
+<ol>
+<li><strong>守护进程模型</strong>：持久化浏览器 = 亚秒级响应 + 状态保持</li>
+<li><strong>Bun 运行时</strong>：编译二进制 + 原生 SQLite + 零配置</li>
+<li><strong>状态文件</strong>：原子写入 + 版本自动重启</li>
+<li><strong>安全模型</strong>：localhost only + Bearer token + Cookie 安全</li>
+<li><strong>Ref 系统</strong>：用 @e1 操作元素，基于 ARIA 树，Locator 查询</li>
+<li><strong>日志架构</strong>：O(1) 环形缓冲区 + 异步刷新 + 有界内存</li>
+<li><strong>SKILL.md 模板</strong>：源码驱动文档，永不过时</li>
+<li><strong>错误哲学</strong>：可操作的错误消息，不尝试自我修复</li>
+</ol>
+
+<hr>
+
+<h2 id="预告">预告</h2>
+
+<p>第3章我们将深入 <strong>browse 核心实现</strong>：CLI 如何启动服务器？CDP 协议如何封装？Cookie 导入如何工作？sidebar agent 是如何实现的？</p>
+
+
+
+
+<nav class="chapter-nav">
+  <a href="ch01.html">◀ 第1章：gstack 是什么——AI 工程流水线的愿景</a>
+  <a href="ch03.html">第3章：持久化浏览器核心实现——browse 模块架构 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#概述">概述</a></li><li><a href="#2-1-守护进程模型-为什么需要持久化浏览器">2.1 守护进程模型：为什么需要持久化浏览器？</a></li><li><a href="#2-2-为什么选择-bun">2.2 为什么选择 Bun？</a></li><li><a href="#2-3-状态管理-文件即状态">2.3 状态管理：文件即状态</a></li><li><a href="#2-4-安全模型-三层防护">2.4 安全模型：三层防护</a></li><li><a href="#2-5-ref-系统-让-ai-操作元素的艺术">2.5 Ref 系统：让 AI 操作元素的艺术</a></li><li><a href="#2-6-日志架构-o-1-环形缓冲区">2.6 日志架构：O(1) 环形缓冲区</a></li><li><a href="#2-7-skill-md-模板系统-文档与代码同步">2.7 SKILL.md 模板系统：文档与代码同步</a></li><li><a href="#2-8-命令调度-读写分离">2.8 命令调度：读写分离</a></li><li><a href="#2-9-错误哲学-错误为-ai-而设计">2.9 错误哲学：错误为 AI 而设计</a></li><li><a href="#本章小结">本章小结</a></li><li><a href="#预告">预告</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  // Progress bar
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  // Back to top
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  // Right TOC highlight
+  var tocLinks = document.querySelectorAll('.toc-list a');
+  if (tocLinks.length) {
+    var headings = Array.from(document.querySelectorAll('#main h2'));
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var active = headings.filter(function(h) { return h.offsetTop <= scrollY; }).pop();
+      tocLinks.forEach(function(a) { a.classList.remove('active'); });
+      if (active) {
+        var match = document.querySelector('.toc-list a[href="#' + active.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }
+  // Mermaid
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  // Highlight.js
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>

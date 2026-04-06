@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 10 章：构建与发布 — AI 工程流水线：gstack 源码深度解读</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+/* Progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+/* Layout */
+#layout { display: flex; min-height: 100vh; }
+/* Left sidebar */
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+/* Main content */
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+/* Right TOC */
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+/* Code */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+.hljs { background: #F5F2ED !important; }
+/* Blockquote */
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+/* Lists */
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+/* HR */
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+/* Mermaid */
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+/* Chapter nav */
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+/* Back to top */
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+/* Index page */
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+/* Responsive */
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI 工程流水线：gstack 源码深度解读</div>
+      <div class="sidebar-subtitle">从守护进程到构建管道，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a>
+<a href="ch02.html">第2章：gstack 的整体架构——守护进程与状态管理</a>
+<a href="ch03.html">第3章：持久化浏览器核心实现——browse 模块架构</a>
+<a href="ch04.html">第4章：SKILL.md 模板系统——Markdown 即配置</a>
+<a href="ch05.html">第5章：核心技能解析——/plan、/review、/ship</a>
+<a href="ch06.html">第6章：autoplan 与 review-army 深度解析</a>
+<a href="ch07.html">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a>
+<a href="ch08.html">第8章：8 大 AI 代理支持——配置即生态</a>
+<a href="ch09.html">第9章：安全机制——freeze / guard / careful</a>
+<a href="ch10.html" class="active">第 10 章：构建与发布</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第-10-章-构建与发布">第 10 章 构建与发布</h1>
+
+<blockquote><p><strong>章前语</strong>：本章揭示 gstack 从源码到可发布工件的全流程：构建管道如何将 TypeScript 编译为多平台二进制；setup 脚本如何为不同 Host 端定制安装路径；gstack-update-check 如何平衡版本检查与用户体验；gstack-upgrade 如何在四种安装类型之间优雅升级。本章是全书的收尾，串联起工程化流水线中最易被忽视但至关重要的"最后一公里"。</p></blockquote>
+
+<h2 id="10-1-构建管道">10.1 构建管道</h2>
+
+<h3 id="10-1-1-编译流水线总览">10.1.1 编译流水线总览</h3>
+
+<p>gstack 的构建以 <code>package.json</code> 中的 <code>build</code> 脚本为核心，串联 5 个步骤将 TypeScript 源码转换为可直接分发的二进制文件和技能文档：</p>
+
+<pre><code>gen:skill-docs (所有 Host)
+        ↓
+browse/dist/browse        ← browse/src/cli.ts
+browse/dist/find-browse   ← browse/src/find-browse.ts
+design/dist/design        ← design/src/cli.ts
+bin/gstack-global-discover ← bin/gstack-global-discover.ts
+        ↓
+browse/scripts/build-node-server.sh (Playwright 服务)
+        ↓
+git rev-parse HEAD → .version (版本戳)
+        ↓
+chmod +x (设置执行权限)
+</code></pre>
+
+<p>第一步 <code>gen:skill-docs --host all</code> 生成所有 Host 格式的技能文档，这是后续编译步骤的前置依赖——browse/dist/browse 需要在运行时查找这些生成的技能文档。编译完成后，git commit hash 被注入到 <code>browse/dist/.version</code> 和 <code>design/dist/.version</code>，使每个二进制文件与其源码版本精确绑定。</p>
+
+<h3 id="10-1-2-智能重建">10.1.2 智能重建</h3>
+
+<p>全量编译在 CI/CD 环境中是标准做法，但在本地开发中，每次保存文件都触发完整构建会严重拖慢迭代速度。gstack 通过 <code>setup</code> 脚本中的 <code>needs_build()</code> 函数实现基于 mtime 的增量构建：</p>
+
+<pre><code class="language-bash">browse_src_mtime=$(stat -c %Y "$SOURCE/browse/src" 2&gt;/dev/null || echo 0)
+browse_bin_mtime=$(stat -c %Y "$SOURCE/browse/dist/browse" 2&gt;/dev/null || echo 0)
+pkg_mtime=$(stat -c %Y "$SOURCE/package.json" 2&gt;/dev/null || echo 0)
+lock_mtime=$(stat -c %Y "$SOURCE/bun.lock" 2&gt;/dev/null || echo 0)
+
+if [ "$browse_src_mtime" -gt "$browse_bin_mtime" ] || \
+   [ "$pkg_mtime" -gt "$browse_bin_mtime" ] || \
+   [ "$lock_mtime" -gt "$browse_bin_mtime" ]; then
+  echo "  building gstack..."
+  ( cd "$SOURCE" &amp;&amp; bun run build )
+fi
+</code></pre>
+
+<p>触发条件有三个：源代码文件变更、package.json 变更（新增依赖或修改构建脚本）、bun.lock 变更（依赖版本更新）。只要三者中任一比二进制文件更新，就触发重新编译。这种策略在保留完整类型安全的同时，将本地构建时间从分钟级降至秒级。</p>
+
+<h3 id="10-1-3-多格式技能文档生成">10.1.3 多格式技能文档生成</h3>
+
+<p><code>gen:skill-docs</code> 是构建管道的第一步，也是最容易被忽视的关键环节。不同 AI Agent Host 对技能格式的要求差异巨大：</p>
+
+<ul>
+<li><strong>Claude Code</strong> 需要顶级目录结构（<code>~/.claude/skills/gstack/SKILL.md</code>）</li>
+<li><strong>Codex CLI</strong> 扫描 <code>.agents/skills/</code> 目录下的 Markdown 文件</li>
+<li><strong>Kiro CLI</strong> 需要将 <code>~/.claude/</code> 路径重写为 <code>~/.kiro/</code></li>
+<li><strong>Factory Droid</strong> 使用 <code>.factory/skills/</code> 目录</li>
+</ul>
+
+<p><code>gen:skill-docs --host all</code> 遍历所有 Host 类型，为每个生成适配其格式的技能文档，同时调整模板中的路径变量（<code>$CLAUDE_SKILL_DIR</code>、<code>$HOME/.codex/skills/gstack</code> 等）。这一步生成的文档存放在 <code>.agents/skills/gstack-<em></code> 和 <code>.factory/skills/gstack-</em></code> 目录，供后续安装步骤使用。</p>
+
+<h2 id="10-2-安装流程">10.2 安装流程</h2>
+
+<h3 id="10-2-1-setup-脚本架构">10.2.1 setup 脚本架构</h3>
+
+<p><code>setup</code> 脚本是 gstack 安装体验的核心，全长 767 行，通过参数驱动的模块化设计支持四种 Host 安装。脚本以 <code>umask 077</code> 开头，强制所有新创建的文件和目录默认为所有者独享权限，体现了 gstack 一贯的安全优先理念。</p>
+
+<p>主要参数包括：</p>
+
+<ul>
+<li><code>--host &lt;name&gt;</code>：指定目标 Host（claude / codex / kiro / factory / openclaw / auto）</li>
+<li><code>--local</code>：安装到当前目录的 <code>.claude/skills/</code> 而非全局 <code>~/.claude/skills/</code></li>
+<li><code>--prefix</code> / <code>--no-prefix</code>：技能命令命名风格（<code>/gstack-qa</code> vs <code>/qa</code>）</li>
+<li><code>--skip-build</code>：跳过编译步骤（使用预编译的二进制）</li>
+<li><code>--no-browser-check</code>：跳过 Playwright Chromium 验证</li>
+</ul>
+
+<h3 id="10-2-2-claude-code-安装">10.2.2 Claude Code 安装</h3>
+
+<p>Claude Code 安装是默认行为。核心逻辑在 <code>link_claude_skill_dirs()</code> 函数中：</p>
+
+<pre><code class="language-bash">for skill_dir in "$gstack_dir"/*/; do
+  [ -f "$skill_dir/SKILL.md" ] || continue
+  skill_name="$(basename "$skill_dir")"
+
+  # 命名策略：prefix 模式下 gstack-qa，flat 模式下 qa
+  if [ "$SKILL_PREFIX" -eq 1 ]; then
+    case "$skill_name" in gstack-*) link_name="$skill_name" ;; esac
+  fi
+
+  mkdir -p "$target"           # 真实目录（而非符号链接目录）
+  ln -snf "$gstack_dir/$dir_name/SKILL.md" "$target/SKILL.md"  # 软链接到源文件
+done
+</code></pre>
+
+<p>这个设计精妙之处在于：安装目录是真实目录（mkdir），技能文档是软链接（ln -snf）。这样做有两个好处：第一，Claude Code 的技能加载器期望目录存在；第二，软链接确保源码更新后无需重新安装，链接目标自动指向最新版本。</p>
+
+<h3 id="10-2-3-前缀偏好与双向迁移">10.2.3 前缀偏好与双向迁移</h3>
+
+<p>技能命名风格通过 <code>~/.gstack/.skill-prefix</code> 文件持久化存储。首次安装时通过交互式 AskUserQuestion 询问用户偏好：选择扁平风格（<code>/qa</code>）还是命名空间风格（<code>/gstack-qa</code>）。</p>
+
+<p>当用户切换偏好时，<code>setup</code> 执行双向迁移：<code>cleanup_old_claude_symlinks()</code> 处理从 flat 到 prefix 的迁移（删除旧的 <code>~/.claude/skills/qa</code> 目录），<code>cleanup_prefixed_claude_symlinks()</code> 处理反向迁移（删除旧的 <code>~/.claude/skills/gstack-qa</code> 目录）。两者都通过 <code>readlink</code> 检查链接目标是否指向 gstack 仓库来精确定位待清理项目。</p>
+
+<h3 id="10-2-4-codex-安装与最小化运行时">10.2.4 Codex 安装与最小化运行时</h3>
+
+<p>Codex 安装面临一个独特挑战：Codex 的技能扫描器会递归遍历 <code>$CODEX_SKILLS</code> 下的所有目录和文件。如果将整个 gstack 仓库暴露给扫描器，源码中的每个子目录都包含 SKILL.md，导致"重复技能"问题——同一个技能被多次加载。</p>
+
+<p>gstack 通过 <strong>最小化运行时根目录</strong> 解决此问题：</p>
+
+<pre><code>~/.codex/skills/gstack/
+├── SKILL.md           → .agents/skills/gstack/SKILL.md（生成版）
+├── bin/               → 仓库 bin/ 目录的软链接
+├── browse/
+│   └── dist/          → 编译后的 browse 二进制
+└── review/
+    ├── checklist.md    → review/ 清单文件的软链接
+    └── design-checklist.md
+</code></pre>
+
+<p>运行时根目录仅包含实际运行时代码和资源，源码中的其他技能文档（<code>.agents/skills/gstack-qa/SKILL.md</code> 等）通过 <code>link_codex_skill_dirs()</code> 链接到 <code>$CODEX_SKILLS</code>。</p>
+
+<p><code>create_agents_sidecar()</code> 在 <code>.agents/skills/gstack/</code> 下创建 sidecar 目录，包含 <code>bin/</code>、<code>browse/</code> 等运行时资产链接，使技能模板可以引用 <code>$SKILL_ROOT/bin/</code> 这类路径。</p>
+
+<h3 id="10-2-5-kiro-与-factory-安装">10.2.5 Kiro 与 Factory 安装</h3>
+
+<p>Kiro 安装从 <code>.agents/skills/</code> 复制并用 <code>sed</code> 重写所有路径变量：</p>
+
+<pre><code class="language-bash">sed -e "s|~/.claude/skills/gstack|~/.kiro/skills/gstack|g" \
+    -e "s|\.claude/skills/gstack|.kiro/skills/gstack|g" \
+    -e "s|~/.codex/skills/gstack|~/.kiro/skills/gstack|g" \
+    "$SOURCE/SKILL.md" &gt; "$KIRO_GSTACK/SKILL.md"
+</code></pre>
+
+<p>Factory Droid 安装与 Codex 流程平行，使用 <code>.factory/skills/</code> 作为生成目标目录，共享同一套 <code>create_factory_runtime_root()</code> 和 <code>link_factory_skill_dirs()</code> 辅助函数。</p>
+
+<h3 id="10-2-6-playwright-浏览器安装">10.2.6 Playwright 浏览器安装</h3>
+
+<p>gstack 的浏览功能依赖 Playwright Chromium。<code>ensure_playwright_browser()</code> 函数处理跨平台兼容性：</p>
+
+<ul>
+<li><strong>Bun 环境</strong>（非 Windows）：使用 <code>bunx playwright install chromium</code></li>
+<li><strong>Node.js 环境</strong>（Windows）：使用 <code>npx playwright install chromium</code></li>
+</ul>
+
+<p>这是 Bun 已知 bug（bun#4253）的 workaround：在 Bun 下子进程调用 Playwright 时会阻塞，改用 Node.js 环境运行可规避该问题。setup 脚本通过检测 <code>$OSTYPE</code> 判断操作系统类型，选择合适的运行时。</p>
+
+<h3 id="10-2-7-首次安装迁移框架">10.2.7 首次安装迁移框架</h3>
+
+<p><code>setup</code> 末尾的迁移框架是安装体验的重要保障：</p>
+
+<pre><code class="language-bash">MIGRATIONS_DIR="$SOURCE_GSTACK_DIR/gstack-upgrade/migrations"
+CURRENT_VERSION=$(cat "$SOURCE_GSTACK_DIR/VERSION")
+LAST_SETUP_VERSION=$(cat "$HOME/.gstack/.last-setup-version")
+
+# 运行：last &lt; m_ver &lt;= current 的迁移
+find "$MIGRATIONS_DIR" -maxdepth 1 -name 'v*.sh' -type f | sort -V | \
+  while IFS= read -r migration; do
+    m_ver="$(basename "$migration" .sh | sed 's/^v//')"
+    if version_between "$LAST_SETUP_VERSION" "$m_ver" "$CURRENT_VERSION"; then
+      bash "$migration"
+    fi
+  done
+</code></pre>
+
+<p>迁移脚本处理 setup 本身无法覆盖的状态修复：旧配置文件格式过时、目录结构变更遗留的空目录、第三方工具集成变更等。每个迁移脚本命名为 <code>v&lt;版本&gt;.sh</code>，通过版本号比较确保按顺序执行、不重复执行。</p>
+
+<h2 id="10-3-版本管理">10.3 版本管理</h2>
+
+<h3 id="10-3-1-版本双轨制">10.3.1 版本双轨制</h3>
+
+<p>gstack 使用两个文件追踪版本：</p>
+
+<div class="table-wrap"><table>
+<tr><th>文件</th><th>内容</th><th>用途</th></tr>
+<tr><td>------</td><td>------</td><td>------</td></tr>
+<tr><td><code>VERSION</code></td><td><code>0.15.9.0</code>（语义化版本）</td><td>用户可见的版本号，用于升级提示和变更日志</td></tr>
+<tr><td><code>browse/dist/.version</code></td><td>git commit hash</td><td>精确追踪构建来源，用于调试和回归定位</td></tr>
+</table></div>
+
+<p>语义化版本号（SemVer）与 git hash 的组合让 gstack 同时具备人类可读性和机器可追溯性。用户看到的是 <code>v0.15.9.0</code>，而开发者排查问题时可以精确定位到具体的 commit。</p>
+
+<h3 id="10-3-2-版本检查机制">10.3.2 版本检查机制</h3>
+
+<p><code>bin/gstack-update-check</code> 是版本检查的核心工具，从 GitHub raw 获取最新版本号并与本地比较：</p>
+
+<pre><code class="language-bash">REMOTE_VERSION=$(curl -s "https://raw.githubusercontent.com/garrytan/gstack/main/VERSION")
+</code></pre>
+
+<p>返回三种状态：</p>
+
+<ul>
+<li><code>UP_TO_DATE &lt;version&gt;</code>：本地已是最新</li>
+<li><code>UPGRADE_AVAILABLE &lt;old&gt; &lt;new&gt;</code>：有新版本可用</li>
+<li>无输出：检查失败（网络问题 / GitHub 不可达）</li>
+</ul>
+
+<p>版本号必须通过有效性验证（格式匹配 <code>X.Y.Z.W</code>），否则静默忽略 HTML 错误页面（GitHub 的 404 页面包含 "404" 但不是有效版本号）。</p>
+
+<h3 id="10-3-3-缓存与-snooze">10.3.3 缓存与 Snooze</h3>
+
+<p>为避免每次 Claude Code 启动都触发网络请求，版本检查结果被缓存到 <code>~/.gstack/last-update-check</code>：</p>
+
+<pre><code>UP_TO_DATE 0.15.9.0          ← TTL: 60 分钟
+UPGRADE_AVAILABLE 0.15.8.0 0.15.9.0  ← TTL: 720 分钟
+</code></pre>
+
+<p>snooze 机制通过 <code>~/.gstack/update-snoozed</code> 实现递进延迟：</p>
+
+<pre><code>0.15.9.0 1 1743456789        ← Snooze Level 1: 24 小时
+0.15.9.0 2 1743543189        ← Snooze Level 2: 48 小时
+0.15.9.0 3 1744061589        ← Snooze Level 3+: 168 小时（7 天）
+</code></pre>
+
+<p>用户反复推迟更新时，延迟时间指数级增长。新版本出现时 snooze 计数器重置，因为新版本可能包含重要功能或修复，用户应该知道。</p>
+
+<h3 id="10-3-4-codex-description-迁移">10.3.4 Codex Description 迁移</h3>
+
+<p>gstack 历史上曾为 Codex 生成过超长的 <code>description:</code> 字段（包含完整的技能使用说明），导致 Claude Code 加载时出现警告。该迁移脚本扫描 <code>~/.claude/skills/gstack-*/SKILL.md</code>，删除超过 1024 字符的 <code>description:</code> 字段。这是一次性的清理操作，运行后将 <code>description:</code> 还原为简洁的单行描述。</p>
+
+<h2 id="10-4-升级机制">10.4 升级机制</h2>
+
+<h3 id="10-4-1-安装类型检测">10.4.1 安装类型检测</h3>
+
+<p>gstack-upgrade 首先检测当前安装类型，这是决定升级策略的前提：</p>
+
+<pre><code class="language-bash"># global-git: 克隆版在全局目录
+if [ -d "$HOME/.claude/skills/gstack/.git" ]; then
+  INSTALL_TYPE="global-git"
+  INSTALL_DIR="$HOME/.claude/skills/gstack"
+
+# local-git: 克隆版在工作目录
+elif [ -d "$(pwd)/.claude/skills/gstack/.git" ]; then
+  INSTALL_TYPE="local-git"
+  INSTALL_DIR="$(pwd)/.claude/skills/gstack"
+
+# vendored: 直接复制版
+elif [ -f "$INSTALL_DIR/SKILL.md" ]; then
+  if [ -L "$HOME/.claude/skills/gstack" ]; then
+    INSTALL_TYPE="vendored-global"
+  else
+    INSTALL_TYPE="vendored"
+  fi
+fi
+</code></pre>
+
+<p>git 目录的存在与否是区分克隆版和复制版的关键标志。克隆版可以通过 <code>git pull</code> 升级，复制版需要重新下载替换。</p>
+
+<h3 id="10-4-2-git-升级流程">10.4.2 git 升级流程</h3>
+
+<p>对于 global-git 和 local-git 安装，升级利用 git 的版本控制能力：</p>
+
+<pre><code class="language-bash">cd "$INSTALL_DIR"
+git stash              # 暂存本地修改
+git fetch origin       # 拉取远程更新
+git reset --hard origin/main  # 强制重置到远程最新
+./setup                # 重新运行安装后配置
+</code></pre>
+
+<p><code>git stash</code> 保留本地自定义（如果有），<code>reset --hard</code> 确保干净状态。setup 重新执行链接更新、迁移脚本运行等安装后步骤。</p>
+
+<h3 id="10-4-3-vendored-升级流程">10.4.3 vendored 升级流程</h3>
+
+<p>复制版没有 git 历史，升级策略是完整的目录替换：</p>
+
+<pre><code class="language-bash">git clone --depth 1 https://github.com/garrytan/gstack /tmp/gstack-upgrade
+mv "$INSTALL_DIR" "$INSTALL_DIR.bak"  # 备份（升级失败可回滚）
+mv /tmp/gstack-upgrade "$INSTALL_DIR"
+cd "$INSTALL_DIR" &amp;&amp; ./setup
+rm -rf "$INSTALL_DIR.bak"
+</code></pre>
+
+<p>备份目录 <code>.bak</code> 是关键的安全措施——如果 <code>./setup</code> 失败，用户可以从备份恢复，升级过程不会破坏已有配置。</p>
+
+<h3 id="10-4-4-升级交互流程">10.4.4 升级交互流程</h3>
+
+<p>gstack-upgrade 通过 5 个选项的 AskUserQuestion 提供灵活的升级控制：</p>
+
+<pre><code>gstack-upgrade 发现新版本 v0.16.0.0（当前 v0.15.9.0）
+
+1. Yes, upgrade now
+2. Always keep me up to date  ← 设置自动升级标志
+3. Not now                   ← Snooze Level 1
+4. Never ask again           ← 彻底关闭
+5. Show changelog first
+
+（自动升级时跳过此问题，直接执行选项 1）
+</code></pre>
+
+<p>"Always keep me up to date" 通过写入配置文件（<code>~/.gstack/auto-upgrade</code>）实现。gstack-update-check 在下次运行时读取该文件，自动选择升级路径而不再次询问。</p>
+
+<h3 id="10-4-5-本地副本同步">10.4.5 本地副本同步</h3>
+
+<p>当同时存在全局安装和 repo-local vendored 安装时，gstack-upgrade 会自动同步两者：</p>
+
+<pre><code class="language-bash"># 检测本地副本
+if [ -d "$(pwd)/.claude/skills/gstack" ]; then
+  LOCAL_GSTACK="$(pwd)/.claude/skills/gstack"
+fi
+
+# 比较版本
+PRIMARY_VER=$(cat "$INSTALL_DIR/VERSION")
+LOCAL_VER=$(cat "$LOCAL_GSTACK/VERSION")
+
+if [ "$PRIMARY_VER" != "$LOCAL_VER" ]; then
+  # 同步更新本地副本
+fi
+</code></pre>
+
+<p>这确保了项目的 repo-local 安装（通过 <code>.claude/skills/gstack/</code> 提交到 git）始终与全局安装保持一致。</p>
+
+<h3 id="10-4-6-升级中的迁移脚本">10.4.6 升级中的迁移脚本</h3>
+
+<p>升级流程与安装流程平行地运行迁移脚本（gstack-upgrade/migrations/v*.sh），处理 setup 无法覆盖的升级特有场景：例如从 v0.14 升级到 v0.16 时，中间跳过的 v0.15 版本的某些状态变更需要专门处理。</p>
+
+<h2 id="10-5-安全与隐私">10.5 安全与隐私</h2>
+
+<h3 id="10-5-1-隐私保护">10.5.1 隐私保护</h3>
+
+<p>版本检查过程中的遥测 ping 是非阻塞后台请求（<code>&amp;</code> 挂起），尊重 <code>telemetry: off</code> 配置。即使 Supabase 服务不可达或响应慢，也不会阻塞版本检查流程。缓存机制确保版本检查结果被复用，减少不必要的网络请求。</p>
+
+<h3 id="10-5-2-文件权限">10.5.2 文件权限</h3>
+
+<p><code>umask 077</code> 确保安装过程中创建的所有文件默认具有最严格权限。gstack 不向系统目录写入任何内容，所有用户级配置存储在 <code>~/.gstack/</code> 个人目录下。</p>
+
+<h3 id="10-5-3-备份保护">10.5.3 备份保护</h3>
+
+<p>vendored 升级前的目录备份（<code>.bak</code> 后缀）是防止升级失败导致配置丢失的关键保护。备份目录在 <code>./setup</code> 成功完成后才被删除，确保任何步骤失败都有可恢复的起点。</p>
+
+<h2 id="10-6-本章小结">10.6 本章小结</h2>
+
+<p>本章揭示了 gstack 构建与发布体系的全貌，涵盖从源码到用户设备的完整链路：</p>
+
+<p><strong>构建管道</strong>方面，5 步流水线将 TypeScript 编译为多平台二进制，mtime 驱动的智能重建将本地构建时间从分钟级降至秒级，<code>gen:skill-docs</code> 为四个 Host 生成差异化技能文档。</p>
+
+<p><strong>安装流程</strong>方面，767 行的 setup 脚本以模块化设计支持 Claude Code、Codex、Kiro、Factory 四个 Host，技能目录链接策略兼顾可更新性（软链接到源码）和兼容性（真实目录满足 Host 扫描器），前缀偏好迁移实现平滑的风格切换。</p>
+
+<p><strong>版本管理</strong>方面，双轨版本号（SemVer + git hash）同时服务用户可见性和开发者可追溯性，缓存与 snooze 机制平衡版本检查频率与用户体验，迁移框架确保跨版本升级时状态一致性。</p>
+
+<p><strong>升级机制</strong>方面，四种安装类型（global-git / local-git / vendored / vendored-global）各有其升级策略，git 克隆版利用版本控制能力实现无损升级，复制版通过完整目录替换和 <code>.bak</code> 备份确保安全回滚。</p>
+
+<p>下一章将对全书的架构设计进行回顾与展望，提炼 gstack 作为一个工程化流水线的核心设计哲学。</p>
+
+
+<nav class="chapter-nav">
+  <a href="ch09.html">◀ 第9章：安全机制——freeze / guard / careful</a>
+  <span></span>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#10-1-构建管道">10.1 构建管道</a></li><li><a href="#10-2-安装流程">10.2 安装流程</a></li><li><a href="#10-3-版本管理">10.3 版本管理</a></li><li><a href="#10-4-升级机制">10.4 升级机制</a></li><li><a href="#10-5-安全与隐私">10.5 安全与隐私</a></li><li><a href="#10-6-本章小结">10.6 本章小结</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  // Progress bar
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  // Back to top
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  // Right TOC highlight
+  var tocLinks = document.querySelectorAll('.toc-list a');
+  if (tocLinks.length) {
+    var headings = Array.from(document.querySelectorAll('#main h2'));
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var active = headings.filter(function(h) { return h.offsetTop <= scrollY; }).pop();
+      tocLinks.forEach(function(a) { a.classList.remove('active'); });
+      if (active) {
+        var match = document.querySelector('.toc-list a[href="#' + active.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }
+  // Mermaid
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  // Highlight.js
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>

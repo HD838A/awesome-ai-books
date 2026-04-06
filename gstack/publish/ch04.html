@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第4章：SKILL.md 模板系统——Markdown 即配置 — AI 工程流水线：gstack 源码深度解读</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+/* Progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+/* Layout */
+#layout { display: flex; min-height: 100vh; }
+/* Left sidebar */
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+/* Main content */
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+/* Right TOC */
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+/* Code */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+.hljs { background: #F5F2ED !important; }
+/* Blockquote */
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+/* Lists */
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+/* HR */
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+/* Mermaid */
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+/* Chapter nav */
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+/* Back to top */
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+/* Index page */
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+/* Responsive */
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI 工程流水线：gstack 源码深度解读</div>
+      <div class="sidebar-subtitle">从守护进程到构建管道，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a>
+<a href="ch02.html">第2章：gstack 的整体架构——守护进程与状态管理</a>
+<a href="ch03.html">第3章：持久化浏览器核心实现——browse 模块架构</a>
+<a href="ch04.html" class="active">第4章：SKILL.md 模板系统——Markdown 即配置</a>
+<a href="ch05.html">第5章：核心技能解析——/plan、/review、/ship</a>
+<a href="ch06.html">第6章：autoplan 与 review-army 深度解析</a>
+<a href="ch07.html">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a>
+<a href="ch08.html">第8章：8 大 AI 代理支持——配置即生态</a>
+<a href="ch09.html">第9章：安全机制——freeze / guard / careful</a>
+<a href="ch10.html">第 10 章：构建与发布</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第4章-skill-md-模板系统-markdown-即配置">第4章：SKILL.md 模板系统——Markdown 即配置</h1>
+
+<p>第3章我们探索了 gstack 的持久化浏览器核心实现，理解了 <code>$B</code> 命令的完整执行路径。本章我们将深入 gstack 的<strong>技能（Skill）系统</strong>——这是 gstack 与 AI Agent 交互的核心协议。</p>
+
+<p>技能系统由三层组成：</p>
+
+<ul>
+<li><strong>模板编译层</strong>（gen-skill-docs.ts）：将 <code>.tmpl</code> 源模板编译为 SKILL.md</li>
+<li><strong>前导脚本层</strong>（preamble.ts）：每次技能执行前注入 Bash 环境检测代码</li>
+<li><strong>专家分派层</strong>（review-army.ts）：多专家并行审查的协调机制</li>
+</ul>
+
+<p>读完本章，你会理解一个 SKILL 文件从源码到运行时的完整生命周期。</p>
+
+<hr>
+
+<h2 id="概述">概述</h2>
+
+<p>本章我们将探索：</p>
+
+<ul>
+<li><strong>模板编译管线</strong>：<code>.tmpl</code> → SKILL.md 的编译过程与字段验证</li>
+<li><strong>前导脚本注入</strong>：Preamble 如何让技能感知运行环境</li>
+<li><strong>多专家分派模式</strong>：Review Army 如何实现并行审查</li>
+<li><strong>自适应门控</strong>：基于命中率的智能专家调度</li>
+</ul>
+
+<hr>
+
+<h2 id="4-1-模板编译管线">4.1 模板编译管线</h2>
+
+<h3 id="4-1-1-从活字到成品">4.1.1 从活字到成品</h3>
+
+<p>在传统出版业中，<strong>活字印刷</strong>（letterpress）是一种革命性的技术：每个汉字刻在单独的木块或金属块上，排版时像搭积木一样组合。gstack 的 SKILL.md 模板系统与此异曲同工——每个技能由一个 <code>.tmpl</code> 模板文件定义，通过编译管线生成最终的 <code>SKILL.md</code>。</p>
+
+<pre><code class="language-bash"># gstack 项目中的模板文件结构
+skills/
+├── _shared/
+│   ├── preamble.tmpl      # 所有技能共享的前导脚本
+│   └── shared-prompts.tmpl
+├── review/
+│   └── review.tmpl        # /review 技能的模板
+├── plan/
+│   └── plan.tmpl          # /plan 技能的模板
+└── ship/
+    └── ship.tmpl          # /ship 技能的模板
+</code></pre>
+
+<p>模板文件的格式是 Markdown，但包含了<strong>占位符（Placeholder）</strong>机制：</p>
+
+<pre><code class="language-markdown"># {{SKILL_NAME}}
+
+{{DESCRIPTION}}
+
+## Usage
+
+{{USAGE_EXAMPLES}}
+
+## Permissions
+
+{{PERMISSIONS}}
+</code></pre>
+
+<p><code>gen-skill-docs.ts</code> 是这个编译管线的核心脚本。它的职责是：</p>
+
+<ol>
+<li>读取 <code>.tmpl</code> 文件</li>
+<li>扫描所有 <code>{{PLACEHOLDER}}</code> 占位符</li>
+<li>从源码中动态解析占位符的值</li>
+<li>对字段长度进行 per-host 验证</li>
+<li>处理 Voice Trigger</li>
+<li>写入最终的 <code>SKILL.md</code></li>
+</ol>
+
+<pre><code>┌──────────────┐     ┌──────────────────┐     ┌─────────────┐
+│  review.tmpl │ ──→ │ gen-skill-docs.ts │ ──→ │ SKILL.md   │
+│  (.tmpl 源码) │     │     （编译器）      │     │ (成品文件)   │
+└──────────────┘     └──────────────────┘     └─────────────┘
+                           │
+                           ├── 扫描 {{PLACEHOLDER}}
+                           ├── 解析占位符值
+                           ├── AI Slop 检测
+                           ├── Voice Trigger 处理
+                           └── per-host 字段验证
+</code></pre>
+
+<h3 id="4-1-2-per-host-字段验证">4.1.2 per-host 字段验证</h3>
+
+<p>gstack 支持 8 种不同的 Host（AI 编程工具），每种 Host 对 SKILL.md 字段长度有不同的限制。例如，OpenAI 的 description 限制为 2000 字符，而 Claude Desktop 的限制为 8000 字符。</p>
+
+<pre><code class="language-typescript">// [gen-skill-docs.ts:~150] Host 配置表
+const HOST_CONFIG = {
+  'claude_desktop': {
+    description: { limit: 8000, behavior: 'error' },
+    name: { limit: 32, behavior: 'warn' },
+  },
+  'claude_code': {
+    description: { limit: 4000, behavior: 'warn' },
+    name: { limit: 50, behavior: 'warn' },
+  },
+  'cursor': {
+    description: { limit: 5000, behavior: 'warn' },
+    name: { limit: 40, behavior: 'error' },
+  },
+  'vscode': {
+    description: { limit: 6000, behavior: 'truncate' },
+    name: { limit: 45, behavior: 'warn' },
+  },
+  'windsurf': {
+    description: { limit: 7000, behavior: 'warn' },
+    name: { limit: 50, behavior: 'warn' },
+  },
+  'openai': {
+    description: { limit: 2000, behavior: 'error' },  // 最严格的限制
+    name: { limit: 35, behavior: 'error' },
+  },
+  'generic': {
+    description: { limit: 8000, behavior: 'warn' },
+    name: { limit: 50, behavior: 'warn' },
+  },
+};
+</code></pre>
+
+<p>验证行为（<code>behavior</code> 字段）有三种策略：</p>
+
+<div class="table-wrap"><table>
+<tr><th>行为</th><th>含义</th><th>使用场景</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><code>error</code></td><td>超限则抛出错误，终止生成</td><td>硬性限制（如 OpenAI 的 2000 字符上限）</td></tr>
+<tr><td><code>warn</code></td><td>超限则输出警告，继续生成</td><td>软性限制，容忍轻微超限</td></tr>
+<tr><td><code>truncate</code></td><td>超限则自动截断</td><td>VS Code 等自动截断过长内容的 Host</td></tr>
+</table></div>
+
+<h3 id="4-1-3-ai-slop-黑名单">4.1.3 AI Slop 黑名单</h3>
+
+<p>你可能见过这样的前端设计描述：</p>
+
+<blockquote><p>"The hero section features a stunning blue-to-purple gradient background with frosted glass navigation, glass morphism cards, and a 3-column feature grid with icon-in-colored-circle and bold titles."</p></blockquote>
+
+<p>这是典型的 <strong>AI Slop</strong>——AI 生成的高重复性、模板化设计描述。gstack 内置了一个 10 条反模式黑名单，在模板编译时检测这类描述：</p>
+
+<pre><code class="language-typescript">// [gen-skill-docs.ts:~80] AI Slop 黑名单
+const AI_SLOP_BLACKLIST = [
+  'Purple/violet/indigo gradient backgrounds or blue-to-purple color schemes',
+  '**The 3-column feature grid:** icon-in-colored-circle + bold title + 2-line description, repeated 3x symmetrically.',
+  'The "Powerful" adjective + "Seamless" adjective + "Intuitive" adjective pattern',
+  'Glass morphism (frosted glass) effects',
+  '"Crafted with precision" / "Meticulously designed" / "Engineered for excellence"',
+  'Countdown timers / "Limited time only" urgency indicators',
+  '"Join millions of developers" social proof claims',
+  'Auto-playing carousel with testimonials',
+  'Confetti or particle effects on successful actions',
+  'Oversized drop shadow on cards (box-shadow: 0 20px 60px rgba(0,0,0,0.3))',
+];
+</code></pre>
+
+<p>当模板内容命中黑名单时，编译输出会包含 <code>⚠️ FRONTEND DESIGN REVIEW</code> 警告。这个机制确保 gstack 的技能描述保持技术性和精确性，而非堆砌空洞的营销词汇。</p>
+
+<h3 id="4-1-4-voice-trigger-的提取与折叠">4.1.4 Voice Trigger 的提取与折叠</h3>
+
+<p>Voice Trigger 是 gstack 的语音交互扩展。模板作者可以在 <code>.tmpl</code> 中用 YAML 格式声明语音触发词：</p>
+
+<pre><code class="language-yaml">---
+voice:
+  triggers:
+    - "review this code"
+    - "检查代码质量"
+    - "run the linter"
+---
+
+# {{SKILL_NAME}}
+
+{{DESCRIPTION}}
+</code></pre>
+
+<p>编译时，<code>extractVoiceTriggers()</code> 函数从 YAML 块中提取触发词列表，然后通过 <code>processVoiceTriggers()</code> 将其折叠到 <code>description</code> 字段中：</p>
+
+<pre><code class="language-typescript">// [gen-skill-docs.ts:~220] Voice Trigger 处理
+function extractVoiceTriggers(content: string): string[] {
+  const voiceMatch = content.match(/voice:\s*\n\s*triggers:\s*\n([\s\S]*?)(?=^---|\n\w)/m);
+  if (!voiceMatch) return [];
+  const triggerLines = voiceMatch[1].split('\n')
+    .map(l =&gt; l.replace(/^\s+-\s*/, '').trim())
+    .filter(Boolean);
+  return triggerLines;
+}
+
+function processVoiceTriggers(description: string, triggers: string[]): string {
+  if (triggers.length === 0) return description;
+  const triggerSection = `Voice triggers: ${triggers.join(', ')}`;
+  return `${description}\n\n${triggerSection}`;
+}
+</code></pre>
+
+<h3 id="4-1-5-openai-格式生成">4.1.5 OpenAI 格式生成</h3>
+
+<p>对于 OpenAI 兼容的 Agent，SKILL.md 需要包含一个特殊的 <code>openai</code> YAML 块，定义 Function Calling 的参数格式：</p>
+
+<pre><code class="language-typescript">// [gen-skill-docs.ts:~280] OpenAI YAML 生成
+function generateOpenAIYaml(displayName: string, shortDescription: string): string {
+  return `
+openai:
+  type: \`function\`
+  name: \`${displayName}\`
+  description: \`${shortDescription.slice(0, 120)}\`
+  parameters:
+    type: object
+    properties: {}
+    required: []
+`.trim();
+}
+</code></pre>
+
+<p>注意 <code>shortDescription.slice(0, 120)</code> —— OpenAI 对函数描述有 120 字符的硬性限制。这是 <code>condenseOpenAIShortDescription()</code> 函数的核心约束。</p>
+
+<hr>
+
+<h2 id="4-2-前导脚本注入机制">4.2 前导脚本注入机制</h2>
+
+<h3 id="4-2-1-preamble-的职责边界">4.2.1 Preamble 的职责边界</h3>
+
+<p>如果说模板编译是<strong>印刷厂的排版车间</strong>，那么 <strong>Preamble（前导脚本）</strong> 就是<strong>机场安检</strong>——每个乘客（技能）在登机（执行）前都必须通过安检，确保携带的行李（环境）符合要求。</p>
+
+<p>Preamble 是一段 Bash 脚本，由 <code>generatePreambleBash()</code> 函数生成，在每次技能执行前注入到 Agent 的上下文中。它的职责是：</p>
+
+<pre><code class="language-typescript">// [preamble.ts:~50] Preamble 生成函数
+function generatePreambleBash(ctx: Context): string {
+  // 1. Bash 运行时检测
+  // 2. gstack-update-check（版本检查）
+  // 3. 会话跟踪（基于 PPID）
+  // 4. 用户偏好检测
+  // 5. 主动建议生成
+  // 6. 路由规则注入
+  // 7. 遥测配置
+  return bashScript;
+}
+</code></pre>
+
+<p>Preamble 输出的不是技能本身的指令，而是一系列<strong>环境检测命令</strong>。这些命令的执行结果会被 gstack 捕获并注入到后续的 Agent 上下文中，让技能能够感知运行环境。</p>
+
+<h3 id="4-2-2-会话跟踪与-ppid">4.2.2 会话跟踪与 PPID</h3>
+
+<p>gstack 使用 <strong>PPID（父进程 ID）</strong> 作为会话标识符。每个会话在 <code>~/.gstack/sessions/</code> 下创建一个文件：</p>
+
+<pre><code class="language-bash"># 会话跟踪逻辑（Preamble 注入的 Bash 代码）
+mkdir -p ~/.gstack/sessions
+touch ~/.gstack/sessions/"$PPID"
+
+# 统计 120 分钟内活跃的会话数
+_SESSIONS=$(find ~/.gstack/sessions -mmin -120 -type f 2&gt;/dev/null | wc -l | tr -d ' ')
+
+# 清理超过 120 分钟的孤立会话文件
+find ~/.gstack/sessions -mmin +120 -type f -exec rm {} + 2&gt;/dev/null || true
+</code></pre>
+
+<p>这个设计的巧妙之处在于：</p>
+
+<ul>
+<li><strong>无状态</strong>：不需要维护一个常驻进程来追踪会话</li>
+<li><strong>自清理</strong>：超过 120 分钟不活跃的会话自动消失</li>
+<li><strong>PPID 隔离</strong>：不同终端窗口、不同调用链路的会话互不干扰</li>
+</ul>
+
+<h3 id="4-2-3-路由规则动态注入">4.2.3 路由规则动态注入</h3>
+
+<p>Preamble 还负责将技能特定的<strong>路由规则</strong>注入到 Host 的配置文件中（如 <code>~/.claude/commands/CLAUDE.md</code>）：</p>
+
+<pre><code class="language-typescript">// [preamble.ts:~180] 路由注入函数
+function generateRoutingInjection(ctx: Context): string {
+  // 读取 ~/.claude/commands/CLAUDE.md 或等效路由文件
+  // 追加技能特定的路由规则
+  // 例如: "当用户说 'review' 时，使用 /review 技能"
+  return routingRules;
+}
+</code></pre>
+
+<p>这意味着当你在 Claude Code 中说 "帮我 review 这个 PR" 时，Claude Code 会自动查找匹配的路由规则并调用 <code>/review</code> 技能。</p>
+
+<h3 id="4-2-4-遥测系统的分层设计">4.2.4 遥测系统的分层设计</h3>
+
+<p>gstack 的遥测系统采用<strong>三层架构</strong>，用户可以按需选择参与级别：</p>
+
+<pre><code class="language-typescript">interface TelemetryConfig {
+  mode: 'community' | 'anonymous' | 'off';
+  localJsonl: boolean;
+  remoteEndpoint?: string;
+}
+</code></pre>
+
+<div class="table-wrap"><table>
+<tr><th>模式</th><th>本地日志</th><th>远程遥测</th><th>用途</th></tr>
+<tr><td>------</td><td>----------</td><td>----------</td><td>------</td></tr>
+<tr><td><code>community</code></td><td>✅</td><td>✅</td><td>参与社区数据分析</td></tr>
+<tr><td><code>anonymous</code></td><td>✅</td><td>✅（匿名）</td><td>仅发送匿名统计数据</td></tr>
+<tr><td><code>off</code></td><td>✅</td><td>❌</td><td>仅本地记录，不外发</td></tr>
+</table></div>
+
+<p>本地日志以 <strong>JSONL</strong>（JSON Lines）格式存储在 <code>~/.gstack/telemetry/</code> 目录下，便于用户事后分析或导入其他工具。</p>
+
+<hr>
+
+<h2 id="4-3-多专家分派模式">4.3 多专家分派模式</h2>
+
+<h3 id="4-3-1-review-army-交响乐团">4.3.1 Review Army 交响乐团</h3>
+
+<p>当你说 "帮我 review 这个 PR" 时，gstack 并不是启动一个单一的 AI Agent 来做全面审查——它启动的是一整个<strong>交响乐团</strong>，每个乐器组（专家）同时演奏自己负责的声部，最终汇成交响乐。</p>
+
+<p>这就是 <strong>Review Army（审查军团）</strong> 模式：</p>
+
+<pre><code>/review 调用
+    │
+    ├──→ Testing Specialist ──→ 测试覆盖率发现
+    ├──→ Security Specialist ──→ 安全漏洞发现
+    ├──→ Performance Specialist ──→ 性能问题发现
+    ├──→ Data Migration Specialist ──→ 数据迁移风险
+    ├──→ API Contract Specialist ──→ API 兼容性发现
+    └──→ Design Specialist ──→ 架构设计建议
+                                        │
+                                        ↓
+                              ┌─────────────────┐
+                              │  Findings Merge  │
+                              │  （发现合并）     │
+                              └─────────────────┘
+                                        │
+                                        ↓
+                              ┌─────────────────┐
+                              │  最终审查报告     │
+                              │  + PQS 评分      │
+                              └─────────────────┘
+</code></pre>
+
+<h3 id="4-3-2-always-on-vs-conditional-专家">4.3.2 Always-on vs Conditional 专家</h3>
+
+<p>Review Army 的专家分为两类：</p>
+
+<p><strong>Always-on 专家</strong>：无论什么代码，只要变更超过 50 行就必定分派。</p>
+
+<div class="table-wrap"><table>
+<tr><th>专家</th><th>职责</th></tr>
+<tr><td>------</td><td>------</td></tr>
+<tr><td><strong>Testing Specialist</strong></td><td>检查测试覆盖率、测试质量、mock 使用是否合理</td></tr>
+<tr><td><strong>Maintainability Specialist</strong></td><td>检查代码复杂度、命名规范、模块耦合度</td></tr>
+</table></div>
+
+<p><strong>Conditional 专家</strong>：根据代码的关键词特征，按需分派。</p>
+
+<div class="table-wrap"><table>
+<tr><th>专家</th><th>触发关键词</th><th>职责</th></tr>
+<tr><td>------</td><td>-----------</td><td>------</td></tr>
+<tr><td><strong>Security Specialist</strong></td><td><code>auth</code>, <code>token</code>, <code>crypto</code>, <code>password</code></td><td>安全漏洞检测</td></tr>
+<tr><td><strong>Performance Specialist</strong></td><td><code>query</code>, <code>loop</code>, <code>memory</code>, <code>cache</code></td><td>性能问题检测</td></tr>
+<tr><td><strong>Data Migration Specialist</strong></td><td><code>migration</code>, <code>schema</code>, <code>db</code></td><td>数据迁移风险</td></tr>
+<tr><td><strong>API Contract Specialist</strong></td><td><code>endpoint</code>, <code>api</code>, <code>route</code></td><td>API 兼容性</td></tr>
+<tr><td><strong>Design Specialist</strong></td><td>大文件/多模块变更</td><td>架构设计审查</td></tr>
+</table></div>
+
+<pre><code class="language-typescript">// [review-army.ts:~60] 专家选择函数
+function generateSpecialistSelection(ctx: ScopeContext): Specialist[] {
+  const scope = detectScope(ctx); // STACK / DIFF_LINES / TEST_FW
+
+  const alwaysOn = selectAlwaysOn(ctx); // Testing + Maintainability
+  const conditional = selectConditional(ctx, scope); // 按关键词匹配
+
+  return [...alwaysOn, ...conditional];
+}
+</code></pre>
+
+<h3 id="4-3-3-自适应门控的数学原理">4.3.3 自适应门控的数学原理</h3>
+
+<p>如果一个专家在 10 次分派中都没有发现任何问题，是否意味着它不再有用？gstack 的 <strong>Adaptive Gating（自适应门控）</strong> 机制给出了答案：是的，自动淘汰。</p>
+
+<pre><code class="language-typescript">// [review-army.ts:~140] 自适应门控
+interface SpecialistStats {
+  dispatched: number;      // 已分派次数
+  findings: number;        // 发现数量
+  critical: number;        // 严重问题数
+  informational: number;   // 提示性发现数
+}
+
+function shouldGateSpecialist(stats: SpecialistStats): boolean {
+  if (stats.dispatched &gt;= 10 &amp;&amp; stats.findings === 0) {
+    return true; // 10+ 次分派，0 发现 → 自动门控
+  }
+  return false;
+}
+</code></pre>
+
+<p>这个机制背后的思想是：</p>
+
+<ul>
+<li><strong>专业分工</strong>：如果你的代码库从不涉及数据库，<code>Data Migration Specialist</code> 自然不会有发现</li>
+<li><strong>动态调整</strong>：当代码库发生变化（如引入新框架）时，被门控的专家可能重新变得有价值</li>
+<li><strong>强制分派</strong>：<code>--security</code>、<code>--performance</code>、<code>--testing</code>、<code>--all-specialists</code> 标志可以绕过门控</li>
+</ul>
+
+<h3 id="4-3-4-发现合并与-pqs-评分">4.3.4 发现合并与 PQS 评分</h3>
+
+<p>多个专家并行运行后，会产生多份发现报告。<code>mergeFindings()</code> 函数负责：</p>
+
+<ol>
+<li><strong>JSON 解析</strong>：每个专家返回的发现可能格式不一，需要统一解析</li>
+<li><strong>指纹去重</strong>：两个专家可能发现同一个 bug，通过 <code>fingerprint</code> 字段去重</li>
+<li><strong>置信度门控</strong>：置信度低于 0.5 的发现被丢弃</li>
+<li><strong>严重度排序</strong>：critical → high → medium → low → informational</li>
+<li><strong>PQS 计算</strong>：综合评分，衡量 PR 的整体质量</li>
+</ol>
+
+<pre><code class="language-typescript">// [review-army.ts:~280] 发现合并
+interface Finding {
+  fingerprint: string;  // 唯一指纹，用于去重
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'informational';
+  confidence: number;    // 置信度 0.0 - 1.0
+  specialist: string;    // 来源专家
+  message: string;       // 发现描述
+  location: string;     // 代码位置
+}
+
+function mergeFindings(allFindings: Finding[]): MergeResult {
+  // 1. JSON 解析
+  // 2. 指纹去重
+  // 3. 置信度门控（&lt; 0.5 丢弃）
+  // 4. 严重度排序
+  // 5. PR Quality Score（PQS）计算
+  return result;
+}
+</code></pre>
+
+<p><strong>PR Quality Score（PQS）</strong> 是一个综合评分，范围 0-100，权重分配大致如下：</p>
+
+<ul>
+<li>50% 来自发现数量与严重度</li>
+<li>30% 来自测试覆盖率</li>
+<li>20% 来自代码复杂度</li>
+</ul>
+
+<h3 id="4-3-5-红队分派">4.3.5 红队分派</h3>
+
+<p>当审查发现以下任一条件时，Review Army 会额外分派 <strong>Red Team（红队）</strong> 进行更激进的攻击性审查：</p>
+
+<ul>
+<li>超过 5 个高严重度（high+）问题</li>
+<li>变更超过 200 行</li>
+<li>存在 critical 级别的发现</li>
+</ul>
+
+<p>红队会从<strong>恶意用户视角</strong>审视代码，寻找可被利用的漏洞或边界条件。</p>
+
+<hr>
+
+<h2 id="4-4-本章小结">4.4 本章小结</h2>
+
+<p>本章我们深入了 gstack SKILL 系统的三层架构：</p>
+
+<ol>
+<li><strong>模板编译层</strong>：<code>.tmpl</code> → SKILL.md 的编译管线，包含 per-host 字段验证、AI Slop 检测、Voice Trigger 处理</li>
+<li><strong>前导脚本层</strong>：Preamble 在技能执行前注入环境检测代码，实现会话跟踪、路由注入、遥测配置</li>
+<li><strong>专家分派层</strong>：Review Army 以交响乐团模式并行分派多个专家，通过自适应门控智能调度，基于 PQS 评分输出最终审查报告</li>
+</ol>
+
+<p>这三个层次的协作，使得 gstack 的 SKILL 系统既有<strong>模板化的可维护性</strong>（编译层）、又有<strong>运行时的灵活性</strong>（Preamble 层）、还有<strong>并行化的效率</strong>（Review Army 层）。</p>
+
+<p>下一章我们将聚焦具体技能的实现：<strong>/plan</strong>、<strong>/review</strong>、<strong>/ship</strong> 这三个核心技能是如何利用本章介绍的底层机制工作的。</p>
+
+<hr>
+
+<div class="table-wrap"><table>
+<tr><th>层级</th><th>核心文件</th><th>核心概念</th></tr>
+<tr><td>------</td><td>----------</td><td>----------</td></tr>
+<tr><td>模板编译</td><td><code>gen-skill-docs.ts</code></td><td>占位符、per-host 验证、AI Slop 黑名单</td></tr>
+<tr><td>前导脚本</td><td><code>preamble.ts</code></td><td>PPID 会话跟踪、路由注入、遥测分层</td></tr>
+<tr><td>专家分派</td><td><code>review-army.ts</code></td><td>Always-on/Conditional 专家、自适应门控、PQS</td></tr>
+</table></div>
+
+
+<nav class="chapter-nav">
+  <a href="ch03.html">◀ 第3章：持久化浏览器核心实现——browse 模块架构</a>
+  <a href="ch05.html">第5章：核心技能解析——/plan、/review、/ship ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#概述">概述</a></li><li><a href="#4-1-模板编译管线">4.1 模板编译管线</a></li><li><a href="#4-2-前导脚本注入机制">4.2 前导脚本注入机制</a></li><li><a href="#4-3-多专家分派模式">4.3 多专家分派模式</a></li><li><a href="#4-4-本章小结">4.4 本章小结</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  // Progress bar
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  // Back to top
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  // Right TOC highlight
+  var tocLinks = document.querySelectorAll('.toc-list a');
+  if (tocLinks.length) {
+    var headings = Array.from(document.querySelectorAll('#main h2'));
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var active = headings.filter(function(h) { return h.offsetTop <= scrollY; }).pop();
+      tocLinks.forEach(function(a) { a.classList.remove('active'); });
+      if (active) {
+        var match = document.querySelector('.toc-list a[href="#' + active.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }
+  // Mermaid
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  // Highlight.js
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>

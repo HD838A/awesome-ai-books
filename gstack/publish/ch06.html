@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第6章：autoplan 与 review-army 深度解析 — AI 工程流水线：gstack 源码深度解读</title>
+<style>*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #FEFCF8;
+  color: #2C2C2C;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+/* Progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+  background: #C7553A; z-index: 2000; transition: width 0.08s linear;
+}
+/* Layout */
+#layout { display: flex; min-height: 100vh; }
+/* Left sidebar */
+#sidebar {
+  position: fixed; top: 3px; left: 0;
+  width: 260px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-right: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100;
+}
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+}
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a {
+  display: block; padding: 6px 12px; border-radius: 5px;
+  color: #444; font-size: 0.82em; text-decoration: none;
+  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+/* Main content */
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+/* Right TOC */
+#toc-right {
+  position: fixed; top: 3px; right: 0;
+  width: 224px; height: calc(100vh - 3px);
+  background: #F8F4EE; border-left: 1px solid #E8E2D8;
+  overflow-y: auto; z-index: 100; padding: 22px 14px;
+}
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a {
+  display: block; padding: 3px 8px; font-size: 0.77em; color: #666;
+  text-decoration: none; border-left: 2px solid transparent;
+  line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s;
+}
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em;
+}
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+/* Code */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace;
+  font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em;
+  border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all;
+}
+pre {
+  background: #F5F2ED; padding: 18px 22px; border-radius: 8px;
+  overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6;
+}
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+.hljs { background: #F5F2ED !important; }
+/* Blockquote */
+blockquote {
+  margin: 1.4em 0; padding: 14px 20px;
+  border-left: 4px solid #C7553A;
+  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 0; color: #555; font-style: italic; }
+/* Lists */
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+/* HR */
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+/* Mermaid */
+.mermaid {
+  margin: 1.6em 0; padding: 20px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 8px;
+  text-align: center; overflow-x: auto;
+}
+/* Chapter nav */
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px;
+}
+.chapter-nav a {
+  display: inline-flex; align-items: center; padding: 10px 16px;
+  background: #F5F2ED; border: 1px solid #E8E2D8; border-radius: 6px;
+  color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%;
+  line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+/* Back to top */
+#back-to-top {
+  position: fixed; bottom: 28px; right: 240px;
+  width: 42px; height: 42px; background: #C7553A; color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  font-size: 18px; font-weight: bold; display: none;
+  align-items: center; justify-content: center; z-index: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+/* Index page */
+.index-hero {
+  text-align: center; padding: 44px 0 52px;
+  border-bottom: 1px solid #E8E2D8; margin-bottom: 52px;
+}
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li {
+  margin-bottom: 10px; padding: 13px 20px;
+  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+/* Responsive */
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #toc-right { display: none; }
+  #main { margin: 0; padding: 24px 20px 60px; }
+  #back-to-top { right: 20px; }
+}</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI 工程流水线：gstack 源码深度解读</div>
+      <div class="sidebar-subtitle">从守护进程到构建管道，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a>
+<a href="ch02.html">第2章：gstack 的整体架构——守护进程与状态管理</a>
+<a href="ch03.html">第3章：持久化浏览器核心实现——browse 模块架构</a>
+<a href="ch04.html">第4章：SKILL.md 模板系统——Markdown 即配置</a>
+<a href="ch05.html">第5章：核心技能解析——/plan、/review、/ship</a>
+<a href="ch06.html" class="active">第6章：autoplan 与 review-army 深度解析</a>
+<a href="ch07.html">第7章：Host 适配层——用一套源码服务 8 种 AI 代理</a>
+<a href="ch08.html">第8章：8 大 AI 代理支持——配置即生态</a>
+<a href="ch09.html">第9章：安全机制——freeze / guard / careful</a>
+<a href="ch10.html">第 10 章：构建与发布</a>
+    </div>
+  </nav>
+  <main id="main">
+<h1 id="第6章-autoplan-与-review-army-深度解析">第6章：autoplan 与 review-army 深度解析</h1>
+
+<p>第5章我们深入了三大核心技能的实现。本章我们将聚焦两个<strong>规模化 SKILL 实践</strong>：</p>
+
+<ul>
+<li><strong>autoplan</strong>：全自动化审查流水线，用 6 条决策原则替代 15-30 个中间问题</li>
+<li><strong>review-army 深度</strong>：自适应门控、发现合并、置信度校准的完整机制</li>
+</ul>
+
+<p>读完本章，你会理解 gstack 如何在大规模代码审查中实现<strong>智能化调度</strong>——让审查既全面又高效。</p>
+
+<hr>
+
+<h2 id="概述">概述</h2>
+
+<p>本章我们将探索：</p>
+
+<ul>
+<li><strong>autoplan 全自动化审查</strong>：6 条决策原则、决策分类、顺序执行</li>
+<li><strong>Review Army 四步流程</strong>：Selection → Dispatch → Merge → Red Team</li>
+<li><strong>自适应门控算法</strong>：基于历史命中率的智能专家调度</li>
+<li><strong>置信度校准体系</strong>：发现的质量与覆盖率的平衡</li>
+</ul>
+
+<hr>
+
+<h2 id="6-1-autoplan-全自动化审查">6.1 autoplan 全自动化审查</h2>
+
+<h3 id="6-1-1-定位-一键全审查">6.1.1 定位：一键全审查</h3>
+
+<p>autoplan 是 gstack 的<strong>自动驾驶模式</strong>。想象你告诉导航仪"带我去目的地"，而不是一步一步问"下一个路口左转还是右转？"。autoplan 读取完整的 CEO、Design、Eng、DX 四层审查技能文件，按顺序执行——与手动运行每个技能同等深度，但所有中间 AskUserQuestion 用 6 条决策原则自动回答。</p>
+
+<p><strong>触发场景</strong>：</p>
+<ul>
+<li>用户说 "auto review"、"autoplan"、"run all reviews"</li>
+<li>用户有 plan 文件但不想回答 15-30 个中间问题</li>
+</ul>
+
+<pre><code class="language-bash"># 调用 autoplan
+/autoplan
+# 输出: One command. Rough plan in, fully reviewed plan out.
+</code></pre>
+
+<h3 id="6-1-2-六条决策原则">6.1.2 六条决策原则</h3>
+
+<p>autoplan 的核心是 <strong>6 条决策宪法</strong>——它们约束所有自动决策：</p>
+
+<pre><code class="language-markdown">1. **Choose completeness** — Ship the whole thing.
+   Pick the approach that covers more edge cases.
+
+2. **Boil lakes** — Fix everything in the blast radius.
+   Auto-approve expansions that are in blast radius AND &lt; 1 day CC effort.
+
+3. **Pragmatic** — If two options fix the same thing, pick the cleaner one.
+   5 seconds choosing, not 5 minutes.
+
+4. **DRY** — Duplicates existing functionality? Reject. Reuse what exists.
+
+5. **Explicit over clever** — 10-line obvious fix &gt; 200-line abstraction.
+   Pick what a new contributor reads in 30 seconds.
+
+6. **Bias toward action** — Merge &gt; review cycles &gt; stale deliberation.
+   Flag concerns but don't block.
+</code></pre>
+
+<p><strong>冲突解决</strong>（上下文相关的平局决胜）：</p>
+
+<div class="table-wrap"><table>
+<tr><th>阶段</th><th>主导原则</th></tr>
+<tr><td>------</td><td>----------</td></tr>
+<tr><td>CEO phase</td><td>P1 (completeness) + P2 (boil lakes)</td></tr>
+<tr><td>Eng phase</td><td>P5 (explicit) + P3 (pragmatic)</td></tr>
+<tr><td>Design phase</td><td>P5 (explicit) + P1 (completeness)</td></tr>
+</table></div>
+
+<h3 id="6-1-3-决策分类">6.1.3 决策分类</h3>
+
+<p>每条自动决策被分为三类，处理方式截然不同：</p>
+
+<div class="table-wrap"><table>
+<tr><th>分类</th><th>特征</th><th>处理方式</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><strong>Mechanical</strong></td><td>唯一正确答案</td><td>静默自动决定</td></tr>
+<tr><td><strong>Taste</strong></td><td>合理人会有分歧</td><td>自动决定，最终门控上浮</td></tr>
+<tr><td><strong>User Challenge</strong></td><td>双模型同意用户方向应改</td><td><strong>从不自动决定</strong></td></tr>
+</table></div>
+
+<p><strong>Taste 决策的三种自然来源</strong>：</p>
+
+<ol>
+<li><strong>Close approaches</strong>：前两名都可行，各有权衡</li>
+<li><strong>Borderline scope</strong>：在 blast radius 边缘，3-5 个文件</li>
+<li><strong>Codex disagreements</strong>：Codex 推荐不同但有合理依据</li>
+</ol>
+
+<p><strong>User Challenge 的特殊设计</strong>：</p>
+
+<p>当 Claude 和 Codex 都认为用户陈述的方向应该改变时，这是 User Challenge——<strong>从不自动决定</strong>。</p>
+
+<p>User Challenge 需要更丰富的上下文：</p>
+
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│ USER CHALLENGE — 人类最终确认                             │
+├─────────────────────────────────────────────────────────┤
+│ What the user said: [原始方向]                           │
+│ What both models recommend: [改变内容]                    │
+│ Why: [模型的推理]                                        │
+│ What context we might be missing: [明确承认盲点]           │
+│ If we're wrong, the cost is: [代价]                      │
+└─────────────────────────────────────────────────────────┘
+</code></pre>
+
+<p>例外：如果双模型都将改变标记为安全漏洞或可行性阻塞，AskUserQuestion 的措辞明确警告。但这仍是用户决定，只是措辞更紧迫。</p>
+
+<h3 id="6-1-4-顺序执行-强制">6.1.4 顺序执行（强制）</h3>
+
+<p>autoplan 严格按<strong>强制顺序</strong>执行四阶段——每一层建立在上一层之上：</p>
+
+<pre><code>Phase 0: Intake + Restore Point
+    ↓
+Phase 1: CEO Review（策略与范围）
+    ↓
+Phase 2: Design Review（条件性，UI scope 时）
+    ↓
+Phase 3: Eng Review（架构与测试）
+    ↓
+Phase 4: DX Review（条件性，DX scope 时）
+    ↓
+Final Gate: Taste Decisions 汇总确认
+</code></pre>
+
+<p><strong>从不当并行执行</strong>——如果 Design 阶段发现的问题影响 CEO 阶段的范围决策，并行执行会导致不一致。顺序执行确保每一层的输出是下一层的可靠输入。</p>
+
+<h3 id="6-1-5-phase-0-摄入检查">6.1.5 Phase 0 摄入检查</h3>
+
+<p>Phase 0 三个关键检测决定后续阶段的 scope：</p>
+
+<p><strong>UI Scope 检测</strong>：</p>
+<pre><code class="language-bash">grep plan for: component, screen, form, button, modal,
+layout, dashboard, sidebar, nav, dialog
+# Require 2+ matches → UI scope = true
+</code></pre>
+
+<p><strong>DX Scope 检测</strong>：</p>
+<pre><code class="language-bash">grep plan for: API, endpoint, REST, GraphQL, gRPC,
+webhook, CLI, command, SDK, package, npm, pip, SKILL.md...
+# Also trigger if: product IS a developer tool
+</code></pre>
+
+<p><strong>Restore Point</strong>：</p>
+<p>在开始任何工作前，保存 plan 文件到外部文件：</p>
+
+<pre><code class="language-bash"># 保存 restore point
+cp $PLAN_FILE $HOME/.gstack/projects/$SLUG/${BRANCH}-autoplan-restore-${DATETIME}.md
+
+# 在 plan 文件中记录 restore path
+&lt;!-- /autoplan restore point: /path/to/restore.md --&gt;
+</code></pre>
+
+<p>这确保如果 autoplan 把事情搞砸，用户可以一键回滚。</p>
+
+<h3 id="6-1-6-dual-voices-架构">6.1.6 Dual Voices 架构</h3>
+
+<p>CEO 和 Design 阶段总是运行<strong>双声音</strong>——Claude subagent（Agent Tool）+ Codex（Bash）：</p>
+
+<pre><code class="language-typescript">// [autoplan/SKILL.md.tmpl:~220] Dual Voices
+// Run them sequentially in foreground. First Claude subagent, then Codex.
+// Both must complete before building the consensus table.
+</code></pre>
+
+<p><strong>Claude CEO subagent</strong>（Agent Tool）：</p>
+<blockquote><p>"Read the plan file. You are an independent CEO/strategist... Evaluate: Is this the right problem? What's the 6-month regret? What alternatives were dismissed?"</p></blockquote>
+
+<p><strong>Codex CEO voice</strong>（Bash）：</p>
+<pre><code class="language-bash">codex exec "You are a CEO/founder advisor reviewing a development plan.
+Challenge the strategic foundations..." -C "$_REPO_ROOT" -s read-only
+</code></pre>
+
+<p><strong>共识表</strong>：</p>
+
+<pre><code>CEO DUAL VOICES — CONSENSUS TABLE:
+═══════════════════════════════════════════════════════════════
+  Dimension                           Claude  Codex  Consensus
+  ─────────────────────────────────── ─────── ─────── ─────────
+  1. Premises valid?                   —       —      —
+  2. Right problem to solve?           —       —      —
+  3. Scope calibration correct?       —       —      —
+  4. Alternatives sufficiently explored?—      —      —
+  5. Competitive/market risks covered?—       —      —
+  6. 6-month trajectory sound?        —       —      —
+═══════════════════════════════════════════════════════════════
+CONFIRMED = both agree. DISAGREE = models differ → taste decision.
+</code></pre>
+
+<hr>
+
+<h2 id="6-2-review-army-四步深度流程">6.2 Review Army 四步深度流程</h2>
+
+<h3 id="6-2-1-流程总览">6.2.1 流程总览</h3>
+
+<p>Review Army 的完整四步流程：</p>
+
+<pre><code>Step 4.5: Specialist Selection
+    ├── Detect stack and scope
+    ├── Read specialist hit rates (adaptive gating)
+    └── Select + gate specialists
+
+Step 4.6: Specialist Dispatch (parallel)
+    └── Launch ALL via Agent tool (foreground, not background)
+
+Step 4.7: Findings Merge
+    ├── Parse JSON outputs
+    ├── Fingerprint deduplication
+    ├── Multi-specialist confirmation
+    ├── Confidence gates
+    └── PR Quality Score calculation
+
+Step 4.8: Red Team (conditional)
+    └── If DIFF_LINES &gt; 200 OR CRITICAL findings exist
+</code></pre>
+
+<h3 id="6-2-2-specialist-selection">6.2.2 Specialist Selection</h3>
+
+<p><strong>Always-on 专家</strong>（50+ 变更行时始终分派）：</p>
+<ul>
+<li>Testing Specialist → 读取 <code>review/specialists/testing.md</code></li>
+<li>Maintainability Specialist → 读取 <code>review/specialists/maintainability.md</code></li>
+</ul>
+
+<p><strong>Conditional 专家</strong>（scope 匹配时）：</p>
+
+<div class="table-wrap"><table>
+<tr><th>专家</th><th>触发条件</th></tr>
+<tr><td>------</td><td>----------</td></tr>
+<tr><td>Security</td><td><code>SCOPE_AUTH=true</code> OR (<code>SCOPE_BACKEND=true</code> AND <code>DIFF_LINES &gt; 100</code>)</td></tr>
+<tr><td>Performance</td><td><code>SCOPE_BACKEND=true</code> OR <code>SCOPE_FRONTEND=true</code></td></tr>
+<tr><td>Data Migration</td><td><code>SCOPE_MIGRATIONS=true</code></td></tr>
+<tr><td>API Contract</td><td><code>SCOPE_API=true</code></td></tr>
+<tr><td>Design</td><td><code>SCOPE_FRONTEND=true</code></td></tr>
+</table></div>
+
+<pre><code class="language-bash"># [review-army.ts:~20] Stack detection
+source &lt;(${ctx.paths.binDir}/gstack-diff-scope &lt;base&gt;)
+STACK=""
+[ -f Gemfile ] &amp;&amp; STACK="${STACK}ruby "
+[ -f package.json ] &amp;&amp; STACK="${STACK}node "
+# ...
+echo "STACK: ${STACK:-unknown}"
+DIFF_LINES=$(git diff origin/&lt;base&gt; --stat | tail -1 | grep -oE '[0-9]+' || echo "0")
+</code></pre>
+
+<h3 id="6-2-3-自适应门控算法">6.2.3 自适应门控算法</h3>
+
+<p>adaptive gating 是 Review Army 的<strong>自我优化机制</strong>——它让专家调度随时间改进：</p>
+
+<pre><code class="language-bash"># [review-army.ts:~20] 读取专家命中率
+${ctx.paths.binDir}/gstack-specialist-stats 2&gt;/dev/null
+</code></pre>
+
+<p>输出格式示例：</p>
+<pre><code>[SPECIALIST:security] dispatched:12 findings:2 → [GATE_CANDIDATE]
+[SPECIALIST:testing] dispatched:15 findings:8 → [NEVER_GATE]
+</code></pre>
+
+<p><strong>门控规则</strong>：</p>
+
+<div class="table-wrap"><table>
+<tr><th>标签</th><th>含义</th><th>行为</th></tr>
+<tr><td>------</td><td>------</td><td>------</td></tr>
+<tr><td><code>[GATE_CANDIDATE]</code></td><td>0 发现 in 10+ 分派</td><td>跳过</td></tr>
+<tr><td><code>[NEVER_GATE]</code></td><td>永不门控</td><td>始终分派</td></tr>
+<tr><td>scope skip</td><td>scope 不匹配</td><td>跳过</td></tr>
+</table></div>
+
+<p><strong>强制标志</strong>：<code>--security</code>、<code>--all-specialists</code> 等标志绕过门控。</p>
+
+<h3 id="6-2-4-specialist-dispatch">6.2.4 Specialist Dispatch</h3>
+
+<p>每个专家 subagent 以<strong>并行</strong>方式启动——所有专家同时运行，互不阻塞：</p>
+
+<pre><code class="language-typescript">// [review-army.ts:~70] 并行分派
+// Launch ALL selected specialists in a single message
+// (multiple Agent tool calls) so they run in parallel
+// Each subagent has fresh context — no prior review bias
+</code></pre>
+
+<p>每个 subagent 接收的 prompt 包含：</p>
+
+<ol>
+<li><strong>checklist 内容</strong>（从 specialist 文件读取）</li>
+<li><strong>Stack context</strong>：<code>"This is a {STACK} project."</code></li>
+<li><strong>Past learnings</strong>：</li>
+</ol>
+
+<pre><code class="language-bash">${ctx.paths.binDir}/gstack-learnings-search --type pitfall --query "{domain}" --limit 5
+</code></pre>
+
+<ol>
+<li><strong>JSON 输出格式要求</strong>：</li>
+</ol>
+
+<pre><code class="language-json">{
+  "severity": "CRITICAL|INFORMATIONAL",
+  "confidence": 9,
+  "path": "src/handler.ts",
+  "line": 42,
+  "category": "security",
+  "summary": "SQL injection via string interpolation",
+  "fix": "Use parameterized query",
+  "fingerprint": "src/handler.ts:42:sql-injection",
+  "specialist": "security"
+}
+</code></pre>
+
+<h3 id="6-2-5-findings-merge-与-pqs-计算">6.2.5 Findings Merge 与 PQS 计算</h3>
+
+<p>发现合并是 Review Army 的<strong>聚变反应</strong>——多个专家的独立发现汇聚成统一报告：</p>
+
+<p><strong>指纹去重</strong>：</p>
+<pre><code class="language-typescript">// 优先使用显式 fingerprint 字段
+// 否则: "{path}:{line}:{category}"
+fingerprint = fingerprint_field || `${path}:${line}:${category}`
+</code></pre>
+
+<p><strong>多专家确认</strong>：</p>
+<p>当两个专家独立发现同一问题（相同 fingerprint）：</p>
+<ul>
+<li>保留最高置信度</li>
+<li>confidence +1（上限 10）</li>
+<li>tag: "MULTI-SPECIALIST CONFIRMED (security + eng)"</li>
+</ul>
+
+<p><strong>PR Quality Score（PQS）</strong>：</p>
+
+<pre><code>quality_score = max(0, 10 - (critical_count * 2 + informational_count * 0.5))
+上限: 10
+</code></pre>
+
+<div class="table-wrap"><table>
+<tr><th>PQS</th><th>含义</th></tr>
+<tr><td>-----</td><td>------</td></tr>
+<tr><td>9-10</td><td>优秀，几乎无问题</td></tr>
+<tr><td>7-8</td><td>良好，少量可改进</td></tr>
+<tr><td>5-6</td><td>一般，需要关注</td></tr>
+<tr><td>3-4</td><td>较差，建议延迟合并</td></tr>
+<tr><td>0-2</td><td>严重问题，必须修复</td></tr>
+</table></div>
+
+<h3 id="6-2-6-red-team">6.2.6 Red Team</h3>
+
+<p>Red Team 是 Review Army 的<strong>特种部队</strong>——在最需要的时候介入：</p>
+
+<p><strong>触发条件</strong>：</p>
+<ul>
+<li><code>DIFF_LINES &gt; 200</code> <strong>OR</strong></li>
+<li>任何专家产生 CRITICAL 发现</li>
+</ul>
+
+<pre><code class="language-typescript">// [review-army.ts:~200] Red Team dispatch
+// Activation: Only if DIFF_LINES &gt; 200 OR any specialist produced CRITICAL
+</code></pre>
+
+<p>Red Team subagent 的独特之处：它知道专家们<strong>已经捕获了什么</strong>，因此专注于<strong>找遗漏</strong>：</p>
+
+<ul>
+<li>跨领域问题（单个专家 checklist 不覆盖）</li>
+<li>集成边界问题</li>
+<li>失败模式（专家从不同角度可能遗漏）</li>
+</ul>
+
+<hr>
+
+<h2 id="6-3-置信度校准体系">6.3 置信度校准体系</h2>
+
+<h3 id="6-3-1-1-10-置信度-rubric">6.3.1 1-10 置信度 rubric</h3>
+
+<p>每个发现必须包含 <strong>1-10 置信度分数</strong>。这平衡了<strong>精确性</strong>（只报告高置信度发现）与<strong>覆盖率</strong>（不遗漏潜在问题）：</p>
+
+<div class="table-wrap"><table>
+<tr><th>分数</th><th>含义</th><th>显示规则</th></tr>
+<tr><td>------</td><td>------</td><td>----------</td></tr>
+<tr><td><strong>9-10</strong></td><td>通过阅读具体代码验证。Concrete bug 或 exploit 已演示。</td><td>正常显示</td></tr>
+<tr><td><strong>7-8</strong></td><td>高置信度模式匹配。很可能正确。</td><td>正常显示</td></tr>
+<tr><td><strong>5-6</strong></td><td>中等。可能误报。</td><td>带 caveat："中置信度，验证这是否真的是问题"</td></tr>
+<tr><td><strong>3-4</strong></td><td>低置信度。模式可疑但可能没问题。</td><td>仅在 appendix</td></tr>
+<tr><td><strong>1-2</strong></td><td>推测。仅在严重度 P0 时报告。</td><td>完全压制</td></tr>
+</table></div>
+
+<h3 id="6-3-2-发现格式">6.3.2 发现格式</h3>
+
+<pre><code class="language-markdown">[P1] (confidence: 9/10) app/models/user.rb:42 — SQL injection via string interpolation in where clause
+[P2] (confidence: 5/10) app/controllers/api/v1/users_controller.rb:18 — Possible N+1 query, verify with production logs
+</code></pre>
+
+<h3 id="6-3-3-校准学习">6.3.3 校准学习</h3>
+
+<p>如果报告了 &lt;7 置信度的发现，但用户确认<strong>确实是</strong>问题——这是<strong>校准事件</strong>：</p>
+
+<pre><code>Initial confidence was too low → Log the corrected pattern as a Learning
+→ Future reviews catch it with higher confidence
+</code></pre>
+
+<p>这让 Review Army 随时间<strong>变聪明</strong>——每次校准事件都是一次学习。</p>
+
+<hr>
+
+<h2 id="6-4-本章小结">6.4 本章小结</h2>
+
+<p>本章我们深入了 autoplan 和 review-army 的深度机制：</p>
+
+<ol>
+<li><strong>autoplan 全自动化审查</strong>：6 条决策原则作为宪法约束，决策分为 Mechanical/Taste/User Challenge 三类，强制顺序执行确保层级一致性</li>
+<li><strong>Review Army 四步流程</strong>：Selection → Dispatch → Merge → Red Team，每步都有明确的职责和交互协议</li>
+<li><strong>自适应门控算法</strong>：基于 <code>gstack-specialist-stats</code> 的历史数据，自动淘汰无效专家，让调度随时间优化</li>
+<li><strong>置信度校准体系</strong>：1-10 分数平衡精确性与覆盖率，校准学习让系统持续改进</li>
+</ol>
+
+<p>这三章（ch04-ch06）完整覆盖了 SKILL 系统的设计哲学：模板化的可维护性、运行时的灵活性、大规模并行化的效率。</p>
+
+<p>下一批（ch07-ch10）我们将探索 <strong>Host 适配层</strong>、<strong>8 大 AI 代理支持</strong>、<strong>安全机制</strong>和<strong>构建发布</strong>。</p>
+
+<hr>
+
+<div class="table-wrap"><table>
+<tr><th>组件</th><th>源码位置</th><th>核心概念</th></tr>
+<tr><td>------</td><td>----------</td><td>----------</td></tr>
+<tr><td>6 Decision Principles</td><td><code>autoplan:~50</code></td><td>决策宪法</td></tr>
+<tr><td>Decision Classification</td><td><code>autoplan:~70</code></td><td>Mechanical/Taste/User Challenge</td></tr>
+<tr><td>Specialist Selection</td><td><code>review-army.ts:~20</code></td><td>Always-on + Conditional</td></tr>
+<tr><td>Adaptive Gating</td><td><code>review-army.ts:~40</code></td><td>命中率追踪</td></tr>
+<tr><td>Findings Merge</td><td><code>review-army.ts:~140</code></td><td>指纹去重 + PQS</td></tr>
+<tr><td>Red Team</td><td><code>review-army.ts:~200</code></td><td>特种部队触发</td></tr>
+<tr><td>Confidence Calibration</td><td><code>confidence.ts:~15</code></td><td>1-10 rubric</td></tr>
+</table></div>
+
+
+<nav class="chapter-nav">
+  <a href="ch05.html">◀ 第5章：核心技能解析——/plan、/review、/ship</a>
+  <a href="ch07.html">第7章：Host 适配层——用一套源码服务 8 种 AI 代理 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"><div class="toc-title">本章目录</div><ul class="toc-list"><li><a href="#概述">概述</a></li><li><a href="#6-1-autoplan-全自动化审查">6.1 autoplan 全自动化审查</a></li><li><a href="#6-2-review-army-四步深度流程">6.2 Review Army 四步深度流程</a></li><li><a href="#6-3-置信度校准体系">6.3 置信度校准体系</a></li><li><a href="#6-4-本章小结">6.4 本章小结</a></li></ul></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  // Progress bar
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  // Back to top
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  // Right TOC highlight
+  var tocLinks = document.querySelectorAll('.toc-list a');
+  if (tocLinks.length) {
+    var headings = Array.from(document.querySelectorAll('#main h2'));
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var active = headings.filter(function(h) { return h.offsetTop <= scrollY; }).pop();
+      tocLinks.forEach(function(a) { a.classList.remove('active'); });
+      if (active) {
+        var match = document.querySelector('.toc-list a[href="#' + active.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }
+  // Mermaid
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  // Highlight.js
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>
