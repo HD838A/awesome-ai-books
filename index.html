@@ -27,7 +27,8 @@ body {
   font-size: 0.95em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 4px;
 }
 .sidebar-subtitle { font-size: 0.68em; color: #999; line-height: 1.4; }
-.sidebar-nav { padding: 8px 6px 20px; }
+.sidebar-nav { padding: 8px 6px 20px; flex: 1; }
+#sidebar { display: flex; flex-direction: column; }
 .sidebar-nav a {
   display: block; padding: 5px 10px; border-radius: 5px;
   color: #444; font-size: 0.8em; text-decoration: none;
@@ -95,6 +96,12 @@ body {
       <a href="openclaw/">🦎 openclaw</a>
       <a href="gstack/">🛠️ gstack</a>
       <a href="superpowers/">⚡ superpower</a>
+    </div>
+    <div style="padding: 14px 14px 20px; border-top: 1px solid #E8E2D8; margin-top: auto;">
+      <div style="font-size: 0.68em; color: #aaa; line-height: 1.6;">
+        <div style="font-weight: 600; color: #888; margin-bottom: 2px;">Awesome AI Books by Andy</div>
+        <div id="commit-info">加载中…</div>
+      </div>
     </div>
   </nav>
   <main id="main">
@@ -181,5 +188,23 @@ body {
 
   </main>
 </div>
+<script>
+(async function() {
+  try {
+    const resp = await fetch('https://api.github.com/repos/HD838A/awesome-ai-books/commits?per_page=1');
+    const data = await resp.json();
+    if (data && data.length) {
+      const c = data[0];
+      const short = c.sha.slice(0, 7);
+      const date = new Date(c.commit.author.date);
+      const fmt = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('commit-info').innerHTML =
+        `<a href="https://github.com/HD838A/awesome-ai-books/commit/${c.sha}" style="color:#aaa;text-decoration:none" target="_blank" rel="noopener">${fmt}<br>#${short}</a>`;
+    }
+  } catch(e) {
+    document.getElementById('commit-info').textContent = '—';
+  }
+})();
+</script>
 </body>
 </html>
