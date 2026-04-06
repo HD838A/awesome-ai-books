@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Books</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #58a6ff;
+    }
+    p.subtitle {
+      color: #8b949e;
+      margin-bottom: 2.5rem;
+    }
+    .books {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      max-width: 900px;
+    }
+    .book-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s, transform 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .book-card:hover {
+      border-color: #58a6ff;
+      transform: translateY(-2px);
+    }
+    .book-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #58a6ff;
+    }
+    .book-desc {
+      font-size: 0.875rem;
+      color: #8b949e;
+      line-height: 1.5;
+    }
+    .book-link {
+      font-size: 0.8rem;
+      color: #388bfd;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Books</h1>
+  <p class="subtitle">深入解读 AI 开源项目，每本书剖析一个项目的设计思想、架构与源码。</p>
+  <div class="books">
+    <a class="book-card" href="gstack/">
+      <div class="book-name">gstack</div>
+      <div class="book-desc">10 章，深入解读 gstack 架构设计与实现细节。</div>
+      <div class="book-link">→ 开始阅读</div>
+    </a>
+    <a class="book-card" href="superpowers/">
+      <div class="book-name">superpowers</div>
+      <div class="book-desc">深入解读 superpowers 开源项目。</div>
+      <div class="book-link">→ 开始阅读</div>
+    </a>
+  </div>
+</body>
+</html>
