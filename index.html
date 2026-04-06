@@ -37,6 +37,16 @@ body {
 .sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
 /* Main content */
 #main { margin-left: 220px; padding: 36px 44px 60px; min-height: 100vh; max-width: 820px; }
+/* Intro */
+.intro { margin-bottom: 40px; padding: 20px 24px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; }
+.intro h3 {
+  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 1em; color: #1A1A1A; margin-bottom: 0.6em;
+}
+.intro p { font-size: 0.82em; color: #555; margin-bottom: 0.5em; line-height: 1.7; }
+.intro p:last-child { margin-bottom: 0; }
+.intro strong { color: #1A1A1A; }
+.intro .tagline { font-size: 0.78em; color: #888; font-style: italic; margin-top: 0.8em; }
 /* Book sections */
 .book-section { margin-bottom: 36px; }
 .book-section h2 {
@@ -84,6 +94,14 @@ body {
     </div>
   </nav>
   <main id="main">
+
+<div class="intro">
+  <h3>关于这些框架</h3>
+  <p><strong>open-multi-agent</strong> — TypeScript 生态最缺的多代理协作框架。把 Claude Code 最核心的多代理编排系统从零重写，只用 3 个依赖、27 个文件，就实现了大目标自动拆解、带依赖的并行调度、消息总线与共享内存协作。一行代码搞定复杂任务，填补了 JS/TS 轻量多代理框架的核心空白。支持 Claude、GPT、Grok、Ollama 等任意模型，全程单进程运行。</p>
+  <p><strong>gstack</strong> — 亮点是 YC 的知识和评判标准，适合产品和 idea 的深度打磨，AI 会对你进行灵魂拷问。未来版本支持知识沉淀，适合大工程的架构设计阶段。</p>
+  <p><strong>superpower</strong> — 强调流程纪律：spec → plan → 拆解 → 执行 → 测试 review → 提交。流程控制好，适合进入执行阶段时的任务推进。</p>
+  <p class="tagline">大工程用 gstack 做产品和 idea 打磨，superpower 来执行。</p>
+</div>
 
 <div class="book-section">
   <h2>open-multi-agent</h2>
