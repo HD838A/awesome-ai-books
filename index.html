@@ -1,80 +1,117 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Books</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      background: #0d1117;
-      color: #c9d1d9;
-      min-height: 100vh;
-      padding: 2rem;
-    }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-      color: #58a6ff;
-    }
-    p.subtitle {
-      color: #8b949e;
-      margin-bottom: 2.5rem;
-    }
-    .books {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.5rem;
-      max-width: 900px;
-    }
-    .book-card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 1.5rem;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color 0.2s, transform 0.2s;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .book-card:hover {
-      border-color: #58a6ff;
-      transform: translateY(-2px);
-    }
-    .book-name {
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: #58a6ff;
-    }
-    .book-desc {
-      font-size: 0.875rem;
-      color: #8b949e;
-      line-height: 1.5;
-    }
-    .book-link {
-      font-size: 0.8rem;
-      color: #388bfd;
-      margin-top: 0.5rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Books</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --border: #e9ecef;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+        }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+        header {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        header h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+        header .subtitle { font-size: 1.2rem; opacity: 0.9; }
+
+        .books {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .book-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .book-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(108, 92, 231, 0.15);
+        }
+
+        .book-card h2 {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .book-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .book-card .arrow {
+            display: inline-block;
+            margin-top: 1rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border);
+        }
+
+        footer a { color: var(--accent); text-decoration: none; }
+    </style>
 </head>
 <body>
-  <h1>AI Books</h1>
-  <p class="subtitle">深入解读 AI 开源项目，每本书剖析一个项目的设计思想、架构与源码。</p>
-  <div class="books">
-    <a class="book-card" href="gstack/">
-      <div class="book-name">gstack</div>
-      <div class="book-desc">10 章，深入解读 gstack 架构设计与实现细节。</div>
-      <div class="book-link">→ 开始阅读</div>
-    </a>
-    <a class="book-card" href="superpowers/">
-      <div class="book-name">superpowers</div>
-      <div class="book-desc">深入解读 superpowers 开源项目。</div>
-      <div class="book-link">→ 开始阅读</div>
-    </a>
-  </div>
+    <div class="container">
+        <header>
+            <h1>AI Books</h1>
+            <p class="subtitle">深入解读 AI 开源项目的设计思想、架构与源码</p>
+        </header>
+
+        <div class="books">
+            <a class="book-card" href="gstack/">
+                <h2>gstack</h2>
+                <p>10 章，深入解读 gstack 架构设计与实现细节。</p>
+                <span class="arrow">→ 开始阅读</span>
+            </a>
+            <a class="book-card" href="superpowers/">
+                <h2>superpowers</h2>
+                <p>深入解读 superpowers 开源项目。</p>
+                <span class="arrow">→ 开始阅读</span>
+            </a>
+        </div>
+
+        <footer>
+            Generated by <a href="https://github.com/lordmos/scriptorium">scriptorium</a>
+        </footer>
+    </div>
 </body>
 </html>
