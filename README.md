@@ -36,5 +36,5 @@
 
 ## 关于
 
-由 [CEO](https://github.com/HD838A) 生成。
+由 [Andy](https://github.com/HD838A) 生成。
 书籍生成工具：[scriptorium](https://github.com/lordmos/scriptorium)
