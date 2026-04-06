@@ -6,70 +6,69 @@
 <title>AI Books</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
 body {
   background: #FEFCF8;
   color: #2C2C2C;
   font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.85;
+  font-size: 15px;
+  line-height: 1.7;
 }
 #layout { display: flex; min-height: 100vh; }
 /* Left sidebar */
 #sidebar {
   position: fixed; top: 0; left: 0;
-  width: 260px; height: 100vh;
+  width: 220px; height: 100vh;
   background: #F8F4EE; border-right: 1px solid #E8E2D8;
   overflow-y: auto; z-index: 100;
 }
-.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-header { padding: 18px 14px 12px; border-bottom: 1px solid #E8E2D8; }
 .sidebar-title {
   font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
-  font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px;
+  font-size: 0.95em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 4px;
 }
-.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
-.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-subtitle { font-size: 0.68em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 8px 6px 20px; }
 .sidebar-nav a {
-  display: block; padding: 6px 12px; border-radius: 5px;
-  color: #444; font-size: 0.82em; text-decoration: none;
-  line-height: 1.45; margin-bottom: 2px; word-break: break-all;
+  display: block; padding: 5px 10px; border-radius: 5px;
+  color: #444; font-size: 0.8em; text-decoration: none;
+  line-height: 1.4; margin-bottom: 2px; word-break: break-all;
   transition: background 0.15s, color 0.15s;
 }
 .sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
 /* Main content */
-#main { margin-left: 260px; padding: 48px 52px 80px; min-height: 100vh; max-width: 860px; }
-/* Hero */
-.hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
-.hero h1 {
-  font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
-  font-size: 2.6em; font-weight: 700; color: #1A1A1A; border: none; margin-bottom: 14px; padding: 0;
-}
-.hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+#main { margin-left: 220px; padding: 36px 44px 60px; min-height: 100vh; max-width: 820px; }
 /* Book sections */
-.book-section { margin-bottom: 60px; }
+.book-section { margin-bottom: 36px; }
 .book-section h2 {
   font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
-  font-size: 1.55em; color: #1A1A1A; padding-bottom: 0.28em;
-  border-bottom: 1px solid #E8E2D8; margin-bottom: 1.2em;
+  font-size: 1.15em; color: #1A1A1A; margin-bottom: 0.6em;
+  display: flex; align-items: center; gap: 8px;
 }
-.chapter-list { padding-left: 0; list-style: none; }
+.book-section h2::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 1em;
+  background: #C7553A; border-radius: 2px;
+  flex-shrink: 0;
+}
+.book-desc {
+  font-size: 0.82em; color: #777; margin-bottom: 0.7em;
+  padding-left: 12px; border-left: 2px solid #E8E2D8;
+}
+.chapter-list { padding-left: 12px; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
 .chapter-list li {
-  margin-bottom: 10px; padding: 13px 20px;
-  background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8;
-  transition: background 0.15s, border-color 0.15s;
+  background: #F5F0E8; border-radius: 4px; border: 1px solid #E8E2D8;
+  transition: border-color 0.15s;
 }
 .chapter-list li:hover { border-color: #C7553A; }
-.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
-.chapter-list li a:hover { color: #C7553A; }
-.book-desc {
-  background: linear-gradient(to right, #FFF9F5, #FEFCF8);
-  border-left: 4px solid #C7553A;
-  padding: 14px 20px; border-radius: 0 6px 6px 0;
-  margin-bottom: 1.4em; color: #555; font-style: italic;
+.chapter-list li a {
+  color: #444; font-size: 0.78em; text-decoration: none;
+  display: block; padding: 4px 10px; white-space: nowrap;
 }
+.chapter-list li a:hover { color: #C7553A; }
 @media (max-width: 900px) {
   #sidebar { display: none; }
-  #main { margin: 0; padding: 24px 20px 60px; }
+  #main { margin: 0; padding: 20px 16px 60px; }
 }
 </style>
 </head>
@@ -86,14 +85,9 @@ body {
   </nav>
   <main id="main">
 
-<div class="hero">
-  <h1>AI Books</h1>
-  <p class="subtitle">深入解读 AI 开源项目的设计思想、架构与源码</p>
-</div>
-
 <div class="book-section">
   <h2>openclaw</h2>
-  <p class="book-desc">openclaw 是一款运行在本地设备的 AI 助手平台，通过模块化架构连接各类 AI 模型与服务，提供任务自动化、长程记忆、Web 可视化等核心能力。</p>
+  <p class="book-desc">本地 AI 助手平台，模块化架构连接各类 AI 模型与服务</p>
   <ul class="chapter-list">
     <li><a href="openclaw/ch01.html">第 1 章 · OpenClaw 概览与核心概念</a></li>
     <li><a href="openclaw/ch02.html">第 2 章 · ACP 协议 - Agent 通信基础</a></li>
@@ -112,7 +106,7 @@ body {
 
 <div class="book-section">
   <h2>gstack</h2>
-  <p class="book-desc">gstack 是一款开源的 AI 辅助编程工具，通过持久化浏览器、SKILL.md 模板系统、多 Host 适配层和 PreToolUse Hook 安全机制，为开发者提供从架构设计到发布部署的全流程支持。</p>
+  <p class="book-desc">AI 辅助编程工具，持久化浏览器 + SKILL.md 模板 + 多 Host 适配</p>
   <ul class="chapter-list">
     <li><a href="gstack/ch01.html">第1章：gstack 是什么——AI 工程流水线的愿景</a></li>
     <li><a href="gstack/ch02.html">第2章：gstack 的整体架构——守护进程与状态管理</a></li>
@@ -129,7 +123,7 @@ body {
 
 <div class="book-section">
   <h2>superpowers</h2>
-  <p class="book-desc">superpowers 开源项目深度解读，探索 AI 编程助手如何赋予开发者超能力。</p>
+  <p class="book-desc">AI 编程助手如何赋予开发者超能力</p>
   <ul class="chapter-list">
     <li><a href="superpowers/ch01.html">第 1 章 · Superpowers 概述与快速上手</a></li>
     <li><a href="superpowers/ch02.html">第 2 章 · 系统架构设计</a></li>
