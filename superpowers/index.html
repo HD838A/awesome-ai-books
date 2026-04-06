@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superpowers 源码解析：从 AI 编程助手到超级开发者</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --border: #e9ecef;
+            --code-bg: #f1f3f5;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #ff7675;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        header .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 3rem;
+            border: 1px solid var(--border);
+        }
+
+        nav h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        nav ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 0.5rem;
+        }
+
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem;
+            display: block;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        nav a:hover {
+            background: var(--accent);
+            color: white;
+            padding-left: 1rem;
+        }
+
+        /* Content */
+        h1 {
+            font-size: 2rem;
+            margin: 3rem 0 1.5rem;
+            color: var(--text-primary);
+            border-bottom: 3px solid var(--accent);
+            padding-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin: 2.5rem 0 1rem;
+            color: var(--text-primary);
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            margin: 2rem 0 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        /* Quote */
+        blockquote {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--accent);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+        }
+
+        /* Code */
+        code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: "SF Mono", Monaco, Consolas, monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 1rem 0 1.5rem 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .alert-info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+        }
+
+        .alert-warning {
+            background: #fff8e1;
+            border-left: 4px solid #ffc107;
+        }
+
+        .alert-danger {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+
+        /* Mermaid diagrams */
+        .mermaid {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        /* Horizontal rule */
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 3rem 0;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem;
+            background: var(--bg-secondary);
+            margin-top: 4rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Superpowers 源码解析</h1>
+        <p class="subtitle">从 AI 编程助手到超级开发者</p>
+    </header>
+
+    <div class="container">
+        <nav>
+            <h2>📚 目录</h2>
+            <ul>
+                <li><a href="#ch1">第1章：Superpowers 概述与快速上手</a></li>
+                <li><a href="#ch2">第2章：系统架构设计</a></li>
+                <li><a href="#ch3">第3章：Skills 系统实现</a></li>
+                <li><a href="#ch4">第4章：Brainstorming 技能</a></li>
+                <li><a href="#ch5">第5章：Subagent-Driven Development</a></li>
+                <li><a href="#ch6">第6章：其他核心技能</a></li>
+                <li><a href="#ch7">第7章：Systematic Debugging</a></li>
+                <li><a href="#ch8">第8章：Test-Driven Development</a></li>
+                <li><a href="#ch9">第9章：多平台适配</a></li>
+                <li><a href="#ch10">第10章：高级主题与生态</a></li>
+                <li><a href="#appendix">附录：快速参考</a></li>
+            </ul>
+        </nav>
+
+        <section id="intro">
+            <blockquote>
+                你有没有过这样的经历：让 AI 帮你写代码，它哗哗地输出一大堆，看起来很专业，但一跑起来——编译错误、逻辑错误、边界情况全没考虑。你花了半小时改 AI 写的代码，比自己写还累。
+                <br><br>
+                或者另一个场景：你让 AI 帮你开发一个功能，它上来就开始写代码，写了三百行之后你发现——它理解错了需求。你不得不从头来。
+                <br><br>
+                <strong>Superpowers 就是来解决这些问题的。</strong>它不是让 AI 更快地写代码，而是让 AI 学会"先想清楚再动手"。
+            </blockquote>
+        </section>
+
+        <hr>
+
+        <!-- 第1章 -->
+        <section id="ch1">
+            <h1>第1章：Superpowers 概述与快速上手</h1>
+
+            <h2>1.1 Superpowers 是什么</h2>
+            <p><strong>Superpowers</strong> 是一个为 AI 编程助手提供"超能力"的插件框架。安装之后，你的 AI 助手会从"只会写代码"进化为"能够进行系统化设计、规范开发、持续迭代"的超级开发者。</p>
+
+            <h3>核心设计理念</h3>
+            <p>想象一下 RPG 游戏中的装备系统：穿上不同的装备，你的角色就获得了不同的能力。Superpowers 就是这样一个"装备系统"——每个 <strong>Skill（技能）</strong> 是一种可以独立使用、也可以组合的功能块。</p>
+
+            <p>当你需要设计一个功能时，"brainstorming" 技能自动激活；当你需要实现时，"TDD" 技能自动激活；当你遇到 bug 时，"systematic-debugging" 技能自动激活。</p>
+
+            <h3>与其他工具的区别</h3>
+            <p>大多数 AI 编程助手追求的是"秒级生成代码"——你给一个提示，它给你一堆代码。这种方式的代价是：代码质量参差不齐，边界情况被忽略，架构设计全靠运气。</p>
+
+            <p>Superpowers 的追求是"一次做对"——通过结构化的工作流程，确保 AI 在动手之前先理解需求，先做设计，先写测试。</p>
+
+            <div class="alert alert-info">
+                <strong>⚡ 快速 vs 正确</strong><br>
+                其他工具：提示 → 代码（快但质量不确定）<br>
+                Superpowers：提示 → 澄清 → 设计 → 测试 → 代码（一次做对）
+            </div>
+
+            <h2>1.2 工作原理概览</h2>
+            <p>Superpowers 的核心是 <strong>Skills 系统</strong>和 <strong>Hooks 机制</strong>。</p>
+
+            <h3>Skills 系统</h3>
+            <p><strong>Skill</strong> 是一种特殊的 Markdown 文件，定义了某种工作方式的最佳实践。每个 Skill 包含：</p>
+            <ul>
+                <li>触发条件（什么时候应该用这个技能）</li>
+                <li>工作流程（如何执行这个技能）</li>
+                <li>质量标准（什么算做好了）</li>
+            </ul>
+
+            <h3>Hooks 机制</h3>
+            <p><strong>Hook</strong> 是在特定事件发生时自动执行的脚本。Superpowers 在会话启动时注入上下文，告诉 AI"你有了超能力"。</p>
+
+            <h2>1.3 快速安装</h2>
+
+            <h3>Claude Code</h3>
+            <pre><code>/claude plugin install superpowers@claude-plugins-official</code></pre>
+
+            <h3>Copilot CLI</h3>
+            <pre><code>copilot plugin install superpowers</code></pre>
+
+            <h2>1.4 第一个项目</h2>
+            <p>让我们通过一个简单项目来体验 Superpowers：</p>
+
+            <p><strong>需求</strong>：创建一个待办事项列表应用。</p>
+
+            <p><strong>第一步</strong>：告诉 AI 你的需求</p>
+            <pre><code>我想创建一个待办事项列表应用，使用 React。</code></pre>
+
+            <p><strong>第二步</strong>：Superpowers 自动激活 brainstorming</p>
+            <p>AI 会先进行需求澄清，而不是直接写代码。</p>
+
+            <p><strong>第三步</strong>：设计文档 → 实现计划 → TDD 实现</p>
+
+            <h2>1.5 核心概念</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>概念</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Skill</strong></td>
+                        <td>定义工作方式的 Markdown 文件</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hook</strong></td>
+                        <td>事件触发的脚本</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HARD-GATE</strong></td>
+                        <td>没有批准就不能前进的硬性规则</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RED FLAGS</strong></td>
+                        <td>识别理性化的信号</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bootstrap</strong></td>
+                        <td>会话初始化时的上下文注入</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- 第2章 -->
+        <section id="ch2">
+            <h1>第2章：系统架构设计</h1>
+
+            <h2>2.1 整体架构</h2>
+            <p>Superpowers 采用三层架构设计：</p>
+
+            <div class="alert alert-info">
+                <strong>三层架构</strong><br>
+                ① Platform Adapter（平台适配层）<br>
+                ② Context Injection（上下文注入层）<br>
+                ③ Skills System（技能系统层）
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>层级</th>
+                        <th>职责</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Platform Adapter</strong></td>
+                        <td>处理不同 AI 平台的差异</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Context Injection</strong></td>
+                        <td>在会话启动时注入上下文</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Skills System</strong></td>
+                        <td>提供可组合的工作技能</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>2.2 平台适配层</h2>
+            <p>不同 AI 编程助手有不同的工具接口。Platform Adapter 层统一这些差异。</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>平台</th>
+                        <th>工具映射</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Claude Code</td>
+                        <td>Read, Write, Edit, Bash, Skill</td>
+                    </tr>
+                    <tr>
+                        <td>Copilot CLI</td>
+                        <td>view, create, edit, bash, skill</td>
+                    </tr>
+                    <tr>
+                        <td>Gemini CLI</td>
+                        <td>activate_skill, 原生工具</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>2.3 上下文注入层</h2>
+            <p>Context Injection 在会话启动时注入 Bootstrap Context，包含：</p>
+            <ul>
+                <li>可用的技能列表</li>
+                <li>触发条件映射</li>
+                <li>默认行为规则</li>
+            </ul>
+
+            <h2>2.4 技能系统层</h2>
+            <p>Skills System 是 Superpowers 的核心。它包含：</p>
+            <ul>
+                <li>Skill 定义文件（SKILL.md）</li>
+                <li>辅助脚本</li>
+                <li>测试场景</li>
+            </ul>
+
+            <h2>2.5 数据流</h2>
+            <div class="alert alert-info">
+                <strong>数据流</strong><br>
+                用户消息 → Hook 注入 Bootstrap Context → AI 检查适用技能 → 加载技能指导 → 遵循技能执行
+            </div>
+        </section>
+
+        <hr>
+
+        <!-- 第3章 -->
+        <section id="ch3">
+            <h1>第3章：Skills 系统实现</h1>
+
+            <h2>3.1 Skill 是什么</h2>
+            <p><strong>Skill</strong> 是一种 Markdown 格式的过程文档，定义了某种工作方式的最佳实践。</p>
+
+            <h3>三个属性</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>属性</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Reusable</strong></td>
+                        <td>可跨项目重用</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Triggerable</strong></td>
+                        <td>可以自动触发</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Composable</strong></td>
+                        <td>可以组合使用</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>与 Prompt 的区别</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>方面</th>
+                        <th>Prompt</th>
+                        <th>Skill</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>触发方式</td>
+                        <td>每次手动输入</td>
+                        <td>自动检测触发</td>
+                    </tr>
+                    <tr>
+                        <td>粒度</td>
+                        <td>整个对话</td>
+                        <td>具体任务</td>
+                    </tr>
+                    <tr>
+                        <td>更新方式</td>
+                        <td>每次对话不同</td>
+                        <td>统一版本管理</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>3.2 Skill 文件结构</h2>
+
+            <h3>基本结构</h3>
+            <pre><code>---
+name: skill-name
+description: 当...时使用此技能
+---
+
+# Skill Title
+
+## Overview
+简要说明。
+
+## When to Use
+何时使用。
+
+## The Process
+执行步骤。</code></pre>
+
+            <h3>frontmatter 规范</h3>
+            <pre><code>---
+name: brainstorming
+description: Use when starting a new feature
+---</code></pre>
+
+            <h2>3.3 触发条件</h2>
+            <p>当 AI 检测到某个 Skill 的触发条件时，自动加载该 Skill。也可以使用 Skill 工具手动触发。</p>
+
+            <h2>3.4 Skill 类型</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>类型</th>
+                        <th>说明</th>
+                        <th>示例</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Process</strong></td>
+                        <td>定义工作流程</td>
+                        <td>brainstorming, TDD</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Implementation</strong></td>
+                        <td>实现指导</td>
+                        <td>frontend-design</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reference</strong></td>
+                        <td>参考文档</td>
+                        <td>API docs</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- 第4章 -->
+        <section id="ch4">
+            <h1>第4章：Brainstorming 技能</h1>
+
+            <h2>4.1 HARD-GATE：核心规则</h2>
+            <p>Brainstorming 技能的核心是 <strong>HARD-GATE</strong> 规则：</p>
+
+            <div class="alert alert-danger">
+                <strong>🚫 HARD-GATE</strong><br><br>
+                Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it.
+            </div>
+
+            <p><strong>翻译</strong>：在用户批准设计之前，AI 不能写任何代码。没有任何例外。</p>
+
+            <div class="alert alert-warning">
+                <strong>⚠️ 反模式：太简单不需要设计</strong><br><br>
+                "这只是一个 todo 列表而已，不需要设计吧？"<br><br>
+                <strong>不，每个项目都经过此过程。</strong>
+            </div>
+
+            <h2>4.2 9 步检查清单</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>步骤</th>
+                        <th>内容</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>探索项目上下文</td></tr>
+                    <tr><td>2</td><td>提供视觉伴侣（可选）</td></tr>
+                    <tr><td>3</td><td>提出澄清问题</td></tr>
+                    <tr><td>4</td><td>提出 2-3 个方案</td></tr>
+                    <tr><td>5</td><td>呈现设计方案</td></tr>
+                    <tr><td>6</td><td>编写设计文档</td></tr>
+                    <tr><td>7</td><td>规范自审</td></tr>
+                    <tr><td>8</td><td>用户审阅书面规范</td></tr>
+                    <tr><td>9</td><td>过渡到实现</td></tr>
+                </tbody>
+            </table>
+
+            <h2>4.3 理解需求</h2>
+            <h3>YAGNI 原则</h3>
+            <p><strong>YAGNI = You Aren't Gonna Need It（你不会需要它）</strong></p>
+            <p>从所有设计中删除不必要的功能。</p>
+
+            <h2>4.4 设计文档</h2>
+            <p>规范保存到：<code>docs/superpowers/specs/YYYY-MM-DD-&lt;topic&gt;-design.md</code></p>
+        </section>
+
+        <hr>
+
+        <!-- 第5章 -->
+        <section id="ch5">
+            <h1>第5章：Subagent-Driven Development</h1>
+
+            <h2>5.1 核心原则</h2>
+            <div class="alert alert-info">
+                <strong>⚡ 核心公式</strong><br><br>
+                Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+            </div>
+
+            <p><strong>为什么使用子代理？</strong></p>
+            <p><strong>隔离上下文是关键。</strong> 每个子代理不继承主会话的上下文，保持专注。</p>
+
+            <h2>5.2 两阶段审查</h2>
+
+            <h3>第一阶段：规范合规审查</h3>
+            <p><strong>关键原则</strong>：<strong>不相信报告</strong></p>
+            <p>必须独立验证代码，而不是相信实现者的报告。</p>
+
+            <h3>第二阶段：代码质量审查</h3>
+            <p>仅在规范合规审查通过<strong>之后</strong>进行。</p>
+
+            <h2>5.3 模型选择策略</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>任务类型</th>
+                        <th>模型</th>
+                        <th>信号</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>机械实现</td>
+                        <td>快速、便宜的模型</td>
+                        <td>1-2 个文件，清晰规范</td>
+                    </tr>
+                    <tr>
+                        <td>集成和判断</td>
+                        <td>标准模型</td>
+                        <td>多文件协调</td>
+                    </tr>
+                    <tr>
+                        <td>架构和设计</td>
+                        <td>最强模型</td>
+                        <td>需要设计判断</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>5.4 RED FLAGS（禁止事项）</h2>
+            <div class="alert alert-danger">
+                <strong>🚫 Never:</strong>
+                <ul>
+                    <li>Start implementation on main/master branch without explicit user consent</li>
+                    <li>Skip reviews (spec compliance OR code quality)</li>
+                    <li>Dispatch multiple implementation subagents in parallel</li>
+                    <li>Start code quality review before spec compliance is ✅</li>
+                </ul>
+            </div>
+        </section>
+
+        <hr>
+
+        <!-- 第6章 -->
+        <section id="ch6">
+            <h1>第6章：其他核心技能</h1>
+
+            <h2>6.1 技能协作概览</h2>
+            <div class="alert alert-info">
+                <strong>工作流</strong><br><br>
+                brainstorming → writing-plans → subagent-driven-development/executing-plans → finishing-a-development-branch
+            </div>
+
+            <h2>6.2 writing-plans — 实现计划编写</h2>
+            <p>假设执行者没有上下文，输出完整的实现计划。</p>
+
+            <pre><code># [Feature] Implementation Plan
+
+**Goal:** [一句话]
+
+---
+
+### Task N: [组件名]
+
+- [ ] Step 1: Write failing test
+- [ ] Step 2: Run test (verify fails)
+- [ ] Step 3: Write minimal code
+- [ ] Step 4: Run test (verify passes)
+- [ ] Step 5: Commit</code></pre>
+
+            <h2>6.3 receiving-code-review — 接收代码审查</h2>
+            <p><strong>响应模式</strong>：</p>
+            <ol>
+                <li>READ: Complete feedback without reacting</li>
+                <li>UNDERSTAND: Restate in own words</li>
+                <li>VERIFY: Check against codebase reality</li>
+                <li>EVALUATE: Technically sound?</li>
+                <li>RESPOND: Technical acknowledgment or pushback</li>
+                <li>IMPLEMENT: One at a time, test each</li>
+            </ol>
+
+            <div class="alert alert-danger">
+                <strong>🚫 禁止的响应</strong>
+                <ul>
+                    <li>"You're absolutely right!"</li>
+                    <li>"Great point!"</li>
+                    <li>"Let me implement that now"</li>
+                </ul>
+            </div>
+
+            <h2>6.4 finishing-a-development-branch — 完成开发分支</h2>
+            <p><strong>4 个选项</strong>：</p>
+            <ol>
+                <li>本地合并</li>
+                <li>创建 Pull Request</li>
+                <li>保留分支</li>
+                <li>丢弃工作</li>
+            </ol>
+        </section>
+
+        <hr>
+
+        <!-- 第7章 -->
+        <section id="ch7">
+            <h1>第7章：Systematic Debugging</h1>
+
+            <h2>7.1 铁律</h2>
+            <div class="alert alert-danger">
+                <strong>🚫 THE IRON LAW</strong><br><br>
+                NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
+            </div>
+
+            <p><strong>翻译</strong>：没有根本原因调查，就不能修复。</p>
+
+            <div class="alert alert-warning">
+                <strong>⚠️ 反模式：快速修复</strong><br><br>
+                "这只是一个简单的问题，我直接改一下就好了。"<br><br>
+                <strong>不。即使问题看起来简单，也不要跳过调试过程。</strong>
+            </div>
+
+            <h2>7.2 四阶段流程</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>阶段</th>
+                        <th>内容</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Phase 1</strong></td><td>根本原因调查</td></tr>
+                    <tr><td><strong>Phase 2</strong></td><td>模式分析</td></tr>
+                    <tr><td><strong>Phase 3</strong></td><td>假设与测试</td></tr>
+                    <tr><td><strong>Phase 4</strong></td><td>验证</td></tr>
+                </tbody>
+            </table>
+
+            <h2>7.3 Phase 1: 根本原因调查</h2>
+            <ul>
+                <li><strong>仔细阅读错误信息</strong> — 不要跳过错误或警告</li>
+                <li><strong>一致地复现</strong> — 如果不可复现，收集更多数据，不要猜测</li>
+                <li><strong>检查最近的更改</strong> — Git diff、最近提交</li>
+            </ul>
+
+            <h2>7.4 Phase 2: 模式分析</h2>
+            <ul>
+                <li>找到工作的例子</li>
+                <li>与参考比较</li>
+                <li>识别差异</li>
+                <li>理解依赖</li>
+            </ul>
+        </section>
+
+        <hr>
+
+        <!-- 第8章 -->
+        <section id="ch8">
+            <h1>第8章：Test-Driven Development</h1>
+
+            <h2>8.1 铁律</h2>
+            <div class="alert alert-danger">
+                <strong>🚫 THE IRON LAW</strong><br><br>
+                NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+            </div>
+
+            <p><strong>翻译</strong>：没有失败的测试，就不能写生产代码。</p>
+
+            <div class="alert alert-info">
+                <strong>💡 核心原则</strong><br><br>
+                If you didn't watch the test fail, you don't know if it tests the right thing.
+            </div>
+
+            <h2>8.2 红-绿-重构循环</h2>
+            <div class="alert alert-info">
+                <strong>🔴 RED</strong> → 写失败的测试<br>
+                <strong>✅ GREEN</strong> → 最小代码<br>
+                <strong>🔵 REFACTOR</strong> → 清理<br>
+                <strong>→ 下一个</strong>
+            </div>
+
+            <h2>8.3 常见借口及真相</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>借口</th>
+                        <th>真相</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>"太简单不需要测试"</td>
+                        <td>简单代码也会坏，测试只需 30 秒</td>
+                    </tr>
+                    <tr>
+                        <td>"我之后再测试"</td>
+                        <td>测试立即通过证明不了什么</td>
+                    </tr>
+                    <tr>
+                        <td>"手动测试就够了"</td>
+                        <td>手动 ≠ 系统，没有记录</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>8.4 RED FLAGS — 停止并重新开始</h2>
+            <div class="alert alert-danger">
+                <strong>🚫 以下任何一项意味着：删除代码。从 TDD 重新开始。</strong>
+                <ul>
+                    <li>代码在测试之前</li>
+                    <li>测试立即通过</li>
+                    <li>"就这一次"</li>
+                    <li>"我已经手动测试了"</li>
+                </ul>
+            </div>
+        </section>
+
+        <hr>
+
+        <!-- 第9章 -->
+        <section id="ch9">
+            <h1>第9章：多平台适配</h1>
+
+            <h2>9.1 核心原则：1% 规则</h2>
+            <div class="alert alert-danger">
+                <strong>🚫 1% 规则</strong><br><br>
+                If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+            </div>
+
+            <p><strong>翻译</strong>：只要有 1% 的可能性技能适用，就必须调用技能来检查。</p>
+
+            <h2>9.2 RED FLAGS（理性化警示）</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>想法</th>
+                        <th>真相</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>"这只是简单的问题"</td>
+                        <td>问题即任务。检查技能。</td>
+                    </tr>
+                    <tr>
+                        <td>"我记得这个技能"</td>
+                        <td>技能会演进。读取当前版本。</td>
+                    </tr>
+                    <tr>
+                        <td>"让我先探索代码库"</td>
+                        <td>技能告诉你如何探索。先检查。</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>9.3 指令优先级</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>优先级</th>
+                        <th>指令类型</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>1（最高）</td><td>用户的明确指令</td></tr>
+                    <tr><td>2</td><td>Superpowers 技能</td></tr>
+                    <tr><td>3（最低）</td><td>默认系统提示</td></tr>
+                </tbody>
+            </table>
+
+            <h2>9.4 工具映射</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Claude Code</th>
+                        <th>Copilot CLI</th>
+                        <th>用途</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Read</td><td>view</td><td>读取文件</td></tr>
+                    <tr><td>Write</td><td>create</td><td>创建文件</td></tr>
+                    <tr><td>Skill</td><td>skill</td><td>调用技能</td></tr>
+                    <tr><td>Task</td><td>task</td><td>分派子代理</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- 第10章 -->
+        <section id="ch10">
+            <h1>第10章：高级主题与生态</h1>
+
+            <h2>10.1 核心原则：技能编写就是 TDD</h2>
+            <div class="alert alert-info">
+                <strong>💡 核心公式</strong><br><br>
+                Writing skills IS Test-Driven Development applied to process documentation.
+            </div>
+
+            <h3>TDD 类比</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>TDD 概念</th>
+                        <th>技能创建</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>测试用例</td><td>压力场景</td></tr>
+                    <tr><td>生产代码</td><td>SKILL.md</td></tr>
+                    <tr><td>测试失败</td><td>没有技能时违反规则</td></tr>
+                    <tr><td>重构</td><td>堵住漏洞</td></tr>
+                </tbody>
+            </table>
+
+            <h2>10.2 什么时候创建技能</h2>
+
+            <h3>✅ 创建当</h3>
+            <ul>
+                <li>技术不是直觉上显而易见的</li>
+                <li>会在项目中再次参考</li>
+                <li>模式广泛适用</li>
+            </ul>
+
+            <h3>❌ 不要创建</h3>
+            <ul>
+                <li>一次性解决方案</li>
+                <li>标准实践（已有文档）</li>
+                <li>特定项目的约定</li>
+            </ul>
+
+            <h2>10.3 技能类型</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>类型</th>
+                        <th>说明</th>
+                        <th>示例</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Technique</strong></td>
+                        <td>有步骤的具体方法</td>
+                        <td>condition-based-waiting</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pattern</strong></td>
+                        <td>思考问题的方式</td>
+                        <td>flatten-with-flags</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reference</strong></td>
+                        <td>API 文档</td>
+                        <td>office docs</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>10.4 测试技能</h2>
+            <ol>
+                <li><strong>RED 阶段</strong>：基线测试（无技能时观察失败）</li>
+                <li><strong>GREEN 阶段</strong>：编写技能（针对失败）</li>
+                <li><strong>REFACTOR 阶段</strong>：堵洞（保持合规）</li>
+            </ol>
+        </section>
+
+        <hr>
+
+        <!-- 附录 -->
+        <section id="appendix">
+            <h1>附录：快速参考</h1>
+
+            <h2>A.1 核心规则速查</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>技能</th>
+                        <th>铁律</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Brainstorming</strong></td><td>没有设计批准就不能实现</td></tr>
+                    <tr><td><strong>Systematic Debugging</strong></td><td>没有根因调查就不能修复</td></tr>
+                    <tr><td><strong>TDD</strong></td><td>没有失败的测试就不能写代码</td></tr>
+                    <tr><td><strong>Subagent-Driven Development</strong></td><td>没有两阶段审查就不能交付</td></tr>
+                </tbody>
+            </table>
+
+            <h2>A.2 技能速查表</h2>
+
+            <h3>Brainstorming</h3>
+            <p><strong>9 步检查清单</strong>：探索 → 澄清 → 方案 → 设计 → 文档 → 自审 → 审阅 → 计划</p>
+
+            <h3>TDD</h3>
+            <p><strong>红-绿-重构</strong>：🔴 RED → ✅ GREEN → 🔵 REFACTOR → 下一个</p>
+
+            <h3>Subagent-Driven Development</h3>
+            <p><strong>两阶段审查</strong>：规范合规审查 → 代码质量审查</p>
+
+            <h2>A.3 RED FLAGS（通用）</h2>
+            <ul>
+                <li>"这只是简单的问题"</li>
+                <li>"我需要先获取更多上下文"</li>
+                <li>"让我先探索代码库"</li>
+                <li>"这不需要正式技能"</li>
+                <li>"我已经手动测试了"</li>
+                <li>"就这一次"</li>
+            </ul>
+
+            <h2>A.4 原则速查</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>缩写</th>
+                        <th>全称</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>YAGNI</strong></td><td>You Aren't Gonna Need It</td><td>不要添加不需要的功能</td></tr>
+                    <tr><td><strong>DRY</strong></td><td>Don't Repeat Yourself</td><td>不要重复知识</td></tr>
+                    <tr><td><strong>HARD-GATE</strong></td><td>-</td><td>没有批准就不能前进</td></tr>
+                    <tr><td><strong>RED FLAGS</strong></td><td>-</td><td>识别理性化的信号</td></tr>
+                </tbody>
+            </table>
+
+            <h2>A.5 文件命名规范</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>文件类型</th>
+                        <th>命名规范</th>
+                        <th>示例</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>规范</td>
+                        <td><code>YYYY-MM-DD-&lt;topic&gt;-design.md</code></td>
+                        <td><code>2026-04-06-login-design.md</code></td>
+                    </tr>
+                    <tr>
+                        <td>计划</td>
+                        <td><code>YYYY-MM-DD-&lt;feature-name&gt;.md</code></td>
+                        <td><code>2026-04-06-user-auth.md</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>A.6 工作流概览</h2>
+            <div class="alert alert-info">
+                <strong>完整工作流</strong><br><br>
+                用户请求 → brainstorming → 规范文档 → writing-plans → 实现计划 → subagent-driven-development → 两阶段审查 → 完成
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p><strong>Superpowers 源码解析：从 AI 编程助手到超级开发者</strong></p>
+        <p>祝你在 Superpowers 的使用中取得成功！</p>
+    </footer>
+</body>
+</html>
