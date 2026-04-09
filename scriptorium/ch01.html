@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第1章：认识 Scriptorium — Scriptorium 框架深度解析</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Scriptorium 框架深度解析</div>
+      <div class="sidebar-subtitle">多 Agent 协作写作技术书籍的完整解决方案</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html">📖 目录</a>
+<a href="ch01.html" class="active">第1章：认识 Scriptorium</a>
+<a href="ch02.html">第2章：系统架构总览</a>
+<a href="ch03.html">第3章：主编排的秘密</a>
+<a href="ch04.html">第4章：创作 Agent 团队</a>
+<a href="ch05.html">第5章：审查与评审机制</a>
+<a href="ch06.html">第6章：五阶段流水线</a>
+<a href="ch07.html">第7章：File Pointers 机制</a>
+<a href="ch08.html">第8章：审查架构与质量保障</a>
+<a href="ch09.html">第9章：发布与装帧</a>
+<a href="ch10.html">第 10 章：搭建你的 Scriptorium</a>
+    </div>
+  </nav>
+  <main id="main">
+
+<h1>第1章：认识 Scriptorium</h1>
+<blockquote><p>本章目标：理解 Scriptorium 是什么、解决什么问题；掌握框架的核心设计理念；了解框架的适用场景和基本使用流程</p></blockquote>
+
+<h2 id="s1-1">1.1 一句话介绍</h2>
+<p>想象一下，你组织了一个"虚拟编辑部"——里面有技术总监、畅销书作家、资深编辑、美食评论家（试读评审），甚至还有一个负责排版的设计师。但这些"人"不是真正的员工，而是 AI Agent。它们各司其职、分工协作，最终帮你完成一本技术书籍的写作。</p>
+<p><strong>Scriptorium 就是这样一套框架</strong>——它让多个 AI Agent 像编辑部一样协作，覆盖从大纲设计到最终出版的全流程。</p>
+
+<h2 id="s1-2">1.2 解决什么问题</h2>
+
+<h3 id="s1-2-1">1.2.1 AI 写作的常见困境</h3>
+<p>用 AI 写技术书籍，最大的问题是<strong>"幻觉"</strong>——AI 会自信地编造代码细节、API 参数、甚至函数名。这在技术写作中是致命的错误。</p>
+<p>传统的解决方案是"人肉校对"——写完后找专家逐行审核。但这违背了用 AI 提效的初衷。</p>
+<p>Scriptorium 的思路完全不同：<strong>不让 AI 凭"记忆"写作，而是让它精确引用源码文件作为事实来源。</strong></p>
+
+<h3 id="s1-2-2">1.2.2 长文本的上下文丢失</h3>
+<p>AI 的上下文窗口是有限的。写完第 5 章后，AI 可能已经"忘记"第 1 章用了什么术语、某个概念怎么定义的。</p>
+<p>Scriptorium 用<strong>外部文件系统</strong>作为"大脑"。每一步的上下文都精确注入，Agent 每次被调用时都像是刚入职的新员工，通过读取文件来了解项目情况。</p>
+
+<h3 id="s1-2-3">1.2.3 多章节的一致性</h3>
+<p>一本书有 10 章，作者 A 写前 5 章，作者 B 写后 5 章。术语翻译可能不一致，比喻可能冲突，数据可能对不上。这些"一致性"问题在大项目中尤为突出。</p>
+<p>Scriptorium 的解决方案是<strong>共享资源机制</strong>：</p>
+<ul>
+<li><code>glossary.md</code>（术语表）——统一术语翻译</li>
+<li><code>metaphor-registry.md</code>（比喻注册表）——防止跨章比喻冲突</li>
+<li><code>source-map.md</code>（源码地图）——统一数据来源</li>
+</ul>
+
+<h2 id="s1-3">1.3 适用场景</h2>
+<p>Scriptorium 专为以下场景设计：</p>
+<ul>
+<li>✅ <strong>源码阅读系列</strong>的技术书籍（如《某某框架源码深度解析》）</li>
+<li>✅ 逐章拆解大型代码仓库的架构分析</li>
+<li>✅ 面向多层次读者的技术科普</li>
+<li>✅ 需要流程可控的长篇技术写作项目</li>
+</ul>
+<p><strong>不适用</strong>：</p>
+<ul>
+<li>❌ 纯理论教材（没有源码可分析）</li>
+<li>❌ API 参考文档</li>
+<li>❌ 短篇技术博客</li>
+</ul>
+
+<h2 id="s1-4">1.4 核心设计理念</h2>
+
+<h3 id="s1-4-1">1.4.1 Agent 是无状态的，文件系统是有状态的</h3>
+<p>这是 Scriptorium 的<strong>第一原则</strong>。</p>
+<div class="mermaid">
+graph LR
+    A["Agent #3<br/>研究员"] -->|"写入"| F[("文件系统<br/>📁")]
+    F -->|"读取"| B["Agent #4<br/>作家"]
+    F -->|"读取"| C["Agent R1<br/>审查员"]
+    F -->|"读取"| D["Agent R2<br/>审查员"]
+</div>
+<p>每个 Agent 每次被调用时都是"新人"——它不记住上次做了什么，所有的"记忆"都存储在共享文件系统中。这带来两个关键优势：</p>
+<ol>
+<li><strong>可重现</strong>：任何时候都可以从 checkpoint 恢复</li>
+<li><strong>可追踪</strong>：文件的修改历史就是 Agent 的工作日志</li>
+</ol>
+
+<h3 id="s1-4-2">1.4.2 Hub-Spoke 架构</h3>
+<p>Scriptorium 采用<strong>轴辐式（Hub-Spoke）架构</strong>：</p>
+<div class="mermaid">
+graph TB
+    H["主编排 #0<br/>Hub"] --> S1["架构师 #1"]
+    H --> S2["读者代言人 #2"]
+    H --> S3["研究员 #3"]
+    H --> S4["作家 #4"]
+    H --> S5["审查员 R1/R2/R3"]
+    H --> S11["装帧工人 #11"]
+    style H fill:#e1f5fe
+    classDef spoke fill:#fff3e0
+    class S1,S2,S3,S4,S5,S11 spoke
+</div>
+<p>主编排（Hub）是唯一的中枢，所有的子 Agent（Spoke）只与主编排通信，子 Agent 之间不直接对话。这确保了：</p>
+<ul>
+<li>信息流向单一，容易追踪</li>
+<li>无环形依赖，调度逻辑清晰</li>
+<li>每个 Agent 的职责边界清晰</li>
+</ul>
+
+<h3 id="s1-4-3">1.4.3 File Pointers：精确的上下文注入</h3>
+<p>每个 Agent 被调用时，主编排传递的不是"让它自己决定读什么"，而是<strong>精确的文件路径列表</strong>——这就是 <strong>File Pointers</strong> 机制。</p>
+<p>类比一下：演员不需要知道其他演员在演什么，导演只需要给他一张"提词卡"，告诉他该读哪些剧本片段。</p>
+
+<h2 id="s1-5">1.5 五阶段工作流</h2>
+<p>Scriptorium 的生产流水线分为 5 个阶段：</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>阶段</th><th>名称</th><th>主要产出</th></tr>
+</thead>
+<tbody>
+<tr><td>Phase 1</td><td>大纲定稿</td><td><code>outline.md</code>（章节大纲）</td></tr>
+<tr><td>Phase 2</td><td>共享资源构建</td><td><code>glossary.md</code>、<code>metaphor-registry.md</code> 等</td></tr>
+<tr><td>Phase 3</td><td>逐章写作</td><td>章节草稿 + 审查报告</td></tr>
+<tr><td>Phase 4</td><td>统稿审计</td><td>全书一致性检查</td></tr>
+<tr><td>Phase 5</td><td>装帧发布</td><td>可阅读的 HTML 电子书</td></tr>
+</tbody>
+</table>
+</div>
+<div class="mermaid">
+flowchart LR
+    P1["Phase 1<br/>大纲定稿"] --> P2["Phase 2<br/>共享资源"]
+    P2 --> P3["Phase 3<br/>逐章写作"]
+    P3 --> P4["Phase 4<br/>统稿审计"]
+    P4 --> P5["Phase 5<br/>装帧发布"]
+    style P1 fill:#bbdefb
+    style P2 fill:#c8e6c9
+    style P3 fill:#fff9c4
+    style P4 fill:#ffccbc
+    style P5 fill:#d1c4e9
+</div>
+
+<h2 id="s1-6">1.6 Agent 团队一览</h2>
+<p>Scriptorium 的团队有 <strong>12 个 Agent</strong>：</p>
+<p><strong>管理团队</strong>：</p>
+<ul>
+<li><strong>#0 主编排</strong>：掌握全局进度的责任编辑</li>
+<li><strong>#1 架构师</strong>：设计书籍大纲的技术总监</li>
+<li><strong>#2 读者代言人</strong>：从读者视角提需求的产品经理</li>
+</ul>
+<p><strong>执行团队</strong>：</p>
+<ul>
+<li><strong>#3 研究员</strong>：深入源码考古的考古学家</li>
+<li><strong>#4 作家</strong>：撰写章节正文的畅销书作者</li>
+<li><strong>#11 装帧工人</strong>：把 Markdown 变成漂亮 HTML 的排版设计师</li>
+</ul>
+<p><strong>审查团队</strong>：</p>
+<ul>
+<li><strong>R1 源码审查员</strong>：较真每一行代码的考据专家</li>
+<li><strong>R2 一致性审查员</strong>：揪出跨章矛盾的记忆管理员</li>
+<li><strong>R3 内容审查员</strong>：把控可读性的资深编辑</li>
+<li><strong>RS/RE/RH 读者评审团</strong>：分别模拟大学生、工程师、科技爱好者三视角</li>
+</ul>
+
+<h2 id="s1-7">1.7 快速开始</h2>
+
+<h3 id="s1-7-1">1.7.1 一句话启动</h3>
+<p>把这句话发给任何兼容 Scriptorium 的 AI 编程助手：</p>
+<pre><code>我的项目源码在 /path/to/project。请读 QUICK_START.md，然后向我提问。
+没有问题就开始你的工作。</code></pre>
+<p>AI 会自动完成：</p>
+<ol>
+<li>读取框架文档</li>
+<li>向你确认基本信息（书名、目标读者等）</li>
+<li><strong>自主运行全部 5 个阶段</strong></li>
+<li>交付可阅读的 HTML 电子书</li>
+</ol>
+
+<h3 id="s1-7-2">1.7.2 中断后恢复</h3>
+<p>写作过程中断？告诉 AI：</p>
+<pre><code>请读 output/memory/checkpoint.md，继续上次未完成的工作。</code></pre>
+<p>Scriptorium 会自动从 checkpoint 恢复进度。</p>
+
+<h2 id="s1-8">1.8 小结</h2>
+<p>本章我们认识了 Scriptorium——一个让多个 AI Agent 协作写作技术书籍的框架。它的核心设计理念可以概括为三点：</p>
+<ol>
+<li><strong>文件系统是唯一的事实来源</strong>——所有 Agent 通过共享文件传递信息</li>
+<li><strong>Hub-Spoke 架构</strong>——主编排作为唯一中枢协调所有 Agent</li>
+<li><strong>五阶段流水线</strong>——从大纲到出版，流程清晰可控</li>
+</ol>
+<p>下一章，我们将深入了解 Scriptorium 的<strong>系统架构</strong>，看看 Hub-Spoke 架构是如何实现的，以及 File Pointers 机制的具体细节。</p>
+
+<nav class="chapter-nav">
+  <span></span>
+  <a href="ch02.html">第2章：系统架构总览 ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>

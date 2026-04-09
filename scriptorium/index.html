@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>目录 — Scriptorium 框架深度解析</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Scriptorium 框架深度解析</div>
+      <div class="sidebar-subtitle">多 Agent 协作写作技术书籍的完整解决方案</div>
+    </div>
+    <div class="sidebar-nav">
+<a href="index.html" class="active">📖 目录</a>
+<a href="ch01.html">第1章：认识 Scriptorium</a>
+<a href="ch02.html">第2章：系统架构总览</a>
+<a href="ch03.html">第3章：主编排的秘密</a>
+<a href="ch04.html">第4章：创作 Agent 团队</a>
+<a href="ch05.html">第5章：审查与评审机制</a>
+<a href="ch06.html">第6章：五阶段流水线</a>
+<a href="ch07.html">第7章：File Pointers 机制</a>
+<a href="ch08.html">第8章：审查架构与质量保障</a>
+<a href="ch09.html">第9章：发布与装帧</a>
+<a href="ch10.html">第 10 章：搭建你的 Scriptorium</a>
+    </div>
+  </nav>
+  <main id="main">
+
+<div class="index-hero">
+  <h1>Scriptorium 框架深度解析</h1>
+  <p class="subtitle">多 Agent 协作写作技术书籍的完整解决方案</p>
+</div>
+<div class="index-intro">
+<p>Scriptorium 是一个基于多 Agent 协作的技术书籍写作框架，通过 Hub-Spoke 架构协调多个专业化 Agent（主编排、架构师、作家、审查员等），实现从大纲规划到最终发布的全流程自动化。本书以 10 个章节深度剖析 Scriptorium 的核心设计理念、系统架构、Agent 协作机制和质量保障体系。适合技术负责人、平台工程师以及对 AI 辅助写作感兴趣的研究者阅读。</p>
+</div>
+<div class="index-toc">
+  <h2>章节目录</h2>
+  <ul class="chapter-list">
+<li><a href="ch01.html">第1章：认识 Scriptorium</a></li>
+<li><a href="ch02.html">第2章：系统架构总览</a></li>
+<li><a href="ch03.html">第3章：主编排的秘密</a></li>
+<li><a href="ch04.html">第4章：创作 Agent 团队</a></li>
+<li><a href="ch05.html">第5章：审查与评审机制</a></li>
+<li><a href="ch06.html">第6章：五阶段流水线</a></li>
+<li><a href="ch07.html">第7章：File Pointers 机制</a></li>
+<li><a href="ch08.html">第8章：审查架构与质量保障</a></li>
+<li><a href="ch09.html">第9章：发布与装帧</a></li>
+<li><a href="ch10.html">第 10 章：搭建你的 Scriptorium</a></li>
+  </ul>
+</div>
+<nav class="chapter-nav">
+  <span></span>
+  <a href="ch01.html">第1章：认识 Scriptorium ▶</a>
+</nav>
+  </main>
+  <aside id="toc-right"></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>(function() {
+  var bar = document.getElementById('progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var s = document.documentElement, scrollTop = s.scrollTop || document.body.scrollTop;
+      var scrollH = s.scrollHeight - s.clientHeight;
+      bar.style.width = (scrollH > 0 ? (scrollTop / scrollH * 100) : 0) + '%';
+    });
+  }
+  var btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', window.scrollY > 300);
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+  var tocLinks = document.querySelectorAll('.toc-list a');
+  if (tocLinks.length) {
+    var headings = Array.from(document.querySelectorAll('#main h2'));
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY + 80;
+      var active = headings.filter(function(h) { return h.offsetTop <= scrollY; }).pop();
+      tocLinks.forEach(function(a) { a.classList.remove('active'); });
+      if (active) {
+        var match = document.querySelector('.toc-list a[href="#' + active.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }
+  if (document.querySelector('.mermaid')) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, theme: "neutral" }); mermaid.run();';
+    document.head.appendChild(s);
+  }
+  if (document.querySelector('pre code')) {
+    var hl = document.createElement('link');
+    hl.rel = 'stylesheet';
+    hl.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    document.head.appendChild(hl);
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    sc.onload = function() { hljs.highlightAll(); };
+    document.head.appendChild(sc);
+  }
+})();</script>
+</body>
+</html>

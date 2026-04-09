@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第3章：主编排的秘密 - Scriptorium 框架深度解析</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+  <div id="progress-bar"></div>
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Scriptorium 框架深度解析</div>
+      <div class="sidebar-subtitle">从创作到发布，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+      <a href="index.html">📖 目录</a>
+      <a href="ch01.html">第1章：认识 Scriptorium</a>
+      <a href="ch02.html">第2章：系统架构总览</a>
+      <a href="ch03.html" class="active">第3章：主编排的秘密</a>
+      <a href="ch04.html">第4章：创作 Agent 团队</a>
+      <a href="ch05.html">第5章：审查与评审机制</a>
+      <a href="ch06.html">第6章：五阶段流水线</a>
+      <a href="ch07.html">第7章：File Pointers 机制</a>
+      <a href="ch08.html">第8章：审查架构与质量保障</a>
+      <a href="ch09.html">第9章：发布与装帧</a>
+      <a href="ch10.html">第10章：搭建你的 Scriptorium</a>
+    </div>
+  </nav><main id="main">
+    <article>
+      <header class="chapter-header">
+        <h1>第3章：主编排的秘密</h1>
+        <blockquote class="chapter-goals">
+          <strong>本章目标</strong>
+          <ul>
+            <li>理解主编排作为"总导演"的核心职责</li>
+            <li>掌握主编排的调度机制和工作流程</li>
+            <li>了解主编排如何管理进度和维护长记忆</li>
+            <li>理解异常处理和断点恢复策略</li>
+          </ul>
+        </blockquote>
+      </header>
+
+      <section id="section-3-1">
+        <h2>3.1 主编排是谁？</h2>
+        <p>想象一个电影剧组：演员们各司其职，但谁来决定"这一幕先拍谁"、"道具准备好了吗"、"这个镜头要不要重拍"？</p>
+        <p>是<strong>导演</strong>。</p>
+        <p>在 Scriptorium 中，主编排就是那个"导演"——它不写内容（不是作家），不审代码（不是审查员），不研究源码（不是研究员）。它只做一件事：<strong>协调</strong>。</p>
+        
+        <h3>3.1.1 为什么说主编排是"用户自己"？</h3>
+        <p>这是一个有趣的设计选择。在 Scriptorium 中，主编排 <strong>不是</strong> 作为子 Agent 被调度的，而是直接由用户（AI 助手的主会话）扮演的。</p>
+        <blockquote>
+          <strong>类比</strong><br>
+          想象你雇了一个"项目管家"。但这个管家不是你的员工，而是你自己——你只是用了管家的手册（QUICK_START.md）来提醒自己该做什么。
+        </blockquote>
+        <p><strong>为什么不把主编排也做成子 Agent？</strong></p>
+        <p>因为会陷入"谁来调度调度者"的问题。如果 #0 主编排也是子 Agent，那么谁来调度它？所以最自然的方式是：<strong>用户就是主编排</strong>。</p>
+        
+        <h3>3.1.2 一句话启动</h3>
+        <p>用户只需要说一句话，就能让整个框架运转起来：</p>
+        <pre><code>我的项目源码在 /path/to/project。请读 QUICK_START.md，然后向我提问。
+没有问题就开始你的工作。</code></pre>
+        <p>这听起来很简单，但背后是精心设计的一整套流程。主编排会：</p>
+        <ol>
+          <li>📖 读取 QUICK_START.md 了解框架手册</li>
+          <li>❓ 向用户确认基本信息（书名、目标读者等）</li>
+          <li>🚀 自主运行全部 5 个阶段</li>
+          <li>📚 交付可阅读的 HTML 电子书</li>
+        </ol>
+      </section>
+
+      <section id="section-3-2">
+        <h2>3.2 主编排的五大职责</h2>
+        
+        <h3>3.2.1 SQL 进度追踪</h3>
+        <p>主编排使用 <code>todos</code> 表管理所有任务状态：</p>
+        <div class="mermaid">
+erDiagram
+    todos {
+        string id PK
+        string status "pending/in_progress/done/blocked"
+        string content "任务描述"
+        string priority "high/medium/low"
+    }
+
+    todo_deps {
+        string todo_id FK
+        string depends_on FK
+    }
+
+    todos ||--o{ todo_deps : "depends on"
+        </div>
+        <p><strong>为什么用 SQL 而不是文件？</strong></p>
+        <p>类比：项目管理用甘特图而不是笔记本。手写的笔记很难追踪依赖关系，但数据库查询可以轻松回答"哪些任务可以开始？"。</p>
+        <pre><code>-- 查询就绪任务（所有前置依赖已完成）
+SELECT t.* FROM todos t
+WHERE t.status = 'pending'
+AND NOT EXISTS (
+    SELECT 1 FROM todo_deps td
+    JOIN todos dep ON td.depends_on = dep.id
+    WHERE td.todo_id = t.id AND dep.status != 'done'
+);</code></pre>
+        
+        <h3>3.2.2 子 Agent 调度</h3>
+        <p>主编排根据依赖关系确定就绪任务，然后构造精确的 prompt 调度对应子 Agent：</p>
+        <div class="mermaid">
+flowchart TB
+    O["主编排<br/>查询就绪任务"] --> Q["SQL 查询"]
+    Q --> R["发现就绪任务"]
+    R --> P["构造 Prompt"]
+    P --> A["调度 Agent"]
+
+    subgraph "Prompt 内容"
+        T["任务目标"]
+        I["📥 输入文件"]
+        O2["📤 输出文件"]
+        G["📎 长记忆"]
+        M["✅ 完成标记"]
+    end
+
+    P --> T
+    P --> I
+    P --> O2
+    P --> G
+    P --> M
+        </div>
+        <p><strong>关键：File Pointers 必须精确</strong></p>
+        <p>主编排传递给子 Agent 的不是"随便读点什么"，而是精心挑选的文件组合：</p>
+        <pre><code>📥 输入文件：
+   - output/memory/outline.md       ← 大纲（任务范围）
+   - output/memory/source-map.md    ← 源码定位
+   - 源码文件（根据 source-map）     ← 实际源码
+
+📤 输出文件：
+   - output/research/ch03-report.md ← 研究报告</code></pre>
+        
+        <h3>3.2.3 长记忆文件维护</h3>
+        <p>主编排负责维护跨章节共享的"记忆文件"：</p>
+        <table>
+          <thead>
+            <tr><th>文件</th><th>作用</th><th>更新时机</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>chapter-summaries.md</code></td><td>各章摘要</td><td>每章完成后追加</td></tr>
+            <tr><td><code>glossary.md</code></td><td>术语表</td><td>每章完成后追加</td></tr>
+            <tr><td><code>metaphor-registry.md</code></td><td>比喻注册表</td><td>每章完成后追加</td></tr>
+          </tbody>
+        </table>
+        <blockquote>
+          <strong>类比</strong><br>
+          主编排就像项目秘书，维护一份"项目百科"。每个子 Agent 完成任务后，都要往百科里添加新条目。
+        </blockquote>
+        
+        <h3>3.2.4 产出质量审计</h3>
+        <p>主编排不信任任何子 Agent 的输出，必须验证：</p>
+        <ol>
+          <li><strong>完成标记检查</strong>：文件末尾是否包含 <code>&lt;!-- DRAFT_COMPLETE --&gt;</code> 等标记？</li>
+          <li><strong>内容质量检查</strong>：是否符合质量标准？</li>
+          <li><strong>格式检查</strong>：是否遵循输出规格？</li>
+        </ol>
+        <p>如果不合格，主编排会：</p>
+        <ul>
+          <li>将具体问题反馈给作家 Agent</li>
+          <li>要求针对性修改</li>
+          <li>不通过则重新调度</li>
+        </ul>
+        
+        <h3>3.2.5 断点恢复</h3>
+        <p>写作过程中断？告诉 AI：</p>
+        <pre><code>请读 output/memory/checkpoint.md，继续上次未完成的工作。</code></pre>
+        <p>主编排会通过双重机制恢复进度：</p>
+        <ol>
+          <li>扫描 <code>todos</code> 表的状态</li>
+          <li>检查文件完成标记</li>
+        </ol>
+        <div class="mermaid">
+flowchart LR
+    A["中断"] --> B["读取 checkpoint.md"]
+    B --> C["检查 todos 表"]
+    C --> D{"文件完成标记?"}
+    D -->|"存在"| E["继续下一任务"]
+    D -->|"不存在"| F["重新执行"]
+        </div>
+      </section>
+
+      <section id="section-3-3">
+        <h2>3.3 主编排的调度流程</h2>
+        
+        <h3>3.3.1 标准调度模板</h3>
+        <p>每次调度子 Agent 前，主编排执行以下流程：</p>
+        <pre><code>1️⃣ 查询 SQL 确定就绪任务
+2️⃣ 确认该任务对应的 Agent 类型
+3️⃣ 构造 prompt，包含：
+   - 任务目标描述
+   - 📥 输入文件列表（精确路径）
+   - 📤 输出文件路径及格式要求
+   - 📎 需参考的长记忆文件
+   - ✅ 完成标记要求
+   - ⚠️ 特别注意事项
+4️⃣ 调度 Agent 执行
+5️⃣ 审查产出 → 更新状态</code></pre>
+        
+        <h3>3.3.2 异常处理策略</h3>
+        <table>
+          <thead>
+            <tr><th>场景</th><th>处理方式</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>审查不通过</td><td>将具体问题反馈给作家 Agent，要求针对性修改</td></tr>
+            <tr><td>子 Agent 输出缺少完成标记</td><td>判定为未完成，重新调度</td></tr>
+            <tr><td>连续失败 ≥3 次</td><td>暂停该任务，标记为 <code>blocked</code>，请求用户介入</td></tr>
+            <tr><td>长记忆文件冲突</td><td>以最新完成章节的内容为准，人工确认后更新</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-3-4">
+        <h2>3.4 主编排在各阶段的工作</h2>
+        
+        <h3>3.4.1 Phase 1 大纲定稿</h3>
+        <pre><code>主编排调用：
+  ├── 架构师 #1  → 分析源码，生成 outline.md
+  ├── 读者代言人 #2  → 审核大纲
+  └── 用户确认  → 最终定稿</code></pre>
+        
+        <h3>3.4.2 Phase 2 共享资源构建</h3>
+        <pre><code>主编排直接执行：
+  ├── 创建 style-guide.md
+  ├── 创建 glossary.md
+  ├── 创建 metaphor-registry.md
+  └── 创建 chapter-summaries.md（空模板）</code></pre>
+        
+        <h3>3.4.3 Phase 3 逐章写作</h3>
+        <p>这是主编排最忙碌的阶段：</p>
+        <pre><code>每章 4 步流水线：
+
+Step 1  研究  → 调度研究员 #3
+Step 2  写作  → 调度作家 #4
+Step 3  三审  → 调度 R1/R2/R3（并行）
+Step 4  评审  → 调度 RS/RE/RH（并行）</code></pre>
+        
+        <h3>3.4.4 Phase 4 统稿审计</h3>
+        <p>主编排对全书进行最终审计：</p>
+        <ul>
+          <li>术语一致性检查</li>
+          <li>跨章引用完整性</li>
+          <li>代码片段准确性</li>
+          <li>整体叙事连贯性</li>
+        </ul>
+        
+        <h3>3.4.5 Phase 5 装帧发布</h3>
+        <pre><code>主编排调度：
+  ├── 装帧工人 #11  → 生成 HTML
+  └── 质检员 #12   → 程序化质检</code></pre>
+      </section>
+
+      <section id="section-3-5">
+        <h2>3.5 主编排的"日工作计划"</h2>
+        <p>如果我们把主编排想象成一个真实的人，它的一天是这样的：</p>
+        <pre><code>08:00 上班，看一眼 checkpoint.md（今天的任务清单）
+08:05 看看有哪些任务"就绪"了（前置依赖都完成了）
+08:10 给研究员 #3 发邮件："请调研第4章的源码"
+09:30 收到研究员的研究报告，质量不错，归档
+09:35 给作家 #4 发邮件："请写第4章，用这份报告做素材"
+11:00 收到作家的初稿，打回修改："代码块超长了"
+12:00 收到修改稿，这次合格了
+12:05 同时发给 R1/R2/R3："请并行审查这份草稿"
+14:00 收到三份审查报告，汇总
+14:05 同时发给 RS/RE/RH："请三视角评审"
+16:00 收到读者评审团反馈，都是小问题
+16:30 给作家发邮件："按反馈修改第4章"
+17:30 第4章最终稿归档，更新 checkpoint.md
+17:35 看看第5章能不能开始了...</code></pre>
+        <blockquote>
+          <strong>核心洞察</strong><br>
+          主编排不做任何"创作"工作——不写代码、不写文字、不做研究。它的价值在于：<strong>知道谁该做什么，什么时候做，以及产出合不合格</strong>。
+        </blockquote>
+      </section>
+
+      <section id="section-3-6">
+        <h2>3.6 小结</h2>
+        <p>本章我们深入理解了主编排（Orchestrator）的工作机制：</p>
+        <ol>
+          <li><strong>主编排是"总导演"</strong>：协调所有子 Agent，不做具体创作</li>
+          <li><strong>SQL 追踪进度</strong>：用 <code>todos</code> 表管理任务状态和依赖关系</li>
+          <li><strong>精确调度</strong>：每次调度都要构造包含 File Pointers 的精确 prompt</li>
+          <li><strong>质量审计</strong>：不信任子 Agent 输出，必须验证完成标记和质量</li>
+          <li><strong>断点恢复</strong>：通过 checkpoint.md 和文件完成标记实现任意中断恢复</li>
+        </ol>
+        <p>下一章，我们将认识 Scriptorium 的 <strong>Agent 团队</strong>——研究员、作家、审查员们各自如何工作。</p>
+      </section>
+    </article>
+
+    <nav class="chapter-nav">
+      <a href="ch02.html">← 第2章：系统架构总览</a>
+      <span></span>
+      <a href="ch04.html">第4章：主编排的秘密 →</a>
+    </nav>
+  </main>
+
+  <aside id="toc-right"></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+  <script src="assets/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#e3f2fd',
+        primaryTextColor: '#333333',
+        primaryBorderColor: '#90caf9',
+        lineColor: '#666666',
+        secondaryColor: '#f5f5f5',
+        tertiaryColor: '#ffffff'
+      }
+    });
+  </script>
+</body>
+</html>

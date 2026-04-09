@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第7章：File Pointers 机制 - Scriptorium 框架深度解析</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+  <div id="progress-bar"></div>
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Scriptorium 框架深度解析</div>
+      <div class="sidebar-subtitle">从创作到发布，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+      <a href="index.html">📖 目录</a>
+      <a href="ch01.html">第1章：认识 Scriptorium</a>
+      <a href="ch02.html">第2章：系统架构总览</a>
+      <a href="ch03.html">第3章：主编排的秘密</a>
+      <a href="ch04.html">第4章：创作 Agent 团队</a>
+      <a href="ch05.html">第5章：审查与评审机制</a>
+      <a href="ch06.html">第6章：五阶段流水线</a>
+      <a href="ch07.html" class="active">第7章：File Pointers 机制</a>
+      <a href="ch08.html">第8章：审查架构与质量保障</a>
+      <a href="ch09.html">第9章：发布与装帧</a>
+      <a href="ch10.html">第10章：搭建你的 Scriptorium</a>
+    </div>
+  </nav><main id="main">
+    <article>
+      <header class="chapter-header">
+        <h1>第7章：File Pointers 机制</h1>
+        <blockquote class="chapter-goals">
+          <strong>本章目标</strong>
+          <ul>
+            <li>理解 File Pointers 的设计动机</li>
+            <li>掌握 File Pointers 的三种类型</li>
+            <li>了解文件生命周期管理策略</li>
+            <li>理解上下文注入的技术实现</li>
+          </ul>
+        </blockquote>
+      </header>
+
+      <section id="section-7-1">
+        <h2>7.1 问题的起源</h2>
+        <p>在多 Agent 系统中，<strong>上下文管理</strong>是一个核心挑战。</p>
+        <p>想象一个没有 File Pointers 的场景：</p>
+        <ul>
+          <li>Agent A 读取了文件 F1、F2、F3</li>
+          <li>Agent B 需要读取 F2、F4、F5</li>
+          <li>问题来了：Agent B 怎么知道 F2、F4、F5 在哪里？内容是什么？</li>
+        </ul>
+        <p><strong>传统方案</strong>：</p>
+        <ol>
+          <li>把所有文件都传给 Agent（浪费 token）</li>
+          <li>让 Agent 自己搜索文件（不可靠）</li>
+          <li>手动复制粘贴（繁琐且容易出错）</li>
+        </ol>
+        <p>Scriptorium 选择了第四种方案：<strong>File Pointers</strong>。</p>
+      </section>
+
+      <section id="section-7-2">
+        <h2>7.2 什么是 File Pointers？</h2>
+        <p>File Pointers 本质上是一个<strong>精确的文件路径清单</strong>：</p>
+        <pre><code>📖 需要读取的文件：
+  - source-map.md          ← 项目内部文件
+  - outline.md             ← 项目内部文件
+  - agents/01-orchestrator.md  ← 源码文件
+
+📝 需要输出的文件：
+  - output/research/ch03-report.md</code></pre>
+        <p><strong>类比</strong>：就像餐厅的点菜单——不是把整个厨房都端给服务员，而是给他一张列有所需食材的清单。</p>
+      </section>
+
+      <section id="section-7-3">
+        <h2>7.3 File Pointers 的三种类型</h2>
+        <p>Scriptorium 定义了三种文件类型，每种有不同的生命周期：</p>
+        <div class="mermaid">
+flowchart TB
+    subgraph "文件类型"
+        S["Static Files<br/>静态文件"]
+        A["Append-Only Files<br/>只追加文件"]
+        O["Overwritable Files<br/>可覆盖文件"]
+    end
+
+    S -->|"永不修改"| P1["持续有效"]
+    A -->|"不断增长"| P2["历史累积"]
+    O -->|"每次更新"| P3["最新状态"]
+
+    style S fill:#e3f2fd
+    style A fill:#c8e6c9
+    style O fill:#fff3e0
+        </div>
+        
+        <h3>7.3.1 静态文件（Static Files）</h3>
+        <p><strong>特点</strong>：一旦创建，绝不修改。</p>
+        <p><strong>示例</strong>：</p>
+        <ul>
+          <li><code>outline.md</code>（大纲）</li>
+          <li><code>style-guide.md</code>（写作规范）</li>
+          <li><code>glossary.md</code>（术语表）</li>
+        </ul>
+        <p><strong>为什么静态？</strong></p>
+        <ul>
+          <li>避免"版本混乱"</li>
+          <li>确保所有 Agent 引用的是同一版本</li>
+          <li>防止引用冲突</li>
+        </ul>
+        
+        <h3>7.3.2 只追加文件（Append-Only Files）</h3>
+        <p><strong>特点</strong>：只能追加，不能修改历史内容。</p>
+        <p><strong>示例</strong>：</p>
+        <ul>
+          <li><code>checkpoint.md</code>（进度追踪）</li>
+          <li>审查报告 <code>reviews/chXX-*.md</code></li>
+        </ul>
+        <pre><code>## 历史记录
+
+### 2026-04-08 10:00
+- 完成第3章初稿
+
+### 2026-04-08 14:00
+- R1 审查完成，发现 2 个问题</code></pre>
+        
+        <h3>7.3.3 可覆盖文件（Overwritable Files）</h3>
+        <p><strong>特点</strong>：每次更新都是全量覆盖。</p>
+        <p><strong>示例</strong>：</p>
+        <ul>
+          <li>章节草稿 <code>chapters/draft/chXX-draft.md</code></li>
+          <li>章节摘要 <code>chapter-summaries.md</code></li>
+        </ul>
+        <pre><code># 第3章草稿
+[这是最新的完整版本，覆盖了旧版本]</code></pre>
+      </section>
+
+      <section id="section-7-4">
+        <h2>7.4 上下文注入流程</h2>
+        <p>File Pointers 的核心价值是<strong>精确的上下文注入</strong>：</p>
+        <div class="mermaid">
+flowchart LR
+    subgraph "主编排调度"
+        P["主编排"]
+        FP["File Pointers"]
+    end
+
+    subgraph "Agent 执行"
+        A["Agent"]
+        C["上下文"]
+    end
+
+    P -->|"生成"| FP
+    FP -->|"读取"| C
+    C -->|"注入"| A
+
+    style FP fill:#fff9c4
+    style C fill:#c8e6c9
+        </div>
+        
+        <h3>7.4.1 上下文注入示例</h3>
+        <p><strong>研究员 Agent 的上下文注入</strong>：</p>
+        <pre><code>╔════════════════════════════════════════════════════╗
+║ 上下文 (Context)                                     ║
+╠════════════════════════════════════════════════════╣
+║ 📖 输入文件：                                         ║
+║   1. output/memory/source-map.md                     ║
+║      - 源码文件定位表                                  ║
+║   2. output/memory/outline.md                       ║
+║      - 第3章大纲要求                                  ║
+║   3. agents/01-orchestrator.md                      ║
+║      - 主编排规范源码                                 ║
+║   4. framework/workflow.md                          ║
+║      - 工作流定义                                    ║
+╠════════════════════════════════════════════════════╣
+║ 📝 输出文件：                                         ║
+║   - output/research/ch03-report.md                   ║
+╚════════════════════════════════════════════════════╝</code></pre>
+        
+        <h3>7.4.2 为什么上下文注入重要？</h3>
+        <p><strong>1. Token 成本控制</strong></p>
+        <ul>
+          <li>Agent 上下文窗口有限</li>
+          <li>精确的文件列表避免"信息过载"</li>
+          <li>只传递必要的文件</li>
+        </ul>
+        <p><strong>2. 可靠性保证</strong></p>
+        <ul>
+          <li>Agent 不需要自己"猜"文件在哪里</li>
+          <li>主编排确保引用的文件都存在</li>
+          <li>减少"找不到文件"错误</li>
+        </ul>
+        <p><strong>3. 可审计性</strong></p>
+        <ul>
+          <li>每次调度的 File Pointers 都有记录</li>
+          <li>可以回溯"这个决策是怎么来的"</li>
+          <li>便于问题排查</li>
+        </ul>
+      </section>
+
+      <section id="section-7-5">
+        <h2>7.5 File Pointers 的设计原则</h2>
+        
+        <h3>7.5.1 最小化原则</h3>
+        <p>只传递 Agent <strong>必须</strong>的文件，不传递"可能有用的"文件。</p>
+        <table>
+          <thead>
+            <tr><th>✅ 正确做法</th><th>❌ 错误做法</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>传递 ch03 相关的 3 个文件</td><td>传递所有 50 个文件</td></tr>
+            <tr><td>传递当前章节的 style-guide</td><td>传递所有历史版本的 style-guide</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>7.5.2 精确性原则</h3>
+        <p>文件路径必须<strong>精确到文件名</strong>，不能模糊引用。</p>
+        <table>
+          <thead>
+            <tr><th>✅ 正确做法</th><th>❌ 错误做法</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>agents/01-orchestrator.md</code></td><td><code>agents 目录下的文件</code></td></tr>
+            <tr><td>第 15-30 行</td><td>中间某一段</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>7.5.3 版本隔离原则</h3>
+        <p>不同 Agent 操作不同类型的文件，避免冲突。</p>
+        <table>
+          <thead>
+            <tr><th>Agent</th><th>操作的文件类型</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>主编排</td><td>静态文件、只追加文件</td></tr>
+            <tr><td>研究员</td><td>源码文件（只读）、研究报告</td></tr>
+            <tr><td>作家</td><td>可覆盖文件（草稿）</td></tr>
+            <tr><td>R1/R2/R3</td><td>只追加文件（审查报告）</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-7-6">
+        <h2>7.6 File Pointers 的实际应用</h2>
+        
+        <h3>7.6.1 主编排的调度模板</h3>
+        <p>主编排在调度每个 Agent 时，都会生成相应的 File Pointers：</p>
+        <pre><code>## Agent #3 研究员 调度
+
+### 读取文件（Read）
+- output/memory/source-map.md      ← 源码定位
+- output/memory/outline.md          ← 大纲要求
+- agents/01-orchestrator.md        ← 主编排规范
+- framework/file-pointers.md       ← 本章主题
+
+### 输出文件（Write）
+- output/research/ch03-report.md   ← 研究报告
+
+### 执行指令
+深度分析主编排的设计决策，重点关注：
+1. 为什么采用中央调度模式
+2. File Pointers 的实际使用方式</code></pre>
+        
+        <h3>7.6.2 三审并行的 File Pointers</h3>
+        <p>R1、R2、R3 虽然同时审查同一份草稿，但它们的 File Pointers 不同：</p>
+        <table>
+          <thead>
+            <tr><th>审查员</th><th>读取的文件</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>R1</td><td><code>ch03-draft.md</code> + 源码文件（根据草稿中的引用）</td></tr>
+            <tr><td>R2</td><td><code>ch03-draft.md</code> + <code>glossary.md</code> + <code>metaphor-registry.md</code></td></tr>
+            <tr><td>R3</td><td><code>ch03-draft.md</code> + <code>style-guide.md</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-7-7">
+        <h2>7.7 小结</h2>
+        <p>本章我们深入了解了 File Pointers 机制：</p>
+        <ol>
+          <li><strong>问题起源</strong>：多 Agent 系统的上下文管理挑战</li>
+          <li><strong>核心概念</strong>：精确的文件路径清单</li>
+          <li><strong>三种类型</strong>：静态文件、只追加文件、可覆盖文件</li>
+          <li><strong>上下文注入</strong>：精确控制 Agent 的输入输出</li>
+          <li><strong>设计原则</strong>：最小化、精确性、版本隔离</li>
+        </ol>
+        <p>File Pointers 是 Scriptorium 的核心创新之一——它解决了"谁读什么文件"的问题，让多 Agent 协作变得可控和可审计。</p>
+        <p>下一章，我们将了解 <strong>审查架构与质量保障</strong> 的完整体系。</p>
+      </section>
+    </article>
+
+    <nav class="chapter-nav">
+      <a href="ch06.html">← 第6章：五阶段流水线</a>
+      <span></span>
+      <a href="ch08.html">第8章：File Pointers 机制 →</a>
+    </nav>
+  </main>
+
+  <aside id="toc-right"></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+  <script src="assets/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#e3f2fd',
+        primaryTextColor: '#333333',
+        primaryBorderColor: '#90caf9',
+        lineColor: '#666666',
+        secondaryColor: '#f5f5f5',
+        tertiaryColor: '#ffffff'
+      }
+    });
+  </script>
+</body>
+</html>

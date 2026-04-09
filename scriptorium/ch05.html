@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第5章：审查与评审机制 - Scriptorium 框架深度解析</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+  <div id="progress-bar"></div>
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Scriptorium 框架深度解析</div>
+      <div class="sidebar-subtitle">从创作到发布，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+      <a href="index.html">📖 目录</a>
+      <a href="ch01.html">第1章：认识 Scriptorium</a>
+      <a href="ch02.html">第2章：系统架构总览</a>
+      <a href="ch03.html">第3章：主编排的秘密</a>
+      <a href="ch04.html">第4章：创作 Agent 团队</a>
+      <a href="ch05.html" class="active">第5章：审查与评审机制</a>
+      <a href="ch06.html">第6章：五阶段流水线</a>
+      <a href="ch07.html">第7章：File Pointers 机制</a>
+      <a href="ch08.html">第8章：审查架构与质量保障</a>
+      <a href="ch09.html">第9章：发布与装帧</a>
+      <a href="ch10.html">第10章：搭建你的 Scriptorium</a>
+    </div>
+  </nav><main id="main">
+    <article>
+      <header class="chapter-header">
+        <h1>第5章：审查与评审机制</h1>
+        <blockquote class="chapter-goals">
+          <strong>本章目标</strong>
+          <ul>
+            <li>理解三审并行（R1/R2/R3）的设计哲学</li>
+            <li>掌握每个审查员的核心职责</li>
+            <li>了解读者评审团的三视角验证</li>
+            <li>理解为什么需要多层次质量保障</li>
+          </ul>
+        </blockquote>
+      </header>
+
+      <section id="section-5-1">
+        <h2>5.1 为什么要审查？</h2>
+        <p>想象一个没有审查的电影制作流程：导演拍完就直接上映。结果可能是：</p>
+        <ul>
+          <li>字幕拼写错误（代码准确性）</li>
+          <li>前后剧情矛盾（一致性）</li>
+          <li>观众看不懂（可读性）</li>
+        </ul>
+        <p>Scriptorium 同样需要审查机制。但与传统"人工校对"不同，这里的审查是<strong>并行的、多维度的</strong>。</p>
+      </section>
+
+      <section id="section-5-2">
+        <h2>5.2 三审并行机制</h2>
+        
+        <h3>5.2.1 三把不同的"放大镜"</h3>
+        <p>三审机制的核心思想：<strong>三个审查员各自拿着不同的放大镜，同时观察同一份稿件</strong>。</p>
+        <div class="mermaid">
+flowchart TB
+    D["章节草稿"] --> R1["R1 源码审查员<br/>🔍 代码准确性"]
+    D --> R2["R2 一致性审查员<br/>🔗 跨章一致性"]
+    D --> R3["R3 内容审查员<br/>📖 内容质量"]
+
+    R1 --> RP["合并审查报告"]
+    R2 --> RP
+    R3 --> RP
+
+    style D fill:#ffebee
+    style RP fill:#e8f5e9
+        </div>
+        <p><strong>为什么可以并行？</strong></p>
+        <p>因为三个维度的检查<strong>完全正交</strong>：</p>
+        <ul>
+          <li>R1 需要源码文件，R2 不需要</li>
+          <li>R2 需要长记忆文件，R1 不需要</li>
+          <li>R3 只需要草稿和 style-guide</li>
+        </ul>
+        
+        <h3>5.2.2 三审各司其职</h3>
+        <table>
+          <thead>
+            <tr><th>审查员</th><th>检查什么</th><th>不检查什么</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>R1</td><td>代码路径、函数名、代码片段是否与源码一致</td><td>写作风格、比喻质量</td></tr>
+            <tr><td>R2</td><td>术语是否与 glossary 一致、比喻是否冲突</td><td>代码技术细节</td></tr>
+            <tr><td>R3</td><td>可读性、叙事结构、市场价值</td><td>代码实现细节</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-5-3">
+        <h2>5.3 R1：源码审查员</h2>
+        
+        <h3>5.3.1 角色定位</h3>
+        <p>R1 就像一个<strong>考据专家</strong>——他较真每一个代码细节，不放过任何"伪造"。</p>
+        <p><strong>核心职责</strong>：</p>
+        <table>
+          <thead>
+            <tr><th>检查项</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>文件路径</td><td>草稿引用的每个文件路径必须存在</td></tr>
+            <tr><td>函数名</td><td>函数/方法名必须与源码一致（含大小写）</td></tr>
+            <tr><td>代码片段</td><td>引用的代码块与源码逐行比对</td></tr>
+            <tr><td>行为描述</td><td>对代码执行流程的描述必须与实际逻辑相符</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>5.3.2 R1 的工作方式</h3>
+        <p>R1 读取两类文件：</p>
+        <ul>
+          <li><code>chXX-draft.md</code>（待审查的草稿）</li>
+          <li>源码文件（根据草稿中引用的路径）</li>
+        </ul>
+        <p>然后逐项验证：</p>
+        <div class="mermaid">
+flowchart LR
+    D["草稿"] -->|"引用1"| F1["检查文件存在"]
+    D -->|"引用2"| F2["检查函数名"]
+    D -->|"引用3"| F3["比对代码片段"]
+    D -->|"引用4"| F4["验证行为描述"]
+
+    F1 -->|结果| R["问题汇总"]
+    F2 -->|结果| R
+    F3 -->|结果| R
+    F4 -->|结果| R
+        </div>
+        
+        <h3>5.3.3 R1 的产出示例</h3>
+        <pre><code># 第3章 代码准确性审查报告（R1）
+
+## 审查概要
+- 代码引用总数：5处
+- 发现问题：1处
+- 审查结论：⚠️ 需修改
+
+## 问题列表
+
+| # | 类型 | 严重程度 | 位置 | 问题描述 |
+|---|------|----------|------|----------|
+| 1 | 代码差异 | 🔴高 | 第42行 | 源码第45行是 `handle(req, res)`，草稿写的是 `handle(req)` |</code></pre>
+      </section>
+
+      <section id="section-5-4">
+        <h2>5.4 R2：一致性审查员</h2>
+        
+        <h3>5.4.1 角色定位</h3>
+        <p>R2 就像<strong>书籍的记忆管理员</strong>——他确保全书像一个"记忆连贯的人"在说话，而不是前后矛盾的两个人。</p>
+        <p><strong>核心职责</strong>：</p>
+        <table>
+          <thead>
+            <tr><th>检查项</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>术语一致性</td><td>使用的术语是否与 glossary 一致</td></tr>
+            <tr><td>比喻冲突</td><td>新比喻是否与 metaphor-registry 冲突</td></tr>
+            <tr><td>跨章一致性</td><td>技术声明是否与之前章节矛盾</td></tr>
+            <tr><td>格式合规</td><td>是否遵循 style-guide 的格式规范</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>5.4.2 R2 的独门武器：长记忆文件</h3>
+        <p>R2 不需要源码，但需要这些"记忆"文件：</p>
+        <table>
+          <thead>
+            <tr><th>文件</th><th>R2 为什么需要</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>glossary.md</code></td><td>核对术语翻译</td></tr>
+            <tr><td><code>metaphor-registry.md</code></td><td>检查比喻是否冲突</td></tr>
+            <tr><td><code>chapter-summaries.md</code></td><td>检查跨章一致性</td></tr>
+            <tr><td><code>style-guide.md</code></td><td>检查格式规范</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>5.4.3 比喻冲突检测示例</h3>
+        <blockquote>
+          <strong>比喻冲突的危害</strong>
+          <p>如果第3章把"主编排"比喻成"总导演"，第7章又把它比喻成"流水线工人"，读者会困惑：主编排到底是导演还是工人？</p>
+        </blockquote>
+        <p>R2 会发现这类问题：</p>
+        <pre><code>## 比喻一致性
+
+| 概念 | 本章比喻 | 已有比喻（来自第3章） | 是否冲突 |
+|------|----------|----------------------|----------|
+| 主编排 | "调度中心" | "总导演"（第3章） | ⚠️ 轻微冲突 |</code></pre>
+      </section>
+
+      <section id="section-5-5">
+        <h2>5.5 R3：内容审查员</h2>
+        
+        <h3>5.5.1 角色定位</h3>
+        <p>R3 就像<strong>资深编辑</strong>——他关注的不只是"对不对"，更是"好不好看"。</p>
+        <p><strong>六维度审查</strong>：</p>
+        <table>
+          <thead>
+            <tr><th>维度</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>敏感性</td><td>政治、宗教、性别等是否得当</td></tr>
+            <tr><td>一致性</td><td>内部逻辑是否自洽</td></tr>
+            <tr><td>准确性</td><td>概念解释是否准确、比喻是否可能误导</td></tr>
+            <tr><td>可读性</td><td>段落长度、比喻质量、语言流畅度</td></tr>
+            <tr><td>过渡性</td><td>章节间衔接是否自然</td></tr>
+            <tr><td>市场性</td><td>标题是否有吸引力、能否激发阅读欲望</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>5.5.2 R3 的"品味"要求</h3>
+        <p>R3 可能会提出这样的反馈：</p>
+        <pre><code>## 可读性审查
+
+- **段落长度**：⚠️ 第5段超过8行，建议拆分
+- **比喻质量**：✅ "主编排是总导演"比喻贴切
+- **语言流畅度**：⚠️ "显而易见"这类词汇应避免
+
+## 市场性审查
+
+- **标题吸引力**：✅ "主编排的秘密"比"主编排简介"更有悬念
+- **开头引入**：⚠️ 直接介绍功能太生硬，建议用一个场景开场</code></pre>
+      </section>
+
+      <section id="section-5-6">
+        <h2>5.6 读者评审团</h2>
+        
+        <h3>5.6.1 为什么需要读者评审？</h3>
+        <p>审查员（R1/R2/R3）都是从<strong>作者视角</strong>审查——他们关注的是"写得好不好"。</p>
+        <p>但读者关心的是<strong>"我能不能看懂"</strong>。</p>
+        <p>类比：电影杀青后，导演和制片人觉得不错，但还是要找普通观众试映。</p>
+        
+        <h3>5.6.2 三种读者的模拟</h3>
+        <p>Scriptorium 模拟三种典型读者：</p>
+        <div class="mermaid">
+flowchart TB
+    subgraph Panel["读者评审团"]
+        RS["🎓 RS<br/>学生读者"] -->|"初级视角"| P["评审汇总"]
+        RE["💻 RE<br/>工程师读者"] -->|"高级视角"| P
+        RH["🌐 RH<br/>爱好者读者"] -->|"非技术视角"| P
+    end
+
+    style RS fill:#e3f2fd
+    style RE fill:#fff3e0
+    style RH fill:#fce4ec
+        </div>
+        <table>
+          <thead>
+            <tr><th>角色</th><th>模拟人群</th><th>关注焦点</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>RS</td><td>计算机专业大三学生</td><td>"看得懂吗？术语解释够吗？"</td></tr>
+            <tr><td>RE</td><td>8年经验全栈工程师</td><td>"深度够吗？有实践价值吗？"</td></tr>
+            <tr><td>RH</td><td>无技术背景的科技爱好者</td><td>"有趣吗？比喻贴切吗？"</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>5.6.3 三视角评审示例</h3>
+        <p><strong>同一段内容，三个读者可能有不同的反应</strong>：</p>
+        <blockquote>在 Scriptorium 中，Agent 是无状态的，所有状态都存储在文件系统中。</blockquote>
+        <table>
+          <thead>
+            <tr><th>读者</th><th>反应</th><th>反馈</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>RS</td><td>"无状态是什么意思？第一次看到这个词"</td><td>建议：补充解释"无状态"的含义</td></tr>
+            <tr><td>RE</td><td>"嗯，这个设计决策很合理"</td><td>无问题</td></tr>
+            <tr><td>RH</td><td>"为什么不用脑子记，要用文件？"</td><td>建议：加一个生活化的比喻</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-5-7">
+        <h2>5.7 审查不是终点</h2>
+        <blockquote>
+          <strong>重要提醒</strong>
+          <p>审查不是"挑刺"，而是"帮助改进"。审查报告不是判决书，而是"改进建议清单"。</p>
+        </blockquote>
+        <p>主编排在收到审查报告后，会：</p>
+        <ol>
+          <li>汇总三审意见</li>
+          <li>将具体问题反馈给作家</li>
+          <li>要求针对性修改</li>
+          <li>修改后再审查（直到通过）</li>
+        </ol>
+      </section>
+
+      <section id="section-5-8">
+        <h2>5.8 小结</h2>
+        <p>本章我们了解了多层次质量保障机制：</p>
+        <ol>
+          <li><strong>三审并行</strong>：R1/R2/R3 各司其职，同时审查不同维度</li>
+          <li><strong>R1 源码审查</strong>：确保代码引用的技术准确性</li>
+          <li><strong>R2 一致性审查</strong>：确保全书术语、比喻、格式的一致性</li>
+          <li><strong>R3 内容审查</strong>：确保可读性、叙事质量、市场价值</li>
+          <li><strong>读者评审团</strong>：从三种读者视角验证可理解性</li>
+        </ol>
+        <p>下一章，我们将深入了解 <strong>五阶段流水线</strong> 的完整运作机制。</p>
+      </section>
+    </article>
+
+    <nav class="chapter-nav">
+      <a href="ch04.html">← 第4章：创作 Agent 团队</a>
+      <span></span>
+      <a href="ch06.html">第6章：审查与评审机制 →</a>
+    </nav>
+  </main>
+
+  <aside id="toc-right"></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+  <script src="assets/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#e3f2fd',
+        primaryTextColor: '#333333',
+        primaryBorderColor: '#90caf9',
+        lineColor: '#666666',
+        secondaryColor: '#f5f5f5',
+        tertiaryColor: '#ffffff'
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第2章：系统架构总览 - Scriptorium 框架深度解析</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+  <div id="progress-bar"></div>
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Scriptorium 框架深度解析</div>
+      <div class="sidebar-subtitle">从创作到发布，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+      <a href="index.html">📖 目录</a>
+      <a href="ch01.html">第1章：认识 Scriptorium</a>
+      <a href="ch02.html" class="active">第2章：系统架构总览</a>
+      <a href="ch03.html">第3章：主编排的秘密</a>
+      <a href="ch04.html">第4章：创作 Agent 团队</a>
+      <a href="ch05.html">第5章：审查与评审机制</a>
+      <a href="ch06.html">第6章：五阶段流水线</a>
+      <a href="ch07.html">第7章：File Pointers 机制</a>
+      <a href="ch08.html">第8章：审查架构与质量保障</a>
+      <a href="ch09.html">第9章：发布与装帧</a>
+      <a href="ch10.html">第10章：搭建你的 Scriptorium</a>
+    </div>
+  </nav>
+
+  <main id="main">
+    <article>
+      <header class="chapter-header">
+        <h1>第2章：系统架构总览</h1>
+        <blockquote class="chapter-goals">
+          <strong>本章目标</strong>
+          <ul>
+            <li>理解 Scriptorium 的 Hub-Spoke 架构设计</li>
+            <li>掌握 File Pointers 机制的核心原理</li>
+            <li>了解三类文件的生命周期管理</li>
+            <li>熟悉 12 个 Agent 的职责分工</li>
+          </ul>
+        </blockquote>
+      </header>
+
+      <section id="section-2-1">
+        <h2>2.1 架构设计理念</h2>
+        
+        <h3>2.1.1 为什么要用 Hub-Spoke？</h3>
+        <p>想象一个传统的编辑部：作者、编辑、校对之间可以直接对话，甚至可以在茶水间闲聊。这种模式在人类协作中没问题，但对 AI Agent 来说，直接对话会带来<strong>上下文污染</strong>——每个 Agent 都要处理来自其他 Agent 的"噪音"。</p>
+        <p>Scriptorium 的解决方案是<strong>轴辐式（Hub-Spoke）架构</strong>：</p>
+        <div class="mermaid">
+graph TB
+    subgraph Hub["主编排 #0（Hub）"]
+        O["调度中心"]
+    end
+
+    subgraph Spokes["Agent 团队（Spokes）"]
+        A1["#1 架构师"]
+        A2["#2 读者代言人"]
+        A3["#3 研究员"]
+        A4["#4 作家"]
+        R1["R1 源码审查"]
+        R2["R2 一致性审查"]
+        R3["R3 内容审查"]
+    end
+
+    O --> A1
+    O --> A2
+    O --> A3
+    O --> A4
+    O --> R1
+    O --> R2
+    O --> R3
+
+    style O fill:#e3f2fd,stroke:#1976d2
+    classDef spoke fill:#fff3e0,stroke:#ff9800
+    class A1,A2,A3,A4,R1,R2,R3 spoke
+        </div>
+        <p>主编排（Hub）是唯一的中枢，所有子 Agent（Spoke）只与主编排通信。类比一下：就像地铁网络，中央换乘站连接所有线路，但各站之间不直通。</p>
+        
+        <h3>2.1.2 架构优势</h3>
+        <table>
+          <thead>
+            <tr><th>优势</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>无环依赖</strong></td><td>信息流单向，不会出现"A等B，B等A"的死锁</td></tr>
+            <tr><td><strong>故障隔离</strong></td><td>单个 Agent 失败不影响其他 Agent</td></tr>
+            <tr><td><strong>可观测性</strong></td><td>所有调度决策集中在主编排，便于日志和调试</td></tr>
+            <tr><td><strong>职责清晰</strong></td><td>每个 Agent 只知道自己该做什么，不知道其他 Agent 在做什么</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-2-2">
+        <h2>2.2 无状态 Agent 设计</h2>
+        
+        <h3>2.2.1 Agent 是无状态的，文件系统是有状态的</h3>
+        <p>这是 Scriptorium 的<strong>第一原则</strong>。</p>
+        <p><strong>类比</strong>：想象你每次上班都变成一个"失忆的新员工"。你不记得上次做了什么、客户是谁、项目进度到哪了。但你的办公桌上有一叠文件（通过 File Pointers 传递），里面记录了所有你需要知道的信息。</p>
+        <div class="mermaid">
+sequenceDiagram
+    participant H as 主编排
+    participant A as Agent
+    participant F as 文件系统
+
+    H->>A: 调度 Agent，传递 File Pointers
+    Note over A: "你是个新人"
+    A->>F: 读取输入文件
+    F-->>A: 返回上下文
+    A->>A: 执行任务
+    A->>F: 写入产出物
+    Note over A: "任务完成，Agent 失忆退出"
+        </div>
+        
+        <h3>2.2.2 为什么这样设计？</h3>
+        <ol>
+          <li><strong>可重现</strong>：任何时候都可以从 checkpoint 恢复</li>
+          <li><strong>可追溯</strong>：文件的修改历史就是 Agent 的工作日志</li>
+          <li><strong>可替换</strong>：任何 Agent 实例都可以被同类型的新实例替换</li>
+        </ol>
+        
+        <h3>2.2.3 与微服务架构的类比</h3>
+        <p>Scriptorium 的设计哲学与现代微服务架构惊人地相似：</p>
+        <table>
+          <thead>
+            <tr><th>微服务概念</th><th>Scriptorium 实现</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>服务无状态</td><td>Agent 无状态</td></tr>
+            <tr><td>数据库存储状态</td><td>文件系统存储状态</td></tr>
+            <tr><td>消息队列通信</td><td>File Pointers 通信</td></tr>
+            <tr><td>API 网关编排</td><td>主编排调度</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-2-3">
+        <h2>2.3 File Pointers 机制</h2>
+        
+        <h3>2.3.1 什么是 File Pointers？</h3>
+        <p><strong>File Pointers（文件指针）</strong>是主编排在调度 Agent 时传递的<strong>精确文件路径列表</strong>。</p>
+        <p>这不是简单的"让 Agent 自己决定读什么"，而是主编排精心挑选的文件组合——每个 Agent 只看到它完成任务所需的最小信息集。</p>
+        <pre><code>主编排传递给作家 Agent 的 File Pointers 示例：
+
+📖 读取文件：
+   - output/memory/style-guide.md      ← 写作风格要求
+   - output/memory/glossary.md         ← 已有术语定义
+   - output/memory/metaphor-registry.md ← 已用比喻（避免重复）
+   - output/research/ch02-report.md     ← 本章源码分析报告
+   - output/memory/chapter-summaries.md ← 前序章节摘要
+
+📝 输出文件：
+   - output/chapters/draft/ch02-draft.md</code></pre>
+        
+        <h3>2.3.2 File Pointers 的三大功能</h3>
+        <table>
+          <thead>
+            <tr><th>功能</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>注入上下文</strong></td><td>告诉 Agent 需要读取哪些文件来获取"记忆"</td></tr>
+            <tr><td><strong>指定输出</strong></td><td>告诉 Agent 需要将成果写入哪个文件</td></tr>
+            <tr><td><strong>隔离职责</strong></td><td>不同 Agent 只看到与自己职责相关的文件</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>2.3.3 遵循最小权限原则</h3>
+        <p>每个 Agent 只获得完成当前任务<strong>最少量</strong>的文件引用：</p>
+        <pre><code>作家 #4 的 File Pointers（需要读取）：
+  ✅ style-guide.md        ← 必须，写作规范
+  ✅ glossary.md           ← 必须，术语定义
+  ✅ metaphor-registry.md  ← 必须，避免比喻冲突
+  ✅ chXX-report.md        ← 必须，本章研究素材
+  ✅ chapter-summaries.md ← 必须，了解前序章节
+  ❌ 其他章节的正文        ← 不需要，避免上下文浪费
+
+R1 源码审查员的 File Pointers：
+  ✅ chXX-draft.md         ← 待审查的草稿
+  ✅ source-map.md         ← 源码文件定位
+  ✅ 相关源码文件           ← 验证引用的准确性
+  ❌ style-guide.md        ← 不需要，只查代码准确性</code></pre>
+      </section>
+
+      <section id="section-2-4">
+        <h2>2.4 文件生命周期管理</h2>
+        
+        <h3>2.4.1 三类文件</h3>
+        <p>Scriptorium 中的文件按生命周期分为三类：</p>
+        <div class="mermaid">
+graph TB
+    subgraph Static["静态文件（创建后不修改）"]
+        S1["outline.md<br/>大纲"]
+        S2["source-map.md<br/>源码地图"]
+        S3["style-guide.md<br/>风格指南"]
+    end
+
+    subgraph Append["追加文件（只增不删）"]
+        A1["glossary.md<br/>术语表"]
+        A2["chapter-summaries.md<br/>章节摘要"]
+        A3["metaphor-registry.md<br/>比喻注册表"]
+        A4["cross-references.md<br/>交叉引用"]
+    end
+
+    subgraph Overwrite["可覆写文件（每次全量替换）"]
+        O1["chXX-report.md<br/>研究报告"]
+        O2["chXX-draft.md<br/>章节草稿"]
+        O3["chXX-r1/r2/r3.md<br/>审查报告"]
+    end
+
+    style Static fill:#e8f5e9
+    style Append fill:#fff8e1
+    style Overwrite fill:#ffebee
+        </div>
+        
+        <h3>2.4.2 静态文件</h3>
+        <p><strong>特点</strong>：创建后不再修改，是全书的"宪法"。</p>
+        <table>
+          <thead>
+            <tr><th>文件</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>outline.md</code></td><td>最终定稿大纲</td></tr>
+            <tr><td><code>source-map.md</code></td><td>源码文件→章节映射</td></tr>
+            <tr><td><code>style-guide.md</code></td><td>写作风格指南</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>2.4.3 追加文件</h3>
+        <p><strong>特点</strong>：只增不删，每章完成后追加新内容。是跨章节连续性的关键。</p>
+        <table>
+          <thead>
+            <tr><th>文件</th><th>追加时机</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>glossary.md</code></td><td>每章完成后</td><td>新增术语及定义</td></tr>
+            <tr><td><code>chapter-summaries.md</code></td><td>每章完成后</td><td>各章 200-300 字摘要</td></tr>
+            <tr><td><code>metaphor-registry.md</code></td><td>每章完成后</td><td>新增比喻/类比</td></tr>
+            <tr><td><code>cross-references.md</code></td><td>每章完成后</td><td>新增交叉引用点</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>2.4.4 可覆写文件</h3>
+        <p><strong>特点</strong>：每次写入时全量替换，生命周期仅限单章。</p>
+        <table>
+          <thead>
+            <tr><th>文件模式</th><th>写入者</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>chXX-report.md</code></td><td>研究员 #3</td><td>本章源码分析</td></tr>
+            <tr><td><code>chXX-draft.md</code></td><td>作家 #4</td><td>本章初稿</td></tr>
+            <tr><td><code>chXX-r1.md</code></td><td>R1</td><td>源码审查报告</td></tr>
+            <tr><td><code>chXX-r2.md</code></td><td>R2</td><td>一致性审查报告</td></tr>
+            <tr><td><code>chXX-r3.md</code></td><td>R3</td><td>内容审查报告</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-2-5">
+        <h2>2.5 Agent 团队一览</h2>
+        
+        <h3>2.5.1 管理组</h3>
+        <table>
+          <thead>
+            <tr><th>编号</th><th>名称</th><th>角色隐喻</th><th>核心职责</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>#0</td><td>主编排</td><td>总导演</td><td>调度全流程，管理进度与依赖</td></tr>
+            <tr><td>#1</td><td>架构师</td><td>技术总监</td><td>分析源码结构，设计章节大纲</td></tr>
+            <tr><td>#2</td><td>读者代言人</td><td>产品经理</td><td>从读者视角审核大纲</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>2.5.2 执行组</h3>
+        <table>
+          <thead>
+            <tr><th>编号</th><th>名称</th><th>角色隐喻</th><th>核心职责</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>#3</td><td>研究员</td><td>源码考古学家</td><td>深度调研源码，产出研究报告</td></tr>
+            <tr><td>#4</td><td>作家</td><td>畅销书作者</td><td>撰写章节正文</td></tr>
+            <tr><td>#11</td><td>装帧工人</td><td>排版设计师</td><td>Markdown→HTML 出版</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>2.5.3 审查组</h3>
+        <table>
+          <thead>
+            <tr><th>编号</th><th>名称</th><th>角色隐喻</th><th>核心职责</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>R1</td><td>源码审查员</td><td>代码考据专家</td><td>验证代码引用的准确性</td></tr>
+            <tr><td>R2</td><td>一致性审查员</td><td>记忆管理员</td><td>检查跨章一致性</td></tr>
+            <tr><td>R3</td><td>内容审查员</td><td>资深编辑</td><td>审核可读性与叙事结构</td></tr>
+            <tr><td>RS/RE/RH</td><td>读者评审团</td><td>试读团</td><td>模拟三视角评审</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-2-6">
+        <h2>2.6 信息流向规则</h2>
+        
+        <h3>2.6.1 单向通信规则</h3>
+        <pre><code>✅ 主编排 → Agent      （通过 File Pointers 注入任务）
+✅ Agent → 文件系统     （写入产出物）
+✅ 主编排 ← 文件系统    （读取产出物，决定下一步）
+❌ Agent → Agent        （禁止直接通信）
+❌ Agent → 主编排       （Agent 不主动发起请求）</code></pre>
+        <p><strong>为什么禁止 Agent 直接通信？</strong></p>
+        <p>想象一个剧组的混乱场景：演员 A 突然去找演员 B 讨论剧本，演员 C 听到了也加入讨论，结果导演（主编排）完全不知道发生了什么。这会导致：</p>
+        <ul>
+          <li>信息流向混乱，难以追踪</li>
+          <li>可能出现环形依赖</li>
+          <li>上下文污染加剧</li>
+        </ul>
+        
+        <h3>2.6.2 信息流示意</h3>
+        <div class="mermaid">
+flowchart TB
+    subgraph Files["共享文件系统"]
+        direction TB
+        Memory["memory/<br/>共享记忆"]
+        Research["research/<br/>研究报告"]
+        Drafts["chapters/draft/<br/>草稿"]
+        Reviews["reviews/<br/>审查报告"]
+    end
+
+    O["主编排 #0"] -->|"调度"| A1
+    O -->|"调度"| A2
+    O -->|"调度"| A3
+
+    A1["研究员 #3"] -->|"写入"| Research
+    A2["作家 #4"] -->|"写入"| Drafts
+    A3["审查员 R1/R2/R3"] -->|"写入"| Reviews
+
+    Research -.->|"读取"| A2
+    Drafts -.->|"读取"| A3
+    Memory -.->|"读取"| A1
+    Memory -.->|"读取"| A2
+
+    style O fill:#e3f2fd
+    style Files fill:#f5f5f5
+        </div>
+      </section>
+
+      <section id="section-2-7">
+        <h2>2.7 小结</h2>
+        <p>本章我们深入理解了 Scriptorium 的系统架构：</p>
+        <ol>
+          <li><strong>Hub-Spoke 架构</strong>：主编排作为唯一中枢，所有 Agent 只与主编排通信</li>
+          <li><strong>无状态设计</strong>：Agent 不保留记忆，所有状态存储在文件系统中</li>
+          <li><strong>File Pointers 机制</strong>：精确的上下文注入，遵循最小权限原则</li>
+          <li><strong>三类文件</strong>：静态文件、追加文件、可覆写文件各有明确的生命周期</li>
+          <li><strong>12 个 Agent 分工明确</strong>：管理组、执行组、审查组各司其职</li>
+        </ol>
+        <p>下一章，我们将详细剖析<strong>主编排 #0</strong>的职责，看看这个"总导演"是如何协调整个流水线的。</p>
+      </section>
+    </article>
+
+    <nav class="chapter-nav">
+      <a href="ch01.html">← 第1章：认识 Scriptorium</a>
+      <span></span>
+      <a href="ch03.html">第3章：主编排的秘密 →</a>
+    </nav>
+  </main>
+
+  <aside id="toc-right"></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+  <script src="assets/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#e3f2fd',
+        primaryTextColor: '#333333',
+        primaryBorderColor: '#90caf9',
+        lineColor: '#666666',
+        secondaryColor: '#f5f5f5',
+        tertiaryColor: '#ffffff'
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第8章：审查架构与质量保障 - Scriptorium 框架深度解析</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+  <div id="progress-bar"></div>
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Scriptorium 框架深度解析</div>
+      <div class="sidebar-subtitle">从创作到发布，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+      <a href="index.html">📖 目录</a>
+      <a href="ch01.html">第1章：认识 Scriptorium</a>
+      <a href="ch02.html">第2章：系统架构总览</a>
+      <a href="ch03.html">第3章：主编排的秘密</a>
+      <a href="ch04.html">第4章：创作 Agent 团队</a>
+      <a href="ch05.html">第5章：审查与评审机制</a>
+      <a href="ch06.html">第6章：五阶段流水线</a>
+      <a href="ch07.html">第7章：File Pointers 机制</a>
+      <a href="ch08.html" class="active">第8章：审查架构与质量保障</a>
+      <a href="ch09.html">第9章：发布与装帧</a>
+      <a href="ch10.html">第10章：搭建你的 Scriptorium</a>
+    </div>
+  </nav><main id="main">
+    <article>
+      <header class="chapter-header">
+        <h1>第8章：审查架构与质量保障</h1>
+        <blockquote class="chapter-goals">
+          <strong>本章目标</strong>
+          <ul>
+            <li>理解三层审查架构的设计哲学</li>
+            <li>掌握质量问题的分级与处理策略</li>
+            <li>了解审查报告的结构与格式</li>
+            <li>理解如何通过流程设计预防质量问题</li>
+          </ul>
+        </blockquote>
+      </header>
+
+      <section id="section-8-1">
+        <h2>8.1 质量不是事后检查出来的</h2>
+        <p>很多项目的质量保障策略是：</p>
+        <ol>
+          <li>写代码</li>
+          <li>测试</li>
+          <li>发现问题，打补丁</li>
+          <li>重复步骤 2-3</li>
+        </ol>
+        <p>结果是：<strong>质量债务越积越多，后期维护成本爆炸</strong>。</p>
+        <p>Scriptorium 采用了<strong>质量内建</strong>（Quality Built-in）策略：</p>
+        <div class="mermaid">
+flowchart LR
+    subgraph "传统模式"
+        T1["写"] --> T2["测"]
+        T2 --> T3["改"]
+        T3 --> T2
+    end
+
+    subgraph "质量内建模式"
+        Q1["设计阶段"] --> Q2["执行阶段"]
+        Q2 --> Q3["验证阶段"]
+        Q3 --> Q4["交付阶段"]
+    end
+
+    style Q1 fill:#c8e6c9
+    style Q4 fill:#c8e6c9
+        </div>
+      </section>
+
+      <section id="section-8-2">
+        <h2>8.2 三层审查架构</h2>
+        <p>Scriptorium 的质量保障分为三个层次：</p>
+        <div class="mermaid">
+flowchart TB
+    subgraph "第一层：单章审查"
+        L1["每章完成后"] --> R1["R1 代码审查"]
+        L1 --> R2["R2 一致性审查"]
+        L1 --> R3["R3 内容审查"]
+    end
+
+    subgraph "第二层：读者验证"
+        L2["每批完成后"] --> P["读者评审团"]
+    end
+
+    subgraph "第三层：全局审计"
+        L3["全书完成后"] --> A["Phase 4 统稿审计"]
+    end
+
+    R1 --> M1["合并报告"]
+    R2 --> M1
+    R3 --> M1
+    M1 --> P
+    P --> A
+
+    style L1 fill:#e3f2fd
+    style L2 fill:#fff3e0
+    style L3 fill:#fce4ec
+        </div>
+        
+        <h3>8.2.1 第一层：单章审查</h3>
+        <p>每写完一章，立即进行 R1/R2/R3 三审。</p>
+        <p><strong>优点</strong>：</p>
+        <ul>
+          <li>问题发现早，修复成本低</li>
+          <li>及时反馈给作家，避免错误固化</li>
+          <li>保持写作节奏</li>
+        </ul>
+        
+        <h3>8.2.2 第二层：读者验证</h3>
+        <p>每批（3章）完成后，进行读者评审团验证。</p>
+        <p><strong>优点</strong>：</p>
+        <ul>
+          <li>验证"可理解性"而非"正确性"</li>
+          <li>从读者视角发现审查员忽略的问题</li>
+          <li>分批验证，避免全书完成后才发现根本性问题</li>
+        </ul>
+        
+        <h3>8.2.3 第三层：全局审计</h3>
+        <p>所有章节写完后，进行全书的系统性审计。</p>
+        <p><strong>优点</strong>：</p>
+        <ul>
+          <li>发现跨章一致性问题</li>
+          <li>验证全书叙事连贯性</li>
+          <li>最终质量把控</li>
+        </ul>
+      </section>
+
+      <section id="section-8-3">
+        <h2>8.3 质量问题的分级</h2>
+        <p>不是所有问题都同等重要。Scriptorium 定义了四个严重级别：</p>
+        <table>
+          <thead>
+            <tr><th>级别</th><th>标记</th><th>含义</th><th>处理策略</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>致命错误</td><td>🔴</td><td>会导致误导或完全无法理解</td><td>必须修复才能进入下一阶段</td></tr>
+            <tr><td>严重错误</td><td>🟠</td><td>影响阅读理解，但可推测</td><td>应该修复</td></tr>
+            <tr><td>一般问题</td><td>🟡</td><td>不影响理解，但不够精确</td><td>建议修复</td></tr>
+            <tr><td>轻微问题</td><td>⚪</td><td>优化建议，非强制</td><td>可选择性修复</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>8.3.1 级别判定示例</h3>
+        <p><strong>同一段代码引用错误</strong>：</p>
+        <table>
+          <thead>
+            <tr><th>场景</th><th>级别</th><th>原因</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>函数名写错</td><td>🔴 致命</td><td>读者按书操作会失败</td></tr>
+            <tr><td>变量名写错</td><td>🟠 严重</td><td>读者会困惑，但能猜到</td></tr>
+            <tr><td>注释文字不准确</td><td>🟡 一般</td><td>不影响代码执行</td></tr>
+            <tr><td>空格多少</td><td>⚪ 轻微</td><td>完全不影响</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-8-4">
+        <h2>8.4 审查报告的结构</h2>
+        <p>每个审查员产出的报告都有统一的结构：</p>
+        <pre><code># 第3章 R1 代码审查报告
+
+## 审查概要
+- 审查员：R1 源码审查员
+- 审查时间：2026-04-08
+- 审查结论：⚠️ 需修改（2个致命问题）
+
+## 统计信息
+| 类型 | 数量 |
+|------|------|
+| 代码引用总数 | 5 |
+| 发现问题 | 3 |
+| 🔴 致命 | 1 |
+| 🟠 严重 | 1 |
+| 🟡 一般 | 1 |
+
+## 问题列表
+
+### 问题 #1：函数名错误
+- **级别**：🔴 致命
+- **位置**：第 3 章，第 42 行
+- **描述**：草稿写的是 `handleRequest(req, res)`，但源码中是 `handle(req, res)`
+- **影响**：读者按书操作会失败
+- **建议修复**：将 `handleRequest` 改为 `handle`
+
+### 问题 #2：文件路径不存在
+- ...
+
+## 附录：审查的文件清单
+- agents/01-orchestrator.md
+- framework/workflow.md
+- output/chapters/draft/ch03-draft.md</code></pre>
+      </section>
+
+      <section id="section-8-5">
+        <h2>8.5 主编排的审查协调</h2>
+        <p>主编排在审查环节扮演"质量协调员"的角色：</p>
+        <div class="mermaid">
+flowchart TB
+    subgraph "主编排协调"
+        O["主编排 #0"] -->|"调度"| R["R1/R2/R3"]
+        R -->|"产出"| RPT["审查报告"]
+        RPT -->|"汇总"| M["合并报告"]
+        M -->|"分析"| D["决策"]
+        D -->|"反馈"| W["作家"]
+        W -->|"修改"| DRAFT["新草稿"]
+        DRAFT -->|"再审"| R
+    end
+
+    style O fill:#fff9c4
+    style M fill:#e3f2fd
+        </div>
+        
+        <h3>8.5.1 主编排的决策逻辑</h3>
+        <p>当收到三份审查报告后，主编排需要决策：</p>
+        <p><strong>情况 1：所有审查通过</strong></p>
+        <pre><code>→ 章节标记为"待发布"
+→ 启动下一章写作</code></pre>
+        <p><strong>情况 2：有致命/严重问题</strong></p>
+        <pre><code>→ 将问题反馈给作家
+→ 要求修改草稿
+→ 修改后重新审查</code></pre>
+        <p><strong>情况 3：有一般/轻微问题</strong></p>
+        <pre><code>→ 可选择：
+  A. 要求修改（保守策略）
+  B. 接受当前版本（激进策略）</code></pre>
+        
+        <h3>8.5.2 修复-审查循环</h3>
+        <p>Scriptorium 允许无限次修复-审查循环，直到质量达标：</p>
+        <div class="mermaid">
+flowchart LR
+    D["草稿"] --> R["审查"]
+    R -->|"通过"| E["结束"]
+    R -->|"不通过"| F["修改"]
+    F --> D
+
+    style R fill:#ffebee
+        </div>
+        <blockquote>
+          <strong>设计哲学</strong>
+          <p>宁可慢一点，也要确保质量。修复-审查循环没有次数限制，直到所有致命和严重问题都解决。</p>
+        </blockquote>
+      </section>
+
+      <section id="section-8-6">
+        <h2>8.6 预防胜于治疗</h2>
+        <p>除了审查，Scriptorium 还通过<strong>流程设计</strong>预防质量问题：</p>
+        
+        <h3>8.6.1 写作前的规范</h3>
+        <p><strong>Phase 2 共享资源</strong>的目的就是预防：</p>
+        <ul>
+          <li><code>style-guide.md</code> → 防止格式混乱</li>
+          <li><code>glossary.md</code> → 防止术语不一致</li>
+          <li><code>metaphor-registry.md</code> → 防止比喻冲突</li>
+        </ul>
+        
+        <h3>8.6.2 写作中的约束</h3>
+        <p>作家在写作时会收到明确的<strong>约束条件</strong>：</p>
+        <ul>
+          <li>每章必须包含至少 2 个代码示例</li>
+          <li>代码示例必须标注文件路径</li>
+          <li>每个核心概念必须至少 1 个比喻</li>
+          <li>段落长度不超过 5 行</li>
+        </ul>
+        
+        <h3>8.6.3 写作后的验证</h3>
+        <p>每个草稿在提交前会自动检查：</p>
+        <ul>
+          <li>是否包含 <code>&lt;!-- DRAFT_COMPLETE --&gt;</code> 标记</li>
+          <li>字数是否符合 3000-5000 字要求</li>
+          <li>是否引用了所有必要的文件</li>
+        </ul>
+      </section>
+
+      <section id="section-8-7">
+        <h2>8.7 质量指标追踪</h2>
+        <p>Scriptorium 在 <code>checkpoint.md</code> 中追踪每个章节的质量状态：</p>
+        <table>
+          <thead>
+            <tr><th>章节</th><th>R1</th><th>R2</th><th>R3</th><th>读者评审</th><th>综合状态</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>ch01</td><td>✅</td><td>✅</td><td>⚠️</td><td>⬜</td><td>进行中</td></tr>
+            <tr><td>ch02</td><td>✅</td><td>✅</td><td>✅</td><td>⬜</td><td>待读者评审</td></tr>
+            <tr><td>ch03</td><td>🔴</td><td>✅</td><td>✅</td><td>✅</td><td>需修改</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-8-8">
+        <h2>8.8 小结</h2>
+        <p>本章我们了解了审查架构与质量保障体系：</p>
+        <ol>
+          <li><strong>三层审查架构</strong>：单章审查 → 读者验证 → 全局审计</li>
+          <li><strong>质量问题分级</strong>：🔴致命 → 🟠严重 → 🟡一般 → ⚪轻微</li>
+          <li><strong>审查报告结构</strong>：概要 → 统计 → 问题列表 → 附录</li>
+          <li><strong>主编排协调</strong>：汇总报告、决策、反馈、循环</li>
+          <li><strong>预防策略</strong>：规范、约束、自动化验证</li>
+        </ol>
+        <p>质量不是事后检查出来的，而是通过流程设计内建到每个环节中的。</p>
+        <p>下一章，我们将了解 <strong>发布与装帧</strong> 的最终交付流程。</p>
+      </section>
+    </article>
+
+    <nav class="chapter-nav">
+      <a href="ch07.html">← 第7章：File Pointers 机制</a>
+      <span></span>
+      <a href="ch09.html">第9章：审查架构与质量保障 →</a>
+    </nav>
+  </main>
+
+  <aside id="toc-right"></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+  <script src="assets/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#e3f2fd',
+        primaryTextColor: '#333333',
+        primaryBorderColor: '#90caf9',
+        lineColor: '#666666',
+        secondaryColor: '#f5f5f5',
+        tertiaryColor: '#ffffff'
+      }
+    });
+  </script>
+</body>
+</html>

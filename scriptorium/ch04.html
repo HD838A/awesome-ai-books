@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第4章：创作 Agent 团队 - Scriptorium 框架深度解析</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+  <div id="progress-bar"></div>
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Scriptorium 框架深度解析</div>
+      <div class="sidebar-subtitle">从创作到发布，解读 AI 辅助编程工具的工程化实践</div>
+    </div>
+    <div class="sidebar-nav">
+      <a href="index.html">📖 目录</a>
+      <a href="ch01.html">第1章：认识 Scriptorium</a>
+      <a href="ch02.html">第2章：系统架构总览</a>
+      <a href="ch03.html">第3章：主编排的秘密</a>
+      <a href="ch04.html" class="active">第4章：创作 Agent 团队</a>
+      <a href="ch05.html">第5章：审查与评审机制</a>
+      <a href="ch06.html">第6章：五阶段流水线</a>
+      <a href="ch07.html">第7章：File Pointers 机制</a>
+      <a href="ch08.html">第8章：审查架构与质量保障</a>
+      <a href="ch09.html">第9章：发布与装帧</a>
+      <a href="ch10.html">第10章：搭建你的 Scriptorium</a>
+    </div>
+  </nav><main id="main">
+    <article>
+      <header class="chapter-header">
+        <h1>第4章：创作 Agent 团队</h1>
+        <blockquote class="chapter-goals">
+          <strong>本章目标</strong>
+          <ul>
+            <li>理解研究员的"源码考古学家"角色</li>
+            <li>理解作家的"畅销书作者"角色</li>
+            <li>掌握两者的协作流程</li>
+            <li>了解 Agent 类型的设计意图</li>
+          </ul>
+        </blockquote>
+      </header>
+
+      <section id="section-4-1">
+        <h2>4.1 流水线上的两把刷子</h2>
+        <p>如果说主编排是"总导演"，那么研究员和作家就是<strong>流水线上的两把刷子</strong>——一把负责"研究"，一把负责"写作"。</p>
+        <div class="mermaid">
+flowchart LR
+    R["研究员 #3<br/>🔍 考古学家"] -->|"产出<br/>调研报告"| W["作家 #4<br/>✍️ 畅销书作者"]
+    W -->|"产出<br/>章节草稿"| N["下一环节"]
+
+    style R fill:#e8f5e9
+    style W fill:#fff3e0
+        </div>
+        <p><strong>为什么不是一个人既研究又写作？</strong></p>
+        <p>类比：就像拍纪录片，实地采访的记者和后期剪辑的导演往往是不同的人。记者擅长发现故事，导演擅长讲故事。专业分工让各自做自己最擅长的事。</p>
+      </section>
+
+      <section id="section-4-2">
+        <h2>4.2 研究员 #3：源码考古学家</h2>
+        
+        <h3>4.2.1 角色定位</h3>
+        <p>研究员就像一个<strong>考古学家</strong>——他深入代码的"遗址"，挖掘设计决策的"文物"，发现隐藏的"彩蛋"。</p>
+        <p><strong>核心职责</strong>：</p>
+        <table>
+          <thead>
+            <tr><th>职责</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>深度源码调研</td><td>对指定章节覆盖的源码文件进行逐行级别的分析</td></tr>
+            <tr><td>设计决策提取</td><td>发现代码背后的架构决策、权衡取舍</td></tr>
+            <tr><td>关键细节发掘</td><td>找出巧妙的技巧、反直觉的设计</td></tr>
+            <tr><td>知识图谱构建</td><td>梳理概念、函数、模块间的依赖关系</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>4.2.2 研究员的工作产出</h3>
+        <p>研究员产出的是<strong>调研报告</strong>，而非最终章节：</p>
+        <pre><code># 第3章 调研报告：主编排的秘密
+
+## 核心发现
+
+### 发现1：主编排的核心职责
+- **位置**：`agents/01-orchestrator.md:15-30`
+- **意义**：主编排是唯一贯穿全流程的 Agent
+
+### 发现2：File Pointers 机制
+- **位置**：`framework/file-pointers.md`
+- **意义**：精确的上下文注入是框架的核心创新
+
+## 设计决策
+
+### 决策1：为什么主编排是"用户自己"？
+- **选择**：不把主编排做成子 Agent
+- **推测原因**：避免"谁来调度调度者"的问题</code></pre>
+        
+        <h3>4.2.3 研究员的质量标准</h3>
+        <p>研究员不是简单地"复制粘贴"代码，而是：</p>
+        <ul>
+          <li>✅ 标注精确的文件路径和行号</li>
+          <li>✅ 解释设计"为什么"这么做（而不仅仅是什么）</li>
+          <li>✅ 标记每个发现在书中的讲解意义</li>
+          <li>✅ 构建清晰的概念关系图</li>
+        </ul>
+        <blockquote>
+          <strong>类比</strong><br>
+          研究员就像美食评论家——他不只是描述"这道菜用了番茄和鸡蛋"，而是分析"为什么要用番茄炒而不是红烧"。
+        </blockquote>
+      </section>
+
+      <section id="section-4-3">
+        <h2>4.3 作家 #4：畅销书作者</h2>
+        
+        <h3>4.3.1 角色定位</h3>
+        <p>作家就像一个<strong>技术布道师</strong>——他要把枯燥的源码分析转化为引人入胜的技术叙事。</p>
+        <p><strong>核心职责</strong>：</p>
+        <table>
+          <thead>
+            <tr><th>职责</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>章节撰写</td><td>将源码分析转化为技术叙事</td></tr>
+            <tr><td>风格统一</td><td>遵循 style-guide，保持全书一致</td></tr>
+            <tr><td>知识衔接</td><td>参考 chapter-summaries，避免重复</td></tr>
+            <tr><td>术语规范</td><td>使用 glossary 中的标准术语</td></tr>
+            <tr><td>比喻管理</td><td>复用/避免冲突 metaphor-registry</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>4.3.2 写作的艺术</h3>
+        <p>作家的工作不是简单地把研究报告"翻译"成中文，而是：</p>
+        <div class="mermaid">
+flowchart TB
+    subgraph "研究员的产出"
+        R1["发现列表"]
+        R2["设计决策"]
+        R3["代码片段"]
+    end
+
+    subgraph "作家的转化"
+        W1["引人入胜的场景开头"]
+        W2["贴切的比喻"]
+        W3["流畅的叙事"]
+        W4["承上启下的过渡"]
+    end
+
+    R1 --> W1
+    R2 --> W2
+    R3 --> W3
+    W1 --> W4
+
+    style W1 fill:#e3f2fd
+    style W2 fill:#e3f2fd
+    style W3 fill:#e3f2fd
+    style W4 fill:#e3f2fd
+        </div>
+        
+        <h3>4.3.3 作家必须遵守的规范</h3>
+        <p><strong>style-guide 规定的硬性要求</strong>：</p>
+        <table>
+          <thead>
+            <tr><th>规范</th><th>要求</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>章节字数</td><td>3000~5000 字</td></tr>
+            <tr><td>代码示例</td><td>每章必须有，标注文件路径和行号</td></tr>
+            <tr><td>比喻密度</td><td>每个核心概念至少一个比喻</td></tr>
+            <tr><td>段落长度</td><td>不超过 5 行</td></tr>
+            <tr><td>开头风格</td><td>用场景、故事或问题引入</td></tr>
+            <tr><td>结尾风格</td><td>总结要点 + 承上启下</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="section-4-4">
+        <h2>4.4 协作流程</h2>
+        
+        <h3>4.4.1 标准流水线</h3>
+        <pre><code>主编排调度
+    │
+    ▼
+研究员 #3 读取：
+  - source-map.md（源码定位）
+  - outline.md（本章要求）
+  - 源码文件
+    │
+    ▼ 产出调研报告
+    │
+作家 #4 读取：
+  - 调研报告
+  - style-guide.md
+  - glossary.md
+  - metaphor-registry.md
+  - chapter-summaries.md
+    │
+    ▼ 产出章节草稿
+    │
+主编排审查</code></pre>
+        
+        <h3>4.4.2 File Pointers 传递</h3>
+        <p>研究员接收到的 File Pointers：</p>
+        <pre><code>📖 读取：
+  - output/memory/source-map.md      ← 源码文件定位
+  - output/memory/outline.md         ← 本章大纲要求
+  - 源码文件（按 source-map）        ← 实际源码
+
+📝 输出：
+  - output/research/ch04-report.md</code></pre>
+        <p>作家接收到的 File Pointers：</p>
+        <pre><code>📖 读取：
+  - output/research/ch04-report.md   ← 本章调研报告
+  - output/memory/style-guide.md      ← 写作规范
+  - output/memory/chapter-summaries.md ← 前序章节摘要
+  - output/memory/glossary.md         ← 术语表
+  - output/memory/metaphor-registry.md ← 比喻表
+
+📝 输出：
+  - output/chapters/draft/ch04-draft.md</code></pre>
+        
+        <h3>4.4.3 为什么不是并行？</h3>
+        <p>有人问：研究员在研究 A 章时，作家可以同时写 B 章吗？</p>
+        <p><strong>可以，但有限制</strong>：</p>
+        <pre><code>并行示例（3章/批）：
+
+第1周：
+  - 研究员研究 ch04
+  - 作家写 ch01（基于上周的 ch01-report）
+
+第2周：
+  - 研究员研究 ch05
+  - 作家写 ch02（基于上周的 ch02-report）
+
+依此类推...</code></pre>
+        <p><strong>限制</strong>：</p>
+        <ul>
+          <li>每批内部，研究员和作家仍是流水线关系</li>
+          <li>不同批次之间可以并行</li>
+          <li>建议批次大小：3 章</li>
+        </ul>
+      </section>
+
+      <section id="section-4-5">
+        <h2>4.5 Agent 类型的设计</h2>
+        
+        <h3>4.5.1 两种 Agent 类型</h3>
+        <p>Scriptorium 定义了两种 Agent 类型：</p>
+        <table>
+          <thead>
+            <tr><th>类型</th><th>说明</th><th>适用 Agent</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>explore</code></td><td>探索型，适合深度分析、代码调研</td><td>研究员、R1、R2</td></tr>
+            <tr><td><code>general-purpose</code></td><td>通用型，适合综合任务</td><td>主编排、作家、架构师</td></tr>
+          </tbody>
+        </table>
+        
+        <h3>4.5.2 为什么需要区分？</h3>
+        <p><strong>类比</strong>：医院的科室分类</p>
+        <ul>
+          <li>专科医生（explore）→ 深度诊断某个器官</li>
+          <li>全科医生（general-purpose）→ 综合评估整体健康</li>
+        </ul>
+        <p><code>explore</code> 类型擅长：</p>
+        <ul>
+          <li>逐行分析代码</li>
+          <li>深度挖掘设计意图</li>
+          <li>穷举式探索</li>
+        </ul>
+        <p><code>general-purpose</code> 类型擅长：</p>
+        <ul>
+          <li>综合决策</li>
+          <li>平衡多方需求</li>
+          <li>处理模糊任务</li>
+        </ul>
+      </section>
+
+      <section id="section-4-6">
+        <h2>4.6 小结</h2>
+        <p>本章我们认识了流水线上的两把刷子：</p>
+        <ol>
+          <li><strong>研究员 #3</strong>：源码考古学家，负责深度调研和设计决策提取</li>
+          <li><strong>作家 #4</strong>：畅销书作者，负责将源码分析转化为技术叙事</li>
+          <li><strong>协作流程</strong>：研究员产出报告 → 作家产出草稿</li>
+          <li><strong>Agent 类型</strong>：<code>explore</code> 适合深度分析，<code>general-purpose</code> 适合综合任务</li>
+        </ol>
+        <p>下一章，我们将了解 <strong>三审并行机制</strong>——R1、R2、R3 和读者评审团如何保证质量。</p>
+      </section>
+    </article>
+
+    <nav class="chapter-nav">
+      <a href="ch03.html">← 第3章：主编排的秘密</a>
+      <span></span>
+      <a href="ch05.html">第5章：创作 Agent 团队 →</a>
+    </nav>
+  </main>
+
+  <aside id="toc-right"></aside>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+  <script src="assets/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#e3f2fd',
+        primaryTextColor: '#333333',
+        primaryBorderColor: '#90caf9',
+        lineColor: '#666666',
+        secondaryColor: '#f5f5f5',
+        tertiaryColor: '#ffffff'
+      }
+    });
+  </script>
+</body>
+</html>
