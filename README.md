@@ -30,7 +30,7 @@
 | [OpenClaw 源码解析](./openclaw/) | v2026.4.5 | 12 章 |
 | [AI 工程流水线：gstack 源码深度解读](./gstack/) | bd8d44d | 10 章 |
 | [Superpowers 源码解析](./superpowers/) | v5.0.7 | 10 章 |
-| [Scriptorium 框架深度解析](./scriptorium/) | — | 10 章 |
+| [Scriptorium 框架深度解析](./scriptorium/) | 61b1cd8 | 10 章 |
 
 ## 关于
 
