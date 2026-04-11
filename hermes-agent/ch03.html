@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 3 章 · 工具系统与函数调用 — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html" class="active">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 3 章 · 工具系统与函数调用</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>理解什么是 <strong>Function Calling</strong>（函数调用）</li><li>掌握 Hermes Agent 的工具注册与发现机制</li><li>了解工具调用的完整流程</li><li>熟悉内置工具集的使用场景</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>3.1 名词解释：什么是 Function Calling？</h2><br>
+<br>
+在开始之前，让我们先把几个容易混淆的概念理清楚。<br>
+<br>
+<h3>3.1.1 Function Calling vs Tool Use</h3><br>
+<br>
+<tr><td>术语</td><td>全称</td><td>说明</td></tr><br>
+<br>
+<tr><td><strong>Function Calling</strong></td><td>函数调用</td><td>AI 模型主动"调用"一个预定义函数的能力</td></tr><br>
+<tr><td><strong>Tool Use</strong></td><td>工具使用</td><td>更通用的概念，包括 Function Calling 和其他工具交互方式</td></tr><br>
+<tr><td><strong>Tool Calling</strong></td><td>工具调用</td><td>Function Calling 在某些 API（如 Anthropic）中的叫法</td></tr><br>
+<br>
+<blockquote><p><strong>💡 提示</strong>：虽然名字不同，但它们本质上说的是同一件事——让 AI 模型能够"动手做事"，而不是只"动嘴说话"。</p></blockquote><br>
+<br>
+<h3>3.1.2 为什么需要 Function Calling？</h3><br>
+<br>
+想象一下，你问 AI：<br>
+<br>
+<blockquote><p><strong>你</strong>：帮我查一下北京今天的天气</p></blockquote><br>
+<br>
+<strong>没有 Function Calling 的 AI</strong> 只能：<br>
+<br>
+<pre><code>"根据我的知识，北京今天的天气是晴朗的，气温约 25°C。"</code></pre><br>
+<br>
+<strong>有 Function Calling 的 AI</strong> 能：<br>
+<br>
+<pre><code>1. 调用 web_search 工具 → 实时获取天气数据<br>
+<ul><li>调用完成后 → 返回准确的实际天气信息</code></pre></li></ul><br>
+<br>
+<blockquote><p><strong>⚠️ 注意</strong>：没有 Function Calling 的 AI 只能回答"截至我训练日期的知识"。有了 Function Calling，AI 才能获取<strong>实时信息</strong>、执行<strong>真实操作</strong>。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>3.2 工具注册与发现机制</h2><br>
+<br>
+Hermes Agent 使用<strong>注册表模式</strong>（Registry Pattern）来管理所有工具。<br>
+<br>
+<h3>3.2.1 中心化注册表</h3><br>
+<br>
+<pre><code class="language-python"># tools/registry.py - 工具注册表<br>
+class ToolRegistry:<br>
+    """工具注册表（简化版）"""<br>
+    <br>
+    def __init__(self):<br>
+        self._tools: Dict[str, ToolEntry] = {}<br>
+    <br>
+    def register(<br>
+        self,<br>
+        name: str,           # 工具名称，如 "web_search"<br>
+        toolset: str,         # 所属工具集，如 "web_tools"<br>
+        schema: dict,         # 工具参数模式（JSON Schema）<br>
+        handler: Callable,    # 实际执行的函数<br>
+        check_fn: Callable,  # 可用性检查函数<br>
+    ):<br>
+        self._tools[name] = ToolEntry(...)</code></pre><br>
+<br>
+<h3>3.2.2 工具的自我注册</h3><br>
+<br>
+每个工具文件在模块加载时自动注册：<br>
+<br>
+<pre><code class="language-python"># tools/web_tools.py<br>
+<br>
+<h1>定义工具的处理函数</h1><br>
+def web_search(query: str, limit: int = 5) -&gt; str:<br>
+    """搜索网页"""<br>
+    ...<br>
+<br>
+<h1>在模块加载时注册</h1><br>
+from tools.registry import registry<br>
+<br>
+registry.register(<br>
+    name="web_search",<br>
+    toolset="web_tools",<br>
+    schema={<br>
+        "name": "web_search",<br>
+        "description": "Search the web for information...",<br>
+        "parameters": {<br>
+            "type": "object",<br>
+            "properties": {<br>
+                "query": {"type": "string", "description": "..."},<br>
+                "limit": {"type": "integer", "description": "..."}<br>
+            },<br>
+            "required": ["query"]<br>
+        }<br>
+    },<br>
+    handler=web_search,  # 绑定处理函数<br>
+    check_fn=lambda: bool(os.getenv("EXA_API_KEY")),  # 检查是否可用<br>
+)</code></pre><br>
+<br>
+<h3>3.2.3 工具发现流程</h3><br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────┐<br>
+│                    Hermes Agent 启动                        │<br>
+└─────────────────────────┬───────────────────────────────────┘<br>
+                          │<br>
+                          ▼<br>
+┌─────────────────────────────────────────────────────────────┐<br>
+│              model_tools.py 导入所有工具模块                 │<br>
+│                                                             │<br>
+│  _discover_tools():                                         │<br>
+│    - tools.web_tools                                        │<br>
+│    - tools.terminal_tool                                    │<br>
+│    - tools.file_tools                                       │<br>
+│    - ...                                                    │<br>
+└─────────────────────────┬───────────────────────────────────┘<br>
+                          │<br>
+                          ▼<br>
+┌─────────────────────────────────────────────────────────────┐<br>
+│           每个工具模块执行 registry.register()              │<br>
+│                                                             │<br>
+│  工具被注册到中心注册表                                       │<br>
+└─────────────────────────┬───────────────────────────────────┘<br>
+                          │<br>
+                          ▼<br>
+┌─────────────────────────────────────────────────────────────┐<br>
+│              获取工具定义供 AI 模型使用                       │<br>
+│                                                             │<br>
+│  get_tool_definitions() → 传给 AI 的工具列表                │<br>
+└─────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>3.3 函数调用（Function Calling）流程</h2><br>
+<br>
+当用户发送消息后，工具调用的完整流程如下：<br>
+<br>
+<h3>3.3.1 流程概览</h3><br>
+<br>
+<pre><code>用户: "帮我搜索 Python 最新动态"<br>
+<br>
+────────────────────────────────────────────────────────────<br>
+<br>
+【步骤 1】组装请求<br>
+<br>
+{<br>
+    "model": "claude-sonnet-4",<br>
+    "messages": [<br>
+        {"role": "user", "content": "帮我搜索 Python 最新动态"}<br>
+    ],<br>
+    "tools": [web_search_schema, read_file_schema, ...]  # 所有可用工具<br>
+}<br>
+<br>
+────────────────────────────────────────────────────────────<br>
+<br>
+【步骤 2】AI 模型决策<br>
+<br>
+模型判断：需要调用 web_search 工具<br>
+<br>
+{<br>
+    "role": "assistant",<br>
+    "content": null,<br>
+    "tool_calls": [<br>
+        {<br>
+            "id": "call_123",<br>
+            "function": {<br>
+                "name": "web_search",<br>
+                "arguments": "{\"query\": \"Python 最新动态 2024\"}"<br>
+            }<br>
+        }<br>
+    ]<br>
+}<br>
+<br>
+────────────────────────────────────────────────────────────<br>
+<br>
+【步骤 3】执行工具<br>
+<br>
+tool_result = registry.dispatch("web_search", {"query": "Python 最新动态 2024"})<br>
+<br>
+{<br>
+    "role": "tool",<br>
+    "tool_call_id": "call_123",<br>
+    "content": "1. Python 3.13 发布...\n2. PEP 749 提议..."<br>
+}<br>
+<br>
+────────────────────────────────────────────────────────────<br>
+<br>
+【步骤 4】循环或结束<br>
+<br>
+继续循环：把工具结果发回给模型，看是否还需要其他工具<br>
+或<br>
+结束：返回最终文本响应给用户</code></pre><br>
+<br>
+<h3>3.3.2 核心代码解析</h3><br>
+<br>
+<pre><code class="language-python"># model_tools.py - 工具调度器<br>
+def handle_function_call(function_name, function_args, task_id, user_task):<br>
+    """执行单个工具调用"""<br>
+    <br>
+    # 1. 解析参数（处理模型可能返回的类型错误）<br>
+    args = coerce_tool_args(function_name, json.loads(function_args))<br>
+    <br>
+    # 2. 从注册表获取处理函数并执行<br>
+    result = registry.dispatch(function_name, args, task_id=task_id)<br>
+    <br>
+    return result</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>3.4 工具集（Toolset）的组织与管理</h2><br>
+<br>
+<h3>3.4.1 什么是 Toolset？</h3><br>
+<br>
+<strong>Toolset</strong> 是一组相关工具的集合。Hermes Agent 按功能把工具分组：<br>
+<br>
+<tr><td>Toolset</td><td>包含工具</td><td>说明</td></tr><br>
+<br>
+<tr><td><code>web_tools</code></td><td>web_search, web_extract</td><td>网页搜索和内容提取</td></tr><br>
+<tr><td><code>terminal_tools</code></td><td>terminal</td><td>在终端执行命令</td></tr><br>
+<tr><td><code>file_tools</code></td><td>read_file, write_file, patch, search_files</td><td>文件操作</td></tr><br>
+<tr><td><code>browser_tools</code></td><td>browser_navigate, browser_click, ...</td><td>浏览器自动化</td></tr><br>
+<tr><td><code>skills_tools</code></td><td>skills_list, skill_view, skill_manage</td><td>Skill 管理</td></tr><br>
+<br>
+<h3>3.4.2 启用/禁用工具集</h3><br>
+<br>
+<pre><code class="language-python"># 只启用特定工具集<br>
+agent = AIAgent(<br>
+    enabled_toolsets=["web_tools", "file_tools"]<br>
+)<br>
+<br>
+<h1>或禁用某些工具集</h1><br>
+agent = AIAgent(<br>
+    disabled_toolsets=["browser_tools"]  # 禁用浏览器工具<br>
+)</code></pre><br>
+<br>
+<h3>3.4.3 工具的可用性检查</h3><br>
+<br>
+每个工具可以定义一个 <code>check_fn</code>，用于检查环境是否满足要求：<br>
+<br>
+<pre><code class="language-python"># 示例：web_search 工具的可用性检查<br>
+registry.register(<br>
+    name="web_search",<br>
+    toolset="web_tools",<br>
+    schema=...,<br>
+    handler=web_search,<br>
+    check_fn=lambda: bool(os.getenv("EXA_API_KEY") or <br>
+                         os.getenv("FIRECRAWL_API_KEY"))<br>
+)</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>3.5 内置工具一览</h2><br>
+<br>
+Hermes Agent 内置了丰富的工具。下面介绍最核心的几个。<br>
+<br>
+<h3>3.5.1 Web 搜索工具</h3><br>
+<br>
+<strong>工具名</strong>：<code>web_search</code><br>
+<br>
+<strong>作用</strong>：在互联网上搜索信息<br>
+<br>
+<strong>使用场景</strong>：<br>
+<br>
+<ul><li>查询实时新闻和价格</li><li>搜索技术文档</li><li>查找产品信息</li></ul><br>
+<br>
+<pre><code class="language-python"># 使用示例<br>
+result = web_search(<br>
+    query="Python 异步编程 best practices",<br>
+    limit=5  # 返回 5 条结果<br>
+)</code></pre><br>
+<br>
+<h3>3.5.2 文件操作工具</h3><br>
+<br>
+Hermes Agent 提供了四个核心文件操作工具：<br>
+<br>
+<tr><td>工具</td><td>作用</td><td>示例</td></tr><br>
+<br>
+<tr><td><code>read_file</code></td><td>读取文件内容</td><td><code>read_file(path="config.yaml")</code></td></tr><br>
+<tr><td><code>write_file</code></td><td>写入或覆盖文件</td><td><code>write_file(path="hello.py", content="...")</code></td></tr><br>
+<tr><td><code>patch</code></td><td>智能修改文件</td><td>对文件进行精确的行级修改</td></tr><br>
+<tr><td><code>search_files</code></td><td>搜索文件内容</td><td>搜索包含关键词的文件</td></tr><br>
+<br>
+<strong>💡 提示</strong>：<code>patch</code> 是最常用的文件修改工具，它支持：<br>
+<br>
+<ul><li>按行号精确修改</li><li>插入新内容</li><li>删除指定行</li><li>替换匹配内容</li></ul><br>
+<br>
+<pre><code class="language-python"># patch 示例<br>
+result = patch(<br>
+    path="app.py",<br>
+    operations=[<br>
+        {"op": "replace", "old": "x = 1", "new": "x = 2"},<br>
+        {"op": "insert", "after": "def main():", "new": "    logger.info('started')"}<br>
+    ]<br>
+)</code></pre><br>
+<br>
+<h3>3.5.3 终端执行工具</h3><br>
+<br>
+<strong>工具名</strong>：<code>terminal</code><br>
+<br>
+<strong>作用</strong>：在本地终端执行命令<br>
+<br>
+<pre><code class="language-python"># 执行命令<br>
+result = terminal(<br>
+    command="pip install requests",<br>
+    timeout=60  # 超时时间（秒）<br>
+)</code></pre><br>
+<br>
+<blockquote><p><strong>⚠️ 注意</strong>：终端工具有风险！Hermes Agent 会检测潜在的破坏性命令（如 <code>rm -rf /</code>），但使用时请谨慎。</p></blockquote><br>
+<br>
+<h3>3.5.4 浏览器自动化工具</h3><br>
+<br>
+Browser Tools 提供完整的浏览器控制能力：<br>
+<br>
+<tr><td>工具</td><td>作用</td></tr><br>
+<br>
+<tr><td><code>browser_navigate</code></td><td>打开网页</td></tr><br>
+<tr><td><code>browser_click</code></td><td>点击元素</td></tr><br>
+<tr><td><code>browser_type</code></td><td>输入文本</td></tr><br>
+<tr><td><code>browser_scroll</code></td><td>滚动页面</td></tr><br>
+<tr><td><code>browser_snapshot</code></td><td>获取页面截图</td></tr><br>
+<br>
+<pre><code class="language-python"># 浏览器自动化示例<br>
+browser_navigate(url="https://github.com")<br>
+browser_click(selector="button.signup")<br>
+browser_type(selector="input.email", text="user@example.com")</code></pre><br>
+<br>
+<h3>3.5.5 其他内置工具</h3><br>
+<br>
+<tr><td>工具</td><td>Toolset</td><td>作用</td></tr><br>
+<br>
+<tr><td><code>vision_analyze</code></td><td>vision_tools</td><td>分析图片内容</td></tr><br>
+<tr><td><code>skills_list</code></td><td>skills_tools</td><td>列出所有可用 Skill</td></tr><br>
+<tr><td><code>skill_view</code></td><td>skills_tools</td><td>查看 Skill 详情</td></tr><br>
+<tr><td><code>skill_manage</code></td><td>skills_tools</td><td>创建/修改 Skill</td></tr><br>
+<tr><td><code>execute_code</code></td><td>code_tools</td><td>在沙箱中执行代码</td></tr><br>
+<tr><td><code>delegate_task</code></td><td>delegate_tools</td><td>委派给子 Agent</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>3.6 工具调用的小技巧</h2><br>
+<br>
+<h3>3.6.1 工具并行执行</h3><br>
+<br>
+Hermes Agent 支持<strong>并行执行</strong>独立的工具调用：<br>
+<br>
+<pre><code class="language-python"># 以下两个调用可以并行执行<br>
+tool_calls = [<br>
+    {"name": "read_file", "args": {"path": "a.txt"}},<br>
+    {"name": "read_file", "args": {"path": "b.txt"}},<br>
+]<br>
+<h1>结果几乎同时返回</code></pre></h1><br>
+<br>
+<blockquote><p><strong>💡 提示</strong>：只要工具之间没有依赖关系（不读写同一文件），Hermes 就会自动并行执行，减少等待时间。</p></blockquote><br>
+<br>
+<h3>3.6.2 工具结果大小限制</h3><br>
+<br>
+为了防止工具返回过多内容导致上下文溢出，工具结果有大小限制：<br>
+<br>
+<tr><td>工具</td><td>默认限制</td><td>可配置</td></tr><br>
+<br>
+<tr><td>web_search</td><td>10,000 字符</td><td>否</td></tr><br>
+<tr><td>read_file</td><td>50,000 字符</td><td>否</td></tr><br>
+<tr><td>terminal</td><td>5,000 字符</td><td>是</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li><strong>Function Calling</strong> 让 AI 模型能够调用外部工具，获取实时信息或执行真实操作</li><li><strong>工具注册表模式</strong>：每个工具通过 <code>registry.register()</code> 自我注册</li><li><strong>工具集（Toolset）</strong>：按功能分组工具，支持批量启用/禁用</li><li><strong>工具调用流程</strong>：组装请求 → AI 决策 → 执行工具 → 返回结果 → 循环或结束</li><li><strong>核心内置工具</strong>：web_search、read_file/write_file、terminal、browser_tools</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>如果你想让 Agent 能"发送邮件"，需要实现什么？</li><li>为什么工具结果需要大小限制？如果不限制会发生什么？</li><li>在什么场景下，你会选择使用 <code>browser_tools</code> 而不是 <code>web_tools</code>？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>工具注册表：<code>tools/registry.py</code></li><li>工具发现：<code>model_tools.py</code> 中的 <code>_discover_tools()</code></li><li>工具调度：<code>model_tools.py</code> 中的 <code>handle_function_call()</code></li><li>Web 工具示例：<code>tools/web_tools.py</code></li><li>文件工具示例：<code>tools/file_tools.py</code></li></ul><br>
+
+<div class="chapter-nav"><a href="ch02.html">← 第 2 章 · Agent 核心架构解析</a><span></span><a href="ch04.html">第 4 章 · 记忆系统入门 →</a></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>

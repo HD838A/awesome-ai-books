@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 7 章 · 多 Agent 协作与 ACP 协议 — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html" class="active">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 7 章 · 多 Agent 协作：ACP 协议</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>理解 <strong>ACP（Agent Client Protocol）</strong> 的设计理念</li><li>掌握 <strong>delegate_task</strong> 委派工具的使用方法</li><li>学会构建<strong>父子 Agent 协作模式</strong></li><li>了解 <strong>ACP 编辑器集成</strong>的用法</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>7.1 为什么需要多 Agent 协作？</h2><br>
+<br>
+<h3>7.1.1 单 Agent 的局限</h3><br>
+<br>
+一个 Agent 就像一个<strong>全栈工程师</strong>：<br>
+<br>
+<tr><td>优点</td><td>局限</td></tr><br>
+<br>
+<tr><td>✅ 通才，什么都能做</td><td>❌ 每个任务都是串行执行</td></tr><br>
+<tr><td>✅ 上下文连贯</td><td>❌ 复杂任务容易"迷失"</td></tr><br>
+<tr><td>✅ 工具齐全</td><td>❌ Token 消耗大</td></tr><br>
+<br>
+<h3>7.1.2 多 Agent 的优势</h3><br>
+<br>
+多 Agent 协作就像一个<strong>专业团队</strong>：<br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐<br>
+│                        团队协作模式                               │<br>
+├─────────────────────────────────────────────────────────────────┤<br>
+│                                                                 │<br>
+│    【产品经理 Agent】                                            │<br>
+│    接收需求，拆解任务，协调各方                                  │<br>
+│                                                                 │<br>
+│    ┌─────────┐    ┌─────────┐    ┌─────────┐                     │<br>
+│    │ 前端    │    │ 后端    │    │ 测试    │                     │<br>
+│    │ Agent   │ +  │ Agent   │ +  │ Agent   │                     │<br>
+│    └─────────┘    └─────────┘    └─────────┘                     │<br>
+│                                                                 │<br>
+│    各自专注领域，并行工作，输出专业成果                           │<br>
+│                                                                 │<br>
+└─────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>7.2 ACP 协议概述</h2><br>
+<br>
+<h3>7.2.1 什么是 ACP？</h3><br>
+<br>
+<strong>ACP（Agent Client Protocol）</strong> 是 Hermes Agent 的多 Agent 通信协议：<br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐<br>
+│                       ACP 协议栈                                 │<br>
+├─────────────────────────────────────────────────────────────────┤<br>
+│                                                                 │<br>
+│  【应用层】                                                      │<br>
+│  ├── Editor 集成（VS Code、Zed、JetBrains）                       │<br>
+│  ├── CLI 交互                                                    │<br>
+│  └── 消息平台（需要时）                                          │<br>
+│                                                                 │<br>
+│  【协议层】 ACP                                                  │<br>
+│  ├── JSON-RPC 通信                                               │<br>
+│  ├── 工具调用传递                                               │<br>
+│  └── 会话管理                                                    │<br>
+│                                                                 │<br>
+│  【传输层】 stdio / HTTP / WebSocket                             │<br>
+│                                                                 │<br>
+└─────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<h3>7.2.2 ACP 的两种模式</h3><br>
+<br>
+<tr><td>模式</td><td>用途</td><td>特点</td></tr><br>
+<br>
+<tr><td><strong>委派模式（Delegation）</strong></td><td>一个 Agent 委派子 Agent</td><td>共享进程，通过函数调用</td></tr><br>
+<tr><td><strong>服务端模式（ACP Server）</strong></td><td>编辑器集成</td><td>通过 stdio 通信</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>7.3 委派模式详解</h2><br>
+<br>
+<h3>7.3.1 delegate_task 工具</h3><br>
+<br>
+<code>delegate_task</code> 是 Hermes Agent 的核心委派工具：<br>
+<br>
+<pre><code class="language-python">delegate_task(<br>
+    goal: str,                          # 子 Agent 的任务目标<br>
+    context: str = "",                   # 上下文信息<br>
+    toolsets: List[str] = None,         # 工具集，默认为 ["terminal", "file", "web"]<br>
+    tasks: List[Dict] = None,           # 批量模式：并行执行多个子任务<br>
+    max_iterations: int = 50,            # 最大迭代次数<br>
+    acp_command: str = None,            # ACP 命令<br>
+    acp_args: List[str] = None          # ACP 参数<br>
+)</code></pre><br>
+<br>
+<h3>7.3.2 子 Agent 的特性</h3><br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐<br>
+│                     子 Agent 隔离环境                            │<br>
+├─────────────────────────────────────────────────────────────────┤<br>
+│                                                                 │<br>
+│  ✅ 独立对话历史（无父 Agent 上下文）                            │<br>
+│  ✅ 独立终端会话（独立的工作目录）                                │<br>
+│  ✅ 受限工具集（安全隔离）                                        │<br>
+│  ✅ 独立系统提示（专注任务）                                       │<br>
+│                                                                 │<br>
+│  ❌ 不能调用 delegate_task（防止递归）                            │<br>
+│  ❌ 不能调用 clarify（不能与用户交互）                            │<br>
+│  ❌ 不能写 memory（防止冲突）                                     │<br>
+│  ❌ 不能调用 send_message（防止跨平台副作用）                      │<br>
+│  ❌ 不能调用 execute_code（需逐步推理而非写脚本）                  │<br>
+│                                                                 │<br>
+└─────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<h3>7.3.3 委派流程</h3><br>
+<br>
+<pre><code>用户: "帮我研究三个主题"<br>
+<br>
+───────────────────────────────────────────────────────────────────<br>
+<br>
+【父 Agent】<br>
+│<br>
+├── 分析任务，拆分为三个子任务<br>
+│<br>
+├── 启动 3 个子 Agent（并行）<br>
+│   ├── 子 Agent 1: 研究 WebAssembly<br>
+│   ├── 子 Agent 2: 研究 RISC-V<br>
+│   └── 子 Agent 3: 研究量子计算<br>
+│<br>
+├── 等待子 Agent 完成（最多 50 轮迭代）<br>
+│<br>
+└── 汇总结果，返回给用户<br>
+<br>
+───────────────────────────────────────────────────────────────────</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>7.4 实战：并行研究模式</h2><br>
+<br>
+<h3>7.4.1 场景</h3><br>
+<br>
+研究三个主题，返回结构化报告：<br>
+<br>
+<pre><code>用户：请帮我研究这三个技术趋势：<br>
+<ul><li>WebAssembly 在浏览器外的应用</li><li>RISC-V 服务器芯片的采用情况</li><li>量子计算的实际应用</li></ul><br>
+<br>
+请重点关注最近的进展和主要参与者。</code></pre><br>
+<br>
+<h3>7.4.2 实现</h3><br>
+<br>
+<pre><code class="language-python">delegate_task(tasks=[<br>
+    {<br>
+        "goal": "研究 WebAssembly 在 2025 年的浏览器外应用",<br>
+        "context": """重点关注：<br>
+        - Wasmtime、Wasmer 等运行时的进展<br>
+        - 云端/边缘计算用例<br>
+        - WASI 标准进展<br>
+        请搜索最新资料，整理关键发现。""",<br>
+        "toolsets": ["web"]<br>
+    },<br>
+    {<br>
+        "goal": "研究 RISC-V 服务器芯片采用情况",<br>
+        "context": """重点关注：<br>
+        - 已出货的服务器芯片<br>
+        - 云服务商采用情况<br>
+        - 软件生态系统<br>
+        请搜索最新资料，整理关键发现。""",<br>
+        "toolsets": ["web"]<br>
+    },<br>
+    {<br>
+        "goal": "研究量子计算的实际应用",<br>
+        "context": """重点关注：<br>
+        - 纠错技术突破<br>
+        - 实际商业用例<br>
+        - 主要公司和研究机构<br>
+        请搜索最新资料，整理关键发现。""",<br>
+        "toolsets": ["web"]<br>
+    }<br>
+])</code></pre><br>
+<br>
+<h3>7.4.3 优势</h3><br>
+<br>
+<tr><td>对比</td><td>串行研究</td><td>并行委派</td></tr><br>
+<br>
+<tr><td>时间</td><td>3x</td><td>1x</td></tr><br>
+<tr><td>Token 消耗</td><td>全部在主上下文</td><td>仅汇总在主上下文</td></tr><br>
+<tr><td>上下文</td><td>混杂</td><td>清晰隔离</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>7.5 实战：代码审查模式</h2><br>
+<br>
+<h3>7.5.1 场景</h3><br>
+<br>
+对认证模块进行安全审查：<br>
+<br>
+<pre><code>用户：请帮我审查 src/auth/ 目录的认证模块，<br>
+检查 SQL 注入、JWT 验证、密码处理和会话管理问题。<br>
+如果发现 bug，请修复并运行测试。</code></pre><br>
+<br>
+<h3>7.5.2 实现</h3><br>
+<br>
+<pre><code class="language-python">delegate_task(<br>
+    goal="审查 src/auth/ 目录的安全问题并修复",<br>
+    context="""项目位置：/home/user/webapp<br>
+技术栈：Python 3.11, Flask, PyJWT, bcrypt<br>
+<br>
+认证相关文件：<br>
+<ul><li>src/auth/login.py</li><li>src/auth/jwt.py</li><li>src/auth/middleware.py</li></ul><br>
+<br>
+测试命令：pytest tests/auth/ -v<br>
+<br>
+重点检查：<br>
+<ul><li>SQL 注入漏洞</li><li>JWT 验证问题</li><li>密码哈希处理</li><li>会话管理安全</li></ul><br>
+<br>
+请修复发现的问题并验证测试通过。""",<br>
+    toolsets=["terminal", "file"]<br>
+)</code></pre><br>
+<br>
+<h3>7.5.3 关键：上下文传递</h3><br>
+<br>
+<blockquote><p><strong>⚠️ 重要</strong>：子 Agent <strong>完全不知道</strong>父 Agent 的对话内容。如果你说"修复我们讨论的那个 bug"，子 Agent 不知道是哪个 bug。</p></blockquote><br>
+<br>
+<strong>必须明确传递的信息</strong>：<br>
+<br>
+<tr><td>信息类型</td><td>示例</td></tr><br>
+<br>
+<tr><td>文件路径</td><td><code>/home/user/webapp/src/auth/login.py</code></td></tr><br>
+<tr><td>项目结构</td><td><code>Python 3.11, Flask, PyJWT</code></td></tr><br>
+<tr><td>测试命令</td><td><code>pytest tests/auth/ -v</code></td></tr><br>
+<tr><td>错误信息</td><td><code>AttributeError: 'NoneType' has no attribute 'token'</code></td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>7.6 实战：多文件重构模式</h2><br>
+<br>
+<h3>7.6.1 场景</h3><br>
+<br>
+重构 API 服务器的响应格式：<br>
+<br>
+<pre><code>用户：帮我重构整个 API 服务器的响应格式，<br>
+需要更新：<br>
+<ul><li>所有端点处理器</li><li>客户端 SDK</li><li>API 文档</code></pre></li></ul><br>
+<br>
+<h3>7.6.2 实现</h3><br>
+<br>
+<pre><code class="language-python">delegate_task(tasks=[<br>
+    {<br>
+        "goal": "重构所有 API 端点处理器",<br>
+        "context":"""项目：/home/user/api-server<br>
+文件：src/handlers/users.py, src/handlers/auth.py, src/handlers/billing.py<br>
+旧格式：{"data": result, "status": "ok"}<br>
+新格式：{"data": result, "status": 200, "message": "success"}<br>
+导入：from src.responses import APIResponse<br>
+测试：pytest tests/handlers/ -v""",<br>
+        "toolsets": ["terminal", "file"]<br>
+    },<br>
+    {<br>
+        "goal": "更新客户端 SDK",<br>
+        "context":"""项目：/home/user/api-server<br>
+文件：sdk/python/client.py, sdk/python/models.py<br>
+更新 SDK 中的响应解析逻辑以适应新格式<br>
+测试：pytest sdk/python/tests/ -v""",<br>
+        "toolsets": ["terminal", "file"]<br>
+    },<br>
+    {<br>
+        "goal": "更新 API 文档",<br>
+        "context":"""项目：/home/user/api-server<br>
+文档位置：docs/api/<br>
+格式：Markdown + 代码示例<br>
+更新所有响应示例为新格式<br>
+在 docs/api/overview.md 添加响应格式说明""",<br>
+        "toolsets": ["terminal", "file"]<br>
+    }<br>
+])</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>7.7 委派的限制与最佳实践</h2><br>
+<br>
+<h3>7.7.1 委派限制</h3><br>
+<br>
+<pre><code class="language-python"># 子 Agent 被禁止使用的工具<br>
+DELEGATE_BLOCKED_TOOLS = frozenset([<br>
+    "delegate_task",   # 禁止递归委派<br>
+    "clarify",         # 禁止与用户交互<br>
+    "memory",          # 禁止写共享记忆<br>
+    "send_message",    # 禁止跨平台副作用<br>
+    "execute_code",    # 应该逐步推理<br>
+])</code></pre><br>
+<br>
+<h3>7.7.2 最佳实践</h3><br>
+<br>
+<tr><td>场景</td><td>建议</td></tr><br>
+<br>
+<tr><td>并行研究</td><td>独立主题用并行委派，节省时间</td></tr><br>
+<tr><td>代码审查</td><td>用 fresh context 避免偏见</td></tr><br>
+<tr><td>复杂重构</td><td>按模块拆分，每个子 Agent 负责一部分</td></tr><br>
+<tr><td>需要与用户交互</td><td>❌ 不能委派，父 Agent 自己处理</td></tr><br>
+<br>
+<h3>7.7.3 性能控制</h3><br>
+<br>
+<pre><code class="language-python"># 最大并发子 Agent 数（默认 3）<br>
+_MAX_CONCURRENT_CHILDREN = 3<br>
+<br>
+<h1>最大委派深度（默认 2）</h1><br>
+<h1>父(0) → 子(1) → 孙(2) → 拒绝</h1><br>
+MAX_DEPTH = 2</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>7.8 ACP 编辑器集成</h2><br>
+<br>
+<h3>7.8.1 支持的编辑器</h3><br>
+<br>
+<tr><td>编辑器</td><td>支持状态</td></tr><br>
+<br>
+<tr><td>VS Code</td><td>✅ 需要 ACP Client 扩展</td></tr><br>
+<tr><td>Zed</td><td>✅ 原生支持</td></tr><br>
+<tr><td>JetBrains</td><td>✅ 需要 ACP 插件</td></tr><br>
+<br>
+<h3>7.8.2 安装</h3><br>
+<br>
+<pre><code class="language-bash"># 安装 Hermes + ACP 支持<br>
+pip install -e '.[acp]'<br>
+<br>
+<h1>启动 ACP 服务</h1><br>
+hermes acp</code></pre><br>
+<br>
+<h3>7.8.3 编辑器配置</h3><br>
+<br>
+<strong>VS Code</strong>:<br>
+<br>
+<pre><code class="language-json">{<br>
+  "acpClient.agents": [<br>
+    {<br>
+      "name": "hermes-agent",<br>
+      "registryDir": "/path/to/hermes-agent/acp_registry"<br>
+    }<br>
+  ]<br>
+}</code></pre><br>
+<br>
+<strong>Zed</strong>:<br>
+<br>
+<pre><code class="language-json">{<br>
+  "agent_servers": {<br>
+    "hermes-agent": {<br>
+      "type": "custom",<br>
+      "command": "hermes",<br>
+      "args": ["acp"]<br>
+    }<br>
+  }<br>
+}</code></pre><br>
+<br>
+<h3>7.8.4 ACP 模式特性</h3><br>
+<br>
+在 ACP 模式下，Hermes Agent 使用专门的 <code>hermes-acp</code> 工具集：<br>
+<br>
+<tr><td>包含</td><td>不包含</td></tr><br>
+<br>
+<tr><td>文件工具（read/write/patch）</td><td>消息发送</td></tr><br>
+<tr><td>终端工具</td><td>定时任务</td></tr><br>
+<tr><td>浏览器工具</td><td>复杂的工作流工具</td></tr><br>
+<tr><td>记忆和 Skill 工具</td><td></td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>7.9 协作模式总结</h2><br>
+<br>
+<h3>7.9.1 何时用委派</h3><br>
+<br>
+<tr><td>任务类型</td><td>建议</td></tr><br>
+<br>
+<tr><td>单个工具调用</td><td>直接调用工具</td></tr><br>
+<tr><td>机械多步操作</td><td><code>execute_code</code></td></tr><br>
+<tr><td><strong>独立并行任务</strong></td><td><strong>delegate_task</strong></td></tr><br>
+<tr><td><strong>需要 fresh context</strong></td><td><strong>delegate_task</strong></td></tr><br>
+<tr><td><strong>复杂任务拆分</strong></td><td><strong>delegate_task</strong></td></tr><br>
+<tr><td>需要用户交互</td><td>父 Agent 处理</td></tr><br>
+<br>
+<h3>7.9.2 委派模式架构</h3><br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐<br>
+│                        父 Agent                                  │<br>
+│  ┌───────────────────────────────────────────────────────────┐ │<br>
+│  │ 1. 接收任务                                                │ │<br>
+│  │ 2. 拆解子任务                                              │ │<br>
+│  │ 3. 构建子 Agent 系统提示                                   │ │<br>
+│  │ 4. 启动并行子 Agent                                       │ │<br>
+│  │ 5. 收集结果，汇总输出                                      │ │<br>
+│  └───────────────────────────────────────────────────────────┘ │<br>
+│                            │                                     │<br>
+│        ┌───────────────────┼───────────────────┐                 │<br>
+│        │                   │                   │                 │<br>
+│        ▼                   ▼                   ▼                 │<br>
+│  ┌───────────┐     ┌───────────┐     ┌───────────┐             │<br>
+│  │ 子 Agent 1│     │ 子 Agent 2│     │ 子 Agent 3│             │<br>
+│  │ 独立上下文 │     │ 独立上下文 │     │ 独立上下文 │             │<br>
+│  │ 受限工具集 │     │ 受限工具集 │     │ 受限工具集 │             │<br>
+│  └───────────┘     └───────────┘     └───────────┘             │<br>
+└─────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li><strong>ACP（Agent Client Protocol）</strong> 是 Hermes Agent 的多 Agent 通信协议</li><li><strong>delegate_task</strong> 工具允许父 Agent 委派子 Agent 执行任务</li><li>子 Agent 有<strong>隔离的上下文</strong>和<strong>受限的工具集</strong>，安全且高效</li><li>并行委派可以<strong>显著减少任务时间</strong>和<strong>上下文 Token 消耗</strong></li><li>ACP 编辑器集成让 Hermes 可以在 VS Code、Zed、JetBrains 中运行</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>为什么子 Agent 不能调用 <code>clarify</code> 工具？如果放开会有什么风险？</li><li>如果你需要写一本书，团队成员（编辑、作者、校对）如何用多 Agent 协作实现？</li><li>ACP 协议和 HTTP 协议有什么相似之处？有什么本质区别？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>委派工具：<code>tools/delegate_tool.py</code></li><li>ACP 文档：<code>website/docs/user-guide/features/acp.md</code></li><li>委派模式指南：<code>website/docs/guides/delegation-patterns.md</code></li><li>ACP 适配器：<code>acp_adapter/</code></li></ul><br>
+
+<div class="chapter-nav"><a href="ch06.html">← 第 6 章 · Skill 机制深度剖析</a><span></span><a href="ch08.html">第 8 章 · 上下文工程与 Soul.md →</a></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 1 章 · 初识 Hermes Agent — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html" class="active">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 1 章 · 初识 Hermes Agent</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>理解 <strong>Agent</strong> 是什么，以及它与传统 AI 模型的区别</li><li>了解 Hermes Agent 的核心特性和设计理念</li><li>在 5 分钟内运行你的第一个 Agent</li><li>完成开发环境的安装和配置</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>1.1 从 AI 模型到 Agent：发生了什么变化？</h2><br>
+<br>
+你有没有过这种体验：对着一个 AI 对话，问它"帮我查一下天气"，它给你一段关于天气的描述——然后呢？它不会真的去查天气。<br>
+<br>
+这就是 <strong>AI 模型</strong> 的局限：它只会"说"，不会"做"。<br>
+<br>
+而 <strong>Agent</strong>（发音：/'eɪdʒənt/，英文意思是"代理人"）不一样。想象一个贴心的私人助理：<br>
+<br>
+<blockquote><p>你说："帮我订一张下周三去上海的机票。"</p></blockquote><br>
+><br>
+<blockquote><p>助理会：</p></blockquote><br>
+<blockquote><p>1. 打开订票网站</p></blockquote><br>
+<blockquote><p>2. 搜索航班</p></blockquote><br>
+<blockquote><p>3. 比较价格和时间</p></blockquote><br>
+<blockquote><p>4. 选好机票</p></blockquote><br>
+<blockquote><p>5. 填写你的信息</p></blockquote><br>
+<blockquote><p>6. 完成支付</p></blockquote><br>
+><br>
+<blockquote><p>然后告诉你："搞定！机票已出票。"</p></blockquote><br>
+<br>
+这个助理不是在"描述"订票过程，而是<strong>真的在执行</strong>。Agent 就像这样一个能"动手做事"的 AI。<br>
+<br>
+<h3>Agent 的三大超能力</h3><br>
+<br>
+一个完整的 Agent，通常具备这三种能力：<br>
+<br>
+<tr><td>能力</td><td>说明</td><td>类比</td></tr><br>
+<br>
+<tr><td><strong>工具调用</strong></td><td>能使用外部工具（查资料、执行代码、操作文件）</td><td>助理的手</td></tr><br>
+<tr><td><strong>记忆</strong></td><td>能记住之前的对话内容，下次继续</td><td>助理的笔记本</td></tr><br>
+<tr><td><strong>规划</strong></td><td>能把复杂任务拆解成多个步骤</td><td>助理的脑袋</td></tr><br>
+<br>
+Hermes Agent 同时具备这三种能力，而且还有额外惊喜：<strong>多 Agent 协作</strong>和<strong>Skill 扩展机制</strong>。<br>
+<br>
+<hr><br>
+<br>
+<h2>1.2 Hermes Agent 是什么？</h2><br>
+<br>
+<strong>Hermes Agent</strong> 是 Nous Research 开发的一个开源 Agent 框架。它的定位很明确：<br>
+<br>
+<blockquote><p>"Build agents with a built-in learning loop."（构建具有内置学习循环的 Agent。）</p></blockquote><br>
+<br>
+翻译成人话就是：Hermes Agent 不只是一个"听话的助理"，它还是一个能<strong>从经验中学习</strong>的助理。<br>
+<br>
+<h3>核心特性一览</h3><br>
+<br>
+<tr><td>特性</td><td>说明</td><td>详细章节</td></tr><br>
+<br>
+<tr><td><strong>Tool Use</strong></td><td>调用外部工具（浏览器、文件系统、API 等）</td><td>第 3 章</td></tr><br>
+<tr><td><strong>Memory</strong></td><td>跨会话持久化记忆</td><td>第 4-5 章</td></tr><br>
+<tr><td><strong>Skill</strong></td><td>通过 SKILL.md 扩展 Agent 能力</td><td>第 6 章</td></tr><br>
+<tr><td><strong>ACP</strong></td><td>多 Agent 协作通信协议</td><td>第 7 章</td></tr><br>
+<tr><td><strong>Context Engineering</strong></td><td>精细化的上下文控制</td><td>第 8 章</td></tr><br>
+<tr><td><strong>Trajectory</strong></td><td>运行轨迹记录与分析</td><td>第 9 章</td></tr><br>
+<br>
+<h3>Hermes Agent 的设计理念</h3><br>
+<br>
+Hermes Agent 有几个独特的设计哲学：<br>
+<br>
+<ul><li><strong>插件化架构</strong>：Memory 系统是可插拔的，你可以用自带的简单记忆，也可以接入 Mem0、Holographic 等高级记忆系统。</li></ul><br>
+<br>
+<ul><li><strong>配置文件驱动</strong>：Agent 的身份、工具、记忆都通过文件定义，而不是硬编码。这让 Agent 更容易定制和分享。</li></ul><br>
+<br>
+<ul><li><strong>即学即用</strong>：Skill 机制让你可以通过写一份 Markdown 文件来给 Agent 添加新技能，就像给员工发一份培训手册。</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>1.3 ⭐ 5 分钟 Hello World：运行你的第一个 Agent</h2><br>
+<br>
+废话少说，让我们直接跑起来！<br>
+<br>
+<h3>1.3.1 环境要求</h3><br>
+<br>
+在开始之前，确保你的电脑满足以下条件：<br>
+<br>
+<ul><li><strong>Python</strong>: 3.11 或更高版本</li><li><strong>pip</strong>: Python 包管理器（通常随 Python 一起安装）</li><li><strong>API Key</strong>: Claude 或 OpenAI 的 API 密钥</li></ul><br>
+<br>
+<strong>💡 提示</strong>：推荐使用 Claude 的 API，效果更好。如果没有，<a href="https://claude.ai/">官网</a> 可以申请。<br>
+<br>
+<h3>1.3.2 安装 Hermes Agent</h3><br>
+<br>
+打开终端（Windows 用户用 PowerShell 或 CMD），运行以下命令：<br>
+<br>
+<pre><code class="language-bash">pip install hermes-agent</code></pre><br>
+<br>
+安装完成后，验证一下：<br>
+<br>
+<pre><code class="language-bash">hermes --version</code></pre><br>
+<br>
+如果看到版本号（比如 <code>0.8.0</code>），说明安装成功！<br>
+<br>
+<h3>1.3.3 配置 API 密钥</h3><br>
+<br>
+Hermes Agent 需要调用 AI 模型，所以需要配置 API 密钥。<br>
+<br>
+<strong>方法一：环境变量</strong><br>
+<br>
+<pre><code class="language-bash"># macOS / Linux<br>
+export ANTHROPIC_API_KEY="sk-ant-xxxxxx"<br>
+<br>
+<h1>Windows PowerShell</h1><br>
+$env:ANTHROPIC_API_KEY="sk-ant-xxxxxx"</code></pre><br>
+<br>
+<strong>方法二：.env 文件</strong><br>
+<br>
+在项目根目录创建 <code>.env</code> 文件：<br>
+<br>
+<pre><code class="language-bash"># .env<br>
+ANTHROPIC_API_KEY=sk-ant-xxxxxx</code></pre><br>
+<br>
+<strong>⚠️ 注意</strong>：API 密钥不要泄露给他人，也不要提交到 GitHub！<code>.env</code> 文件应该加入 <code>.gitignore</code>。<br>
+<br>
+<h3>1.3.4 运行你的第一个 Agent</h3><br>
+<br>
+创建一个新文件 <code>hello_agent.py</code>：<br>
+<br>
+<pre><code class="language-python"># hello_agent.py<br>
+from run_agent import AIAgent<br>
+<br>
+agent = AIAgent()<br>
+response = agent.run_conversation("你好！请介绍一下你自己。")<br>
+print(response)</code></pre><br>
+<br>
+然后运行：<br>
+<br>
+<pre><code class="language-bash">python hello_agent.py</code></pre><br>
+<br>
+<strong>预期输出</strong>：<br>
+<br>
+<pre><code>你好！我是 Hermes Agent，一个能帮助你完成各种任务的 AI 助手。<br>
+我可以：<br>
+<ul><li>回答问题和提供信息</li><li>帮你写代码和分析代码</li><li>搜索和分析文档</li><li>还有很多其他能力...</code></pre></li></ul><br>
+<br>
+🎉 <strong>恭喜你完成了第一个 Agent 的运行！</strong><br>
+<br>
+<h3>1.3.5 稍完整的例子：带记忆的对话</h3><br>
+<br>
+上一个例子每次运行都是全新的 Agent，不会"记住"之前的对话。让我们试试带记忆的版本：<br>
+<br>
+<pre><code class="language-python"># hello_memory.py<br>
+from run_agent import AIAgent<br>
+from plugins.memory.honcho.session import SessionManager<br>
+<br>
+session_manager = SessionManager()<br>
+session = session_manager.create_session(user_id="hello_world")<br>
+<br>
+agent = AIAgent(session_manager=session_manager)<br>
+<br>
+<h1>第一轮对话</h1><br>
+response1 = agent.run_conversation("我叫小明，请记住我的名字。", session_id=session.id)<br>
+print(f"Agent: {response1}")<br>
+<br>
+<h1>第二轮对话</h1><br>
+response2 = agent.run_conversation("我叫什么名字？", session_id=session.id)<br>
+print(f"Agent: {response2}")</code></pre><br>
+<br>
+<strong>预期输出</strong>：<br>
+<br>
+<pre><code>Agent: 好的，小明，我已经记住你的名字了。很高兴认识你！<br>
+Agent: 你叫小明，对吗？</code></pre><br>
+<br>
+<strong>💡 提示</strong>：第一次运行可能需要安装 honcho 插件。按照提示运行 <code>pip install honcho</code> 即可。<br>
+<br>
+<hr><br>
+<br>
+<h2>1.4 Hermes Agent 的项目结构</h2><br>
+<br>
+了解项目结构能帮助你更好地理解代码。克隆或下载 hermes-agent 源码后，你会看到这样的目录：<br>
+<br>
+<pre><code>hermes-agent/<br>
+├── agent/                    # Agent 核心代码<br>
+│   ├── __init__.py<br>
+│   ├── run_agent.py        # Agent 主循环入口<br>
+│   ├── prompt_builder.py   # 提示词构建<br>
+│   └── ...<br>
+├── plugins/                 # 插件目录<br>
+│   └── memory/              # 记忆插件<br>
+│       ├── builtin/        # 内置记忆<br>
+│       └── honcho/         # Honcho 记忆插件<br>
+├── skills/                  # Skill 定义目录<br>
+│   ├── dogfood/            # 狗粮分析 Skill<br>
+│   ├── creative/           # 创意写作 Skill<br>
+│   └── apple/              # Apple 相关 Skill<br>
+├── acp_adapter/            # ACP 协议适配器<br>
+│   └── server.py<br>
+├── run.py                  # 启动脚本<br>
+├── pyproject.toml          # 项目配置<br>
+└── README.md</code></pre><br>
+<br>
+<strong>关键目录说明</strong>：<br>
+<br>
+<tr><td>目录</td><td>作用</td></tr><br>
+<br>
+<tr><td><code>agent/</code></td><td>Agent 的核心逻辑，包括主循环、提示词构建等</td></tr><br>
+<tr><td><code>plugins/memory/</code></td><td>记忆系统的插件，有多种实现可选</td></tr><br>
+<tr><td><code>skills/</code></td><td>Skill 定义文件，描述 Agent 的各种技能</td></tr><br>
+<tr><td><code>acp_adapter/</code></td><td>多 Agent 协作的通信适配器</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>1.5 Hermes Agent vs 其他框架</h2><br>
+<br>
+你可能听说过其他 Agent 框架，比如 LangChain、AutoGPT、CrewAI。简单对比一下：<br>
+<br>
+<tr><td>框架</td><td>特点</td><td>适合场景</td></tr><br>
+<br>
+<tr><td><strong>Hermes Agent</strong></td><td>内置学习循环、Skill 机制、ACP 协议</td><td>需要多 Agent 协作、长期记忆的应用</td></tr><br>
+<tr><td><strong>LangChain</strong></td><td>生态庞大、组件丰富</td><td>快速原型、灵活组合各种组件</td></tr><br>
+<tr><td><strong>CrewAI</strong></td><td>多 Agent 协作友好</td><td>团队协作场景（角色扮演、任务分配）</td></tr><br>
+<tr><td><strong>AutoGPT</strong></td><td>自主规划能力强</td><td>完全自动化的复杂任务</td></tr><br>
+<br>
+<strong>Hermes Agent 的独特优势</strong>：<br>
+<br>
+<ul><li><strong>Skill 机制</strong>：通过写 Markdown 文件就能扩展 Agent 能力门槛低</li><li><strong>ACP 协议</strong>：标准化多 Agent 通信，集成其他 Agent 系统</li><li><strong>插件化 Memory</strong>：记忆系统可替换，适应不同场景需求</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>1.6 异步编程预告</h2><br>
+<br>
+Hermes Agent 使用了 <strong>异步编程</strong>（Async/Await）来提高效率。不用担心，你不需要成为异步专家才能用它。<br>
+<br>
+简单理解：<br>
+<br>
+<blockquote><p>同步：你排队买咖啡，必须等前一个人买完才能轮到你。</p></blockquote><br>
+><br>
+<blockquote><p>异步：你下单后可以去干别的事，咖啡好了服务员叫你。</p></blockquote><br>
+<br>
+如果你想深入理解，第 2 章会详细讲解 Hermes Agent 如何用异步编程构建主循环。<br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li><strong>Agent</strong> = AI 模型 + 工具 + 记忆 + 规划循环，能"动手做事"</li><li><strong>Hermes Agent</strong> 是支持多 Agent 协作、内置学习循环的开源框架</li><li>运行 Agent 的最小代码只需要 4 行</li><li>Hermes Agent 的核心模块：<code>agent/</code>、<code>plugins/memory/</code>、<code>skills/</code>、<code>acp_adapter/</code></li><li>Skill 机制、ACP 协议、插件化 Memory 是 Hermes 的独特优势</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>为什么 Agent 比普通 AI 模型更适合自动化任务？</li><li>Hermes Agent 的 Skill 机制和传统框架的"插件"有什么不同？</li><li>如果你要给 Agent 添加"发送邮件"的能力，你会怎么设计？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>项目入口：<code>run.py</code></li><li>Agent 主循环：<code>agent/run_agent.py</code></li><li>项目配置：<code>pyproject.toml</code></li></ul><br>
+
+<div class="chapter-nav"><span></span><a href="ch02.html">第 2 章 · Agent 核心架构解析 →</a></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>

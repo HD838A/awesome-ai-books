@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 6 章 · Skill 机制深度剖析 — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html" class="active">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 6 章 · Skill 机制深度剖析</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>理解 <strong>Skill</strong> 与其他扩展机制（Plugin、Tool）的区别</li><li>掌握 <strong>SKILL.md</strong> 格式的每个字段含义</li><li>学会编写高质量的 Skill</li><li>了解 Skill 的生命周期管理</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>6.1 什么是 Skill？</h2><br>
+<br>
+<h3>6.1.1 类比：技能 vs 工具</h3><br>
+<br>
+想象一个<strong>专业的厨师团队</strong>：<br>
+<br>
+<tr><td>概念</td><td>类比</td><td>说明</td></tr><br>
+<br>
+<tr><td><strong>Tool</strong></td><td>厨师的刀、锅、炉灶</td><td>单一功能，执行具体操作</td></tr><br>
+<tr><td><strong>Skill</strong></td><td>厨师的"川菜"技能</td><td>一套完整的工作流程和方法论</td></tr><br>
+<tr><td><strong>Plugin</strong></td><td>厨房设备（如蒸柜、烤箱）</td><td>提供额外能力的模块</td></tr><br>
+<br>
+<pre><code>工具（Tool）     →   "切菜"<br>
+                  "调味"<br>
+                  "掌火"<br>
+<br>
+技能（Skill）    →   "川菜烹饪"  ← 包含：<br>
+                     - 何时用刀<br>
+                     - 如何调味<br>
+                     - 火候控制<br>
+                     - 摆盘要求<br>
+<br>
+插件（Plugin）   →   添加一台蒸柜<br>
+                     → 让厨师能做"粤菜蒸菜"</code></pre><br>
+<br>
+<h3>6.1.2 Skill 的本质</h3><br>
+<br>
+<strong>Skill</strong> 是一套<strong>结构化的提示词</strong>（Structured Prompt），它告诉 Agent：<br>
+<br>
+<ul><li><strong>做什么</strong> — 任务目标</li><li><strong>怎么做</strong> — 工作流程</li><li><strong>用什么工具</strong> — 工具选择</li><li><strong>输出什么格式</strong> — 结果规范</li></ul><br>
+<br>
+<blockquote><p><strong>💡 关键洞察</strong>：Skill 不是代码，而是<strong>给 AI 的工作指南</strong>。它通过自然语言指导 Agent 如何完成特定类型的任务。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>6.2 SKILL.md 格式详解</h2><br>
+<br>
+<h3>6.2.1 完整格式示例</h3><br>
+<br>
+<pre><code class="language-markdown">---<br>
+name: dogfood<br>
+description: 系统化 Web 应用 QA 测试 — 发现 bug、捕获证据、生成结构化报告<br>
+version: 1.0.0<br>
+metadata:<br>
+  hermes:<br>
+    tags: [qa, testing, browser, web, dogfood]<br>
+    related_skills: []<br>
+<hr><br>
+<br>
+<h1>Dogfood: 系统化 Web 应用 QA 测试</h1><br>
+<br>
+<h2>Overview（概述）</h2><br>
+[任务的总体说明]<br>
+<br>
+<h2>Prerequisites（前置条件）</h2><br>
+[需要什么工具、环境]<br>
+<br>
+<h2>Inputs（输入）</h2><br>
+[用户需要提供什么]<br>
+<br>
+<h2>Workflow（工作流程）</h2><br>
+[详细的步骤指南]<br>
+<br>
+<h3>Phase 1: Plan</h3><br>
+<ul><li>...</li><li>...</li></ul><br>
+<br>
+<h3>Phase 2: Explore</h3><br>
+...<br>
+<br>
+<h2>Tools Reference（工具参考）</h2><br>
+[使用的工具及其说明]<br>
+<br>
+<h2>Tips（技巧）</h2><br>
+[最佳实践]</code></pre><br>
+<br>
+<h3>6.2.2 Frontmatter 字段</h3><br>
+<br>
+<tr><td>字段</td><td>类型</td><td>必需</td><td>说明</td></tr><br>
+<br>
+<tr><td><code>name</code></td><td>string</td><td>✅</td><td>Skill 名称（唯一标识）</td></tr><br>
+<tr><td><code>description</code></td><td>string</td><td>✅</td><td>简短描述，Agent 用它决定何时调用</td></tr><br>
+<tr><td><code>version</code></td><td>string</td><td>✅</td><td>语义版本号</td></tr><br>
+<tr><td><code>metadata.hermes.tags</code></td><td>array</td><td>❌</td><td>分类标签</td></tr><br>
+<tr><td><code>metadata.hermes.related_skills</code></td><td>array</td><td>❌</td><td>关联的其他 Skill</td></tr><br>
+<br>
+<h3>6.2.3 章节说明</h3><br>
+<br>
+<tr><td>章节</td><td>用途</td><td>重要性</td></tr><br>
+<br>
+<tr><td><code>Overview</code></td><td>任务的高层概述</td><td>✅ 必须</td></tr><br>
+<tr><td><code>Prerequisites</code></td><td>前置条件（工具、环境）</td><td>✅ 必须</td></tr><br>
+<tr><td><code>Inputs</code></td><td>用户需要提供的输入</td><td>推荐</td></tr><br>
+<tr><td><code>Workflow</code></td><td>详细的工作流程</td><td>✅ 必须</td></tr><br>
+<tr><td><code>Tools Reference</code></td><td>工具使用参考</td><td>推荐</td></tr><br>
+<tr><td><code>Tips</code></td><td>最佳实践和注意事项</td><td>可选</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>6.3 实战：解读 dogfood Skill</h2><br>
+<br>
+<h3>6.3.1 任务概述</h3><br>
+<br>
+<code>dogfood</code> 是一个<strong>系统化 Web 应用 QA 测试</strong>的 Skill。它指导 Agent：<br>
+<br>
+<ul><li>规划测试范围</li><li>探索每个页面</li><li>收集证据（截图、错误日志）</li><li>分类和排序问题</li><li>生成结构化报告</li></ul><br>
+<br>
+<h3>6.3.2 Workflow 解析</h3><br>
+<br>
+<pre><code class="language-markdown">## Workflow<br>
+<br>
+Follow this 5-phase systematic workflow:<br>
+<br>
+<h3>Phase 1: Plan</h3><br>
+<ul><li>Create the output directory structure</li><li>Identify the testing scope</li><li>Build a rough sitemap</li></ul><br>
+<br>
+<h3>Phase 2: Explore</h3><br>
+For each page or feature:<br>
+<ul><li>Navigate to the page</li><li>Take a snapshot</li><li>Check the console</li><li>Take an annotated screenshot</li><li>Test interactive elements</li></ul><br>
+<br>
+<h3>Phase 3: Collect Evidence</h3><br>
+...<br>
+<br>
+<h3>Phase 4: Categorize</h3><br>
+...<br>
+<br>
+<h3>Phase 5: Report</h3><br>
+...</code></pre><br>
+<br>
+<strong>为什么分 5 个 Phase？</strong><br>
+<br>
+<pre><code>Phase 1: Plan      → 磨刀不误砍柴工<br>
+Phase 2: Explore   → 系统化探索<br>
+Phase 3: Collect   → 捕获证据<br>
+Phase 4: Categorize→ 整理归类<br>
+Phase 5: Report    → 输出成果</code></pre><br>
+<br>
+<h3>6.3.3 工具使用指南</h3><br>
+<br>
+<pre><code class="language-markdown">## Tools Reference<br>
+<br>
+<tr><td>Tool</td><td>Purpose</td></tr><br>
+<br>
+<tr><td>browser_navigate</td><td>打开 URL</td></tr><br>
+<tr><td>browser_snapshot</td><td>获取 DOM 快照</td></tr><br>
+<tr><td>browser_click</td><td>点击元素</td></tr><br>
+<tr><td>browser_vision</td><td>AI 分析截图</td></tr><br>
+| browser_console | 获取控制台错误 |</code></pre><br>
+<br>
+<blockquote><p><strong>💡 提示</strong>：在 Skill 中列出工具用法，帮助 Agent 正确使用，而不是靠猜测。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>6.4 Skill 生命周期管理</h2><br>
+<br>
+<h3>6.4.1 Skill 存储位置</h3><br>
+<br>
+<pre><code>~/.hermes/skills/<br>
+├── dogfood/<br>
+│   ├── SKILL.md<br>
+│   ├── references/<br>
+│   │   └── issue-taxonomy.md<br>
+│   └── templates/<br>
+│       └── dogfood-report-template.md<br>
+├── code-review/<br>
+│   └── SKILL.md<br>
+└── research/<br>
+    └── SKILL.md</code></pre><br>
+<br>
+<h3>6.4.2 Skill 管理工具</h3><br>
+<br>
+Hermes Agent 提供了 <code>skill_manager</code> 工具来管理 Skill：<br>
+<br>
+<tr><td>操作</td><td>命令</td><td>说明</td></tr><br>
+<br>
+<tr><td>创建</td><td><code>skill_manager(action="create")</code></td><td>创建新 Skill</td></tr><br>
+<tr><td>编辑</td><td><code>skill_manager(action="edit")</code></td><td>完全重写 SKILL.md</td></tr><br>
+<tr><td>补丁</td><td><code>skill_manager(action="patch")</code></td><td>局部修改</td></tr><br>
+<tr><td>删除</td><td><code>skill_manager(action="delete")</code></td><td>删除 Skill</td></tr><br>
+<tr><td>写文件</td><td><code>skill_manager(action="write_file")</code></td><td>添加支持文件</td></tr><br>
+<tr><td>删文件</td><td><code>skill_manager(action="remove_file")</code></td><td>删除支持文件</td></tr><br>
+<br>
+<h3>6.4.3 创建新 Skill</h3><br>
+<br>
+<pre><code class="language-python"># 使用 skill_manager 创建 Skill<br>
+skill_manager(<br>
+    action="create",<br>
+    name="my-research",<br>
+    category="research",<br>
+    description="深度研究某个主题，输出结构化报告",<br>
+    content='''<br>
+<h1>Research: 深度研究</h1><br>
+<br>
+<h2>Overview</h2><br>
+这个 Skill 指导进行深度研究...<br>
+<br>
+<h2>Workflow</h2><br>
+<h3>Phase 1: 信息收集</h3><br>
+...<br>
+<br>
+<h3>Phase 2: 分析整理</h3><br>
+...<br>
+<br>
+<h3>Phase 3: 报告生成</h3><br>
+...<br>
+'''<br>
+)</code></pre><br>
+<br>
+<h3>6.4.4 编辑现有 Skill</h3><br>
+<br>
+<pre><code class="language-python"># 补丁式修改（推荐）<br>
+skill_manager(<br>
+    action="patch",<br>
+    name="dogfood",<br>
+    old="browser_vision(question=\"...\")",<br>
+    new="browser_vision(question=\"...\", timeout=30)"<br>
+)<br>
+<br>
+<h1>完全重写</h1><br>
+skill_manager(<br>
+    action="edit",<br>
+    name="dogfood",<br>
+    content='''<br>
+<hr><br>
+name: dogfood<br>
+...<br>
+'''<br>
+)</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>6.5 Skill 的安全机制</h2><br>
+<br>
+<h3>6.5.1 安全扫描</h3><br>
+<br>
+Agent 创建的 Skill 会经过<strong>安全扫描</strong>：<br>
+<br>
+<pre><code class="language-python"># skill_manager_tool.py<br>
+from tools.skills_guard import scan_skill<br>
+<br>
+def _security_scan_skill(skill_dir):<br>
+    result = scan_skill(skill_dir, source="agent-created")<br>
+    allowed, reason = should_allow_install(result)<br>
+    <br>
+    if allowed is False:<br>
+        return f"Security scan blocked: {reason}"<br>
+    <br>
+    return None  # 通过</code></pre><br>
+<br>
+<h3>6.5.2 扫描检查项</h3><br>
+<br>
+<tr><td>检查项</td><td>说明</td><td>风险</td></tr><br>
+<br>
+<tr><td>恶意 URL</td><td>检测可疑的外部链接</td><td>数据外泄</td></tr><br>
+<tr><td>可疑代码</td><td>检测隐藏的可执行代码</td><td>命令注入</td></tr><br>
+<tr><td>权限提升</td><td>检测提权意图</td><td>安全绕过</td></tr><br>
+<tr><td>路径遍历</td><td>检测文件路径操作</td><td>文件系统攻击</td></tr><br>
+<br>
+<h3>6.5.3 命名规范</h3><br>
+<br>
+Skill 名称必须符合以下规则：<br>
+<br>
+<pre><code>^[a-z0-9][a-z0-9._-]*$</code></pre><br>
+<br>
+<tr><td>合法名称</td><td>非法名称</td><td>原因</td></tr><br>
+<br>
+<tr><td><code>dogfood</code></td><td><code>Dogfood</code></td><td>必须小写</td></tr><br>
+<tr><td><code>code-review</code></td><td><code>code review</code></td><td>不能有空格</td></tr><br>
+<tr><td><code>my.skill</code></td><td><code>my..skill</code></td><td>不能连续点</td></tr><br>
+<tr><td><code>a1-b2</code></td><td><code>1-a</code></td><td>必须以字母或数字开头</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>6.6 编写高质量 Skill 的技巧</h2><br>
+<br>
+<h3>6.6.1 描述要清晰</h3><br>
+<br>
+❌ <strong>差的描述</strong>：<br>
+<br>
+<pre><code>description: "研究"</code></pre><br>
+<br>
+✅ <strong>好的描述</strong>：<br>
+<br>
+<pre><code>description: "深度研究某个主题，包括竞品分析、<br>
+技术调研、市场趋势等，输出结构化研究报告"</code></pre><br>
+<br>
+<h3>6.6.2 Workflow 要具体</h3><br>
+<br>
+❌ <strong>模糊的步骤</strong>：<br>
+<br>
+<pre><code>### Phase 1: 研究<br>
+<ul><li>搜索相关信息</li><li>分析</li><li>输出</code></pre></li></ul><br>
+<br>
+✅ <strong>具体的步骤</strong>：<br>
+<br>
+<pre><code>### Phase 1: 信息收集<br>
+<ul><li>使用 web_search 搜索主题关键词</li><li>使用 web_extract 获取前 5 个结果详情</li><li>记录关键发现到笔记</li><li>如果发现新关键词，重复搜索</code></pre></li></ul><br>
+<br>
+<h3>6.6.3 提供工具参考</h3><br>
+<br>
+<pre><code class="language-markdown">## Tools Reference<br>
+<br>
+<h3>browser_vision</h3><br>
+<ul><li><strong>用途</strong>：截图 + AI 分析</li><li><strong>annotate=true</strong>：在截图上标注交互元素</li><li><strong>使用场景</strong>：理解页面布局、识别问题</li></ul><br>
+<br>
+<h3>browser_console</h3><br>
+<ul><li><strong>用途</strong>：获取 JavaScript 控制台错误</li><li><strong>关键</strong>：在导航后和重要交互后都要检查</li><li><strong>使用场景</strong>：发现 JS 运行时错误</code></pre></li></ul><br>
+<br>
+<h3>6.6.4 添加边界条件</h3><br>
+<br>
+<pre><code class="language-markdown">## Tips<br>
+<br>
+<ul><li><strong>URL 无效时</strong>：返回友好错误，说明需要有效 URL</li><li><strong>页面加载超时时</strong>：等待 5 秒重试，最多 3 次</li><li><strong>截图失败时</strong>：跳过该页，记录到报告中</li><li><strong>控制台无错误时</strong>：在报告中注明"无控制台错误"</code></pre></li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>6.7 Skill vs Plugin vs Tool</h2><br>
+<br>
+<tr><td>维度</td><td>Skill</td><td>Plugin</td><td>Tool</td></tr><br>
+<br>
+<tr><td><strong>本质</strong></td><td>结构化提示词</td><td>Python 模块</td><td>函数</td></tr><br>
+<tr><td><strong>存储</strong></td><td>Markdown 文件</td><td>Python 代码</td><td>Python 代码</td></tr><br>
+<tr><td><strong>修改</strong></td><td>Agent 可直接编辑</td><td>需要开发者</td><td>需要开发者</td></tr><br>
+<tr><td><strong>用途</strong></td><td>指导工作流程</td><td>提供系统能力</td><td>执行具体操作</td></tr><br>
+<tr><td><strong>生命周期</strong></td><td>运行时可变</td><td>编译时固定</td><td>编译时固定</td></tr><br>
+<tr><td><strong>示例</strong></td><td>"如何做代码审查"</td><td>"记忆系统"</td><td>"web_search"</td></tr><br>
+<br>
+<h3>6.7.1 选择指南</h3><br>
+<br>
+<pre><code>我需要...<br>
+│<br>
+├─ 执行一个具体操作          → Tool<br>
+│   例：搜索网页、读文件<br>
+│<br>
+├─ 提供系统级能力            → Plugin<br>
+│   例：记忆管理、浏览器控制<br>
+│<br>
+└─ 指导 Agent 完成复杂任务   → Skill<br>
+    例：QA 测试、代码审查、研究报告</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>6.8 内置 Skill 一览</h2><br>
+<br>
+Hermes Agent 内置了多个实用 Skill：<br>
+<br>
+<tr><td>Skill</td><td>功能</td><td>适用场景</td></tr><br>
+<br>
+<tr><td><code>dogfood</code></td><td>Web QA 测试</td><td>发现 UI/UX bug</td></tr><br>
+<tr><td><code>code-review</code></td><td>代码审查</td><td>提升代码质量</td></tr><br>
+<tr><td><code>research</code></td><td>深度研究</td><td>竞品分析、技术调研</td></tr><br>
+<tr><td><code>openclaw-migration</code></td><td>从 OpenClaw 迁移</td><td>版本升级</td></tr><br>
+<br>
+<h3>6.8.1 查看所有 Skill</h3><br>
+<br>
+<pre><code class="language-python"># 列出所有可用 Skill<br>
+skills_list()<br>
+<br>
+<h1>查看特定 Skill 详情</h1><br>
+skill_view(name="dogfood")<br>
+<br>
+<h1>完整 API：</h1><br>
+<h1>skill_view(name: str, file_path: str = None, task_id: str = None)</h1><br>
+<h1>- name: Skill 名称</h1><br>
+<h1>- file_path: 可选，指定 SKILL.md 文件路径</h1><br>
+<h1>- task_id: 可选，关联任务 ID</code></pre></h1><br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li><strong>Skill</strong> 是一套结构化的提示词，指导 Agent 完成特定类型的任务</li><li><strong>SKILL.md</strong> 格式包含 Frontmatter（名称、描述、版本）和 Workflow（工作流程）</li><li>Skill 通过 <code>skill_manager</code> 工具管理，支持创建、编辑、补丁、删除</li><li>Agent 创建的 Skill 会经过<strong>安全扫描</strong>，防止恶意代码</li><li>Skill 与 Plugin、Tool 有本质区别：Tool 做具体操作，Plugin 提供系统能力，Skill 指导工作流程</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>为什么 Skill 要用 Markdown 格式而不是 JSON 或 YAML？</li><li>如果你要创建一个"技术文档写作"的 Skill，会包含哪些 Phase？</li><li>Skill 的安全扫描是必须的吗？为什么？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>Dogfood Skill 示例：<code>skills/dogfood/SKILL.md</code></li><li>Skill 管理工具：<code>tools/skill_manager_tool.py</code></li><li>安全扫描：<code>tools/skills_guard.py</code></li><li>内置 Skill 目录：<code>skills/</code></li><li>Skill 存储位置：<code>~/.hermes/skills/</code></li></ul><br>
+
+<div class="chapter-nav"><a href="ch05.html">← 第 5 章 · 记忆插件生态</a><span></span><a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议 →</a></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>

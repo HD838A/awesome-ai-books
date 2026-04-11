@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 2 章 · Agent 核心架构解析 — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html" class="active">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 2 章 · Agent 核心架构解析</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>理解 Hermes Agent 的整体工作流程</li><li>掌握 AIAgent 主循环的三个核心步骤</li><li>了解消息在 Agent 内部的流转过程</li><li>理解上下文管理的基本概念</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>2.1 ⭐ 架构图先行：Hermes Agent 是如何工作的？</h2><br>
+<br>
+让我们先从整体上把握 Hermes Agent 的工作原理。下面是一张简化的工作流程图：<br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐<br>
+│                         用户输入                                  │<br>
+│                    "帮我查一下天气"                                │<br>
+└─────────────────────────┬───────────────────────────────────────┘<br>
+                          │<br>
+                          ▼<br>
+┌─────────────────────────────────────────────────────────────────┐<br>
+│                      AIAgent 主循环                              │<br>
+│  ┌──────────────────────────────────────────────────────────┐   │<br>
+│  │  步骤 1：消息循环 (Message Loop)                          │   │<br>
+│  │  - 加载对话历史                                            │   │<br>
+│  │  - 获取记忆上下文                                          │   │<br>
+│  │  - 组装系统提示词                                          │   │<br>
+│  └────────────────────────┬─────────────────────────────────┘   │<br>
+│                           ▼                                      │<br>
+│  ┌──────────────────────────────────────────────────────────┐   │<br>
+│  │  步骤 2：工具调用 (Tool Invocation)                       │   │<br>
+│  │  - 调用 AI 模型                                            │   │<br>
+│  │  - 判断是否需要使用工具                                      │   │<br>
+│  │  - 执行工具                                                │   │<br>
+│  └────────────────────────┬─────────────────────────────────┘   │<br>
+│                           ▼                                      │<br>
+│  ┌──────────────────────────────────────────────────────────┐   │<br>
+│  │  步骤 3：响应处理 (Response Handling)                     │   │<br>
+│  │  - 整理工具执行结果                                        │   │<br>
+│  │  - 返回最终响应                                            │   │<br>
+│  └──────────────────────────────────────────────────────────┘   │<br>
+└─────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<blockquote><p><strong>💡 提示</strong>：可以把 AIAgent 想成一个餐厅的服务员。它接收顾客（用户）的点单（请求），去厨房（工具系统）准备菜品，然后把做好的菜（响应）端给顾客。如果顾客点了菜单上没有的菜，它可能需要去仓库（记忆系统）查一下，或者去问问经理（子 Agent）。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>2.2 AIAgent 主循环：分解为三个步骤</h2><br>
+<br>
+Hermes Agent 的核心是一个循环结构，我们称之为 <strong>主循环</strong>（Main Loop）。每次用户发送消息，Agent 就会执行一次这个循环。<br>
+<br>
+<h3>2.2.1 步骤一：消息循环（Message Loop）</h3><br>
+<br>
+在调用 AI 模型之前，Agent 需要做好准备工作：<br>
+<br>
+<ul><li><strong>加载对话历史</strong>：从 <code>messages</code> 列表中读取之前的对话</li><li><strong>获取记忆上下文</strong>：从 Memory Manager 那里获取之前存储的信息</li><li><strong>组装系统提示词</strong>：把系统提示词、记忆、Skill 信息等组装在一起</li></ul><br>
+<br>
+<pre><code class="language-python"># run_agent.py - 简化示意<br>
+async def run_conversation(self, user_message, conversation_history=None):<br>
+    messages = list(conversation_history) if conversation_history else []<br>
+    messages.append({"role": "user", "content": user_message})<br>
+    <br>
+    # 获取记忆上下文（ephemeral，不会改变 messages 列表本身）<br>
+    _ext_prefetch_cache = self._memory_manager.prefetch_all(user_message) or ""</code></pre><br>
+<br>
+<strong>关键点</strong>：消息循环不仅仅是"把用户消息加到列表里"，还包括：<br>
+<br>
+<ul><li><strong>上下文压缩</strong>：当对话太长时，压缩历史消息</li><li><strong>记忆注入</strong>：把记忆系统返回的内容插入到上下文中</li><li><strong>插件钩子</strong>：允许插件在调用模型前修改上下文</li></ul><br>
+<br>
+<h3>2.2.2 步骤二：工具调用（Tool Invocation）</h3><br>
+<br>
+这是 Agent 与外界交互的核心环节。流程如下：<br>
+<br>
+<pre><code class="language-python"># 主循环核心代码简化<br>
+while api_call_count &lt; self.max_iterations:<br>
+    api_call_count += 1<br>
+    <br>
+    # 1. 调用 AI 模型<br>
+    response = await self._call_model(api_messages)<br>
+    <br>
+    # 2. 检查是否有工具调用<br>
+    if response.tool_calls:<br>
+        # 3. 执行工具<br>
+        for tool_call in response.tool_calls:<br>
+            tool_result = await handle_function_call(tool_call)<br>
+            messages.append(tool_result)  # 添加工具结果到历史<br>
+        continue  # 继续循环，看看模型是否还有更多工具调用<br>
+    <br>
+    # 4. 没有更多工具调用，返回最终响应<br>
+    return response.content</code></pre><br>
+<br>
+<strong>工具调用的三种情况</strong>：<br>
+<br>
+<tr><td>情况</td><td>说明</td><td>示例</td></tr><br>
+<br>
+<tr><td><strong>直接回答</strong></td><td>模型可以直接回答，不需要工具</td><td>"今天天气怎么样？"→ 直接从记忆中回答</td></tr><br>
+<tr><td><strong>单次工具</strong></td><td>需要调用一个工具</td><td>"帮我搜索最新的 AI 新闻"→ 调用 web_search</td></tr><br>
+<tr><td><strong>多次工具</strong></td><td>需要按顺序调用多个工具</td><td>"帮我写一个 Python 函数，然后运行测试"→ write_file + execute_code</td></tr><br>
+<br>
+<h3>2.2.3 步骤三：响应处理（Response Handling）</h3><br>
+<br>
+当模型说"我完成了"，Agent 需要：<br>
+<br>
+<ul><li><strong>整理响应</strong>：格式化模型输出</li><li><strong>保存轨迹</strong>：记录这次对话的完整过程（用于调试和分析）</li><li><strong>更新记忆</strong>：把重要的信息存入记忆系统</li><li><strong>返回结果</strong>：把最终响应返回给用户</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>2.3 消息流转：User → Agent → Tools → Response</h2><br>
+<br>
+让我们用一个具体的例子来看消息是如何流转的：<br>
+<br>
+<h3>场景：用户让 Agent 搜索天气</h3><br>
+<br>
+<pre><code>用户: "北京今天天气怎么样？"<br>
+<br>
+─────────────────────────────────────────────────────────────<br>
+<br>
+【第 1 轮】<br>
+<br>
+messages = [<br>
+    {"role": "user", "content": "北京今天天气怎么样？"}<br>
+]<br>
+<br>
+↓ 调用模型<br>
+<br>
+模型返回:<br>
+{<br>
+    "content": null,<br>
+    "tool_calls": [<br>
+        {<br>
+            "function": {<br>
+                "name": "web_search",<br>
+                "arguments": '{"query": "北京今天天气"}'<br>
+            }<br>
+        }<br>
+    ]<br>
+}<br>
+<br>
+messages = [<br>
+    {"role": "user", "content": "北京今天天气怎么样？"},<br>
+    {"role": "assistant", "content": null, "tool_calls": [...]}<br>
+]<br>
+<br>
+↓ 执行工具<br>
+<br>
+tool_result = {"role": "tool", "content": "北京今天：晴，25°C，适合外出"}<br>
+<br>
+messages = [<br>
+    {"role": "user", "content": "北京今天天气怎么样？"},<br>
+    {"role": "assistant", "content": null, "tool_calls": [...]},<br>
+    {"role": "tool", "content": "北京今天：晴，25°C，适合外出"}<br>
+]<br>
+<br>
+↓ 再次调用模型<br>
+<br>
+模型返回:<br>
+{<br>
+    "content": "北京今天天气晴朗，气温25°C，非常适合外出活动！☀️"<br>
+}<br>
+<br>
+─────────────────────────────────────────────────────────────<br>
+<br>
+【最终响应】<br>
+"北京今天天气晴朗，气温25°C，非常适合外出活动！☀️"</code></pre><br>
+<br>
+<strong>💡 提示</strong>：你可以把这个过程想象成<strong>餐厅点餐</strong>：<br>
+<ul><li>顾客（用户）点单："我要一份宫保鸡丁"</li><li>服务员（AIAgent）去厨房告诉厨师</li><li>厨师（工具）做好菜</li><li>服务员把菜端回来："您的宫保鸡丁好了！"</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>2.4 模型适配器：支持多种 AI 模型</h2><br>
+<br>
+Hermes Agent 不绑死于某一个 AI 模型。它通过<strong>适配器模式</strong>支持多种模型：<br>
+<br>
+<tr><td>适配器</td><td>支持的模型</td><td>说明</td></tr><br>
+<br>
+<tr><td><code>anthropic_adapter.py</code></td><td>Claude 系列</td><td>原生支持 Claude Messages API</td></tr><br>
+<tr><td><code>openai_adapter.py</code></td><td>GPT-4、GPT-5 等</td><td>OpenAI 兼容接口</td></tr><br>
+<tr><td><code>codex_responses.py</code></td><td>Codex、GPT 模型</td><td>使用 Responses API</td></tr><br>
+<br>
+<h3>Anthropic 适配器的核心功能</h3><br>
+<br>
+<pre><code class="language-python"># agent/anthropic_adapter.py - 核心功能<br>
+class AnthropicAdapter:<br>
+    def __init__(self, api_key, base_url=None):<br>
+        self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url)<br>
+    <br>
+    def call(self, messages, tools=None, model="claude-sonnet-4-20250514"):<br>
+        return self.client.messages.create(<br>
+            model=model,<br>
+            messages=messages,<br>
+            tools=tools,<br>
+            max_tokens=8192  # Claude 需要指定最大 token 数<br>
+        )</code></pre><br>
+<br>
+<strong>适配器的职责</strong>：<br>
+<br>
+<ul><li><strong>格式转换</strong>：把通用格式转换成特定 API 的格式</li><li><strong>认证处理</strong>：处理各种认证方式（API Key、OAuth 等）</li><li><strong>错误处理</strong>：针对不同 API 的错误做适配</li><li><strong>特性支持</strong>：如 Claude 的 thinking、prompt caching 等</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>2.5 上下文管理机制（预告）</h2><br>
+<br>
+Hermes Agent 的上下文管理非常精细，包括：<br>
+<br>
+<ul><li><strong>系统提示词组装</strong>：<code>prompt_builder.py</code></li><li><strong>上下文压缩</strong>：当对话太长时，压缩历史消息</li><li><strong>记忆注入</strong>：把记忆信息插入到上下文</li><li><strong>提示词注入防护</strong>：防止恶意的提示词注入攻击</li></ul><br>
+<br>
+<blockquote><p><strong>⚠️ 注意</strong>：上下文管理是 Hermes Agent 的核心能力之一，但内容较多，我们会在<strong>第 8 章</strong>详细讲解。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>2.6 Agent 身份（Soul）：Soul.md 简介</h2><br>
+<br>
+你有没有想过，为什么同一个 AI 模型，在不同项目里表现得像不同的"人"？<br>
+<br>
+这背后的秘密就是<strong>身份配置</strong>（Soul）。<br>
+<br>
+<h3>Soul 是什么？</h3><br>
+<br>
+<strong>Soul</strong> 是定义 Agent 身份和性格的配置文件，通常命名为 <code>SOUL.md</code> 或 <code>soul.md</code>。<br>
+<br>
+<pre><code class="language-markdown"># soul.md 示例<br>
+<br>
+<h2>身份设定</h2><br>
+你叫小明，是一个热情、幽默的编程助手。<br>
+你喜欢用生动的比喻来解释技术概念。<br>
+<br>
+<h2>语言风格</h2><br>
+<ul><li>喜欢用"咱们"、"咱们一起"</li><li>遇到问题时会说"别慌，这个很好解决"</li><li>代码写得好时会夸"写得真漂亮！"</li></ul><br>
+<br>
+<h2>专业领域</h2><br>
+<ul><li>Python 编程</li><li>Web 开发</li><li>AI 应用</code></pre></li></ul><br>
+<br>
+<h3>Soul 如何工作？</h3><br>
+<br>
+<pre><code class="language-python"># agent/prompt_builder.py<br>
+def load_soul_md(cwd):<br>
+    """加载 SOUL.md 文件"""<br>
+    soul_path = cwd / "SOUL.md"<br>
+    if soul_path.exists():<br>
+        return soul_path.read_text()<br>
+    return ""<br>
+<br>
+def build_system_prompt():<br>
+    soul = load_soul_md(cwd)<br>
+    # 把 Soul 内容注入到系统提示词中<br>
+    return f"{DEFAULT_IDENTITY}\n\n{soul}\n\n{MEMORY_GUIDANCE}"</code></pre><br>
+<br>
+<blockquote><p><strong>💡 提示</strong>：Soul 就像给 Agent "注入灵魂"。同一个模型，加上不同的 Soul，就会表现出完全不同的性格。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>2.7 异步编程基础预告</h2><br>
+<br>
+细心的你可能注意到了，在代码中有很多 <code>async</code> 和 <code>await</code>。这是 Python 的<strong>异步编程</strong>特性。<br>
+<br>
+<h3>为什么需要异步？</h3><br>
+<br>
+想象一下：<br>
+<br>
+<blockquote><p><strong>同步</strong>：你去银行办业务，必须站在窗口前等业务员处理完，哪怕他只是在电脑上查个东西，你也得干等着。</p></blockquote><br>
+><br>
+<blockquote><p><strong>异步</strong>：你去银行办业务，业务员说"您稍等，我查一下"，然后去忙别的。你在等候区可以刷手机、喝水。查到结果后，业务员会叫你。</p></blockquote><br>
+<br>
+异步编程让 Agent 在等待 AI 模型响应或执行工具时，可以做其他事情，从而大大提高效率。<br>
+<br>
+<pre><code class="language-python"># 同步版本（假想）<br>
+def run():<br>
+    response = call_api()  # 这行会阻塞 2-3 秒<br>
+    print(response)<br>
+<br>
+<h1>异步版本（实际使用）</h1><br>
+async def run():<br>
+    response = await call_api()  # 这行会等待，但不阻塞其他代码<br>
+    print(response)</code></pre><br>
+<br>
+<blockquote><p><strong>💡 提示</strong>：你不需要成为异步专家才能使用 Hermes Agent。但如果你想深入理解它的内部机制，建议学习 Python 的 <code>asyncio</code> 库。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li><strong>AIAgent 主循环</strong>分为三个步骤：消息循环 → 工具调用 → 响应处理</li><li><strong>消息流转</strong>：用户消息 → 模型调用 → 工具执行 → 模型再次调用 → 最终响应</li><li><strong>适配器模式</strong>：通过适配器支持多种 AI 模型（Claude、GPT 等）</li><li><strong>Soul（灵魂）</strong>：通过 SOUL.md 文件定义 Agent 的身份和性格</li><li><strong>上下文管理</strong>：包括提示词组装、记忆注入、上下文压缩等复杂机制</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>如果模型在一次响应中返回了两个工具调用，Agent 会怎么处理？</li><li>为什么需要"上下文压缩"？什么时候会触发压缩？</li><li>如果你想让 Agent 表现得像一个"严肃的学术助手"，你会如何在 SOUL.md 中定义？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>Agent 主循环：<code>run_agent.py</code>（核心类 <code>AIAgent</code>）</li><li>消息循环逻辑：<code>run_agent.py</code> 中的 <code>run_conversation()</code> 方法</li><li>模型适配器：<code>agent/anthropic_adapter.py</code></li><li>提示词构建：<code>agent/prompt_builder.py</code></li><li>上下文压缩：<code>agent/context_compressor.py</code></li></ul><br>
+
+<div class="chapter-nav"><a href="ch01.html">← 第 1 章 · 初识 Hermes Agent</a><span></span><a href="ch03.html">第 3 章 · 工具系统与函数调用 →</a></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>

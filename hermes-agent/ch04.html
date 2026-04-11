@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 4 章 · 记忆系统入门 — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html" class="active">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 4 章 · 记忆系统入门</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>理解 Hermes Agent 的<strong>记忆双层架构</strong></li><li>掌握内置记忆系统（MEMORY.md / USER.md）的工作原理</li><li>了解为什么 Agent 需要"记忆"</li><li>学会使用 <code>memory</code> 工具管理记忆内容</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>4.1 为什么 Agent 需要记忆？</h2><br>
+<br>
+<h3>4.1.1 没有记忆的 Agent</h3><br>
+<br>
+想象一个没有记忆的客服：<br>
+<br>
+<pre><code>用户：你好，我姓李<br>
+Agent：你好，李先生！<br>
+<br>
+用户：我的订单号是 12345，什么时候发货？<br>
+Agent：好的，请问您的订单号是？<br>
+<br>
+用户：...我刚才说了啊，12345<br>
+Agent：抱歉，我没有之前的对话记录。</code></pre><br>
+<br>
+这显然是不可接受的用户体验。<br>
+<br>
+<h3>4.1.2 Hermes Agent 的记忆方案</h3><br>
+<br>
+Hermes Agent 采用了<strong>文件持久化 + 快照注入</strong>的记忆方案：<br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────┐<br>
+│                    记忆双层架构                             │<br>
+├─────────────────────────────────────────────────────────────┤<br>
+│                                                             │<br>
+│  【持久层】文件存储（磁盘）                                   │<br>
+│  ┌─────────────┐    ┌─────────────┐                        │<br>
+│  │  MEMORY.md  │    │   USER.md   │                        │<br>
+│  │  Agent 自知  │    │  用户画像   │                        │<br>
+│  └─────────────┘    └─────────────┘                        │<br>
+│                                                             │<br>
+│         │ 读取              │ 写入                          │<br>
+│         ▼                   ▼                               │<br>
+│  【快照层】系统提示注入（会话开始时）                          │<br>
+│  ┌─────────────────────────────────────────┐               │<br>
+│  │ [Memory]                                │               │<br>
+│  │ § 环境事实、工具习惯、项目约定...        │               │<br>
+│  │                                         │               │<br>
+│  │ [User]                                  │               │<br>
+│  │ § 用户偏好、沟通风格、工作习惯...        │               │<br>
+│  └─────────────────────────────────────────┘               │<br>
+└─────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<h3>4.1.3 两种记忆文件</h3><br>
+<br>
+<tr><td>文件</td><td>内容</td><td>示例</td></tr><br>
+<br>
+<tr><td><strong>MEMORY.md</strong></td><td>Agent 对环境的认知</td><td>"这个项目使用 Python 3.11"，"工具 X 有个 bug 需要绕过"</td></tr><br>
+<tr><td><strong>USER.md</strong></td><td>Agent 对用户的认知</td><td>"用户喜欢简洁的回答"，"用户叫李明，在北京工作"</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>4.2 MemoryStore 核心机制</h2><br>
+<br>
+<h3>4.2.1 文件结构</h3><br>
+<br>
+记忆文件使用 <code>§</code> 作为条目分隔符：<br>
+<br>
+<pre><code class="language-markdown"># MEMORY.md<br>
+<br>
+§ 项目使用 FastAPI 框架<br>
+§ 数据库连接需要先启动 PostgreSQL<br>
+§ API 路由在 app/api/ 目录下<br>
+<br>
+§ 用户配置在 config.yaml<br>
+§ 常用测试命令：pytest tests/</code></pre><br>
+<br>
+<h3>4.2.2 双状态设计</h3><br>
+<br>
+<code>MemoryStore</code> 维护两组状态：<br>
+<br>
+<pre><code class="language-python">class MemoryStore:<br>
+    """记忆存储（简化版）"""<br>
+    <br>
+    def __init__(self):<br>
+        # 【快照层】系统提示专用，Session 期间不改变<br>
+        self._system_prompt_snapshot: Dict[str, str] = {<br>
+            "memory": "",  # Session 开始时固定<br>
+            "user": ""<br>
+        }<br>
+        <br>
+        # 【实时层】工具操作时更新<br>
+        self.memory_entries: List[str] = []<br>
+        self.user_entries: List[str] = []</code></pre><br>
+<br>
+<blockquote><p><strong>💡 关键设计</strong>：快照层在 Session 期间<strong>永不改变</strong>。这是因为 AI 模型的上下文有"前缀缓存"机制，固定的前缀可以让缓存命中，显著提升性能。</p></blockquote><br>
+<br>
+<h3>4.2.3 加载与写入流程</h3><br>
+<br>
+<pre><code class="language-python"># 会话开始时：加载文件 → 生成快照<br>
+def load_from_disk(self):<br>
+    self.memory_entries = self._read_file("MEMORY.md")<br>
+    self.user_entries = self._read_file("USER.md")<br>
+    <br>
+    # 生成快照，后续只读不写<br>
+    self._system_prompt_snapshot = {<br>
+        "memory": self._render_block("memory", self.memory_entries),<br>
+        "user": self._render_block("user", self.user_entries),<br>
+    }<br>
+<br>
+<h1>会话中：工具写入 → 立即持久化</h1><br>
+def add(self, target: str, content: str):<br>
+    self.memory_entries.append(content)<br>
+    self.save_to_disk(target)  # 立即写入磁盘</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>4.3 记忆工具使用</h2><br>
+<br>
+<h3>4.3.1 memory 工具概览</h3><br>
+<br>
+<code>memory</code> 工具支持三种操作：<br>
+<br>
+<tr><td>操作</td><td>作用</td><td>示例</td></tr><br>
+<br>
+<tr><td><code>add</code></td><td>添加新记忆</td><td><code>{"target": "memory", "action": "add", "content": "..."}</code></td></tr><br>
+<tr><td><code>replace</code></td><td>替换已有记忆</td><td><code>{"target": "memory", "action": "replace", "old_text": "旧内容", "content": "新内容"}</code></td></tr><br>
+<tr><td><code>remove</code></td><td>删除记忆</td><td><code>{"target": "memory", "action": "remove", "old_text": "..."}</code></td></tr><br>
+<br>
+<h3>4.3.2 添加记忆</h3><br>
+<br>
+<pre><code class="language-python"># 语法<br>
+memory(<br>
+    target: str,      # "memory" | "user"<br>
+    action: str = "add",<br>
+    content: str = "" # 新记忆内容<br>
+)</code></pre><br>
+<br>
+<strong>示例场景</strong>：<br>
+<br>
+<pre><code>用户：以后遇到 Python asyncio 的问题，优先用 asyncpg 而不是 aiopg<br>
+<br>
+Agent（自动调用 memory 工具）：<br>
+┌──────────────────────────────────────┐<br>
+│ memory(                              │<br>
+│   target="memory",                   │<br>
+│   action="add",                     │<br>
+│   content="优先使用 asyncpg 而非     │<br>
+│   aiopg 处理 PostgreSQL 异步操作"     │<br>
+│ )                                    │<br>
+└──────────────────────────────────────┘</code></pre><br>
+<br>
+<h3>4.3.3 替换与删除</h3><br>
+<br>
+<pre><code class="language-python"># 替换：使用唯一子串匹配<br>
+memory(<br>
+    target="memory",<br>
+    action="replace",<br>
+    old_text="旧的事实",      # 只要能被唯一匹配的子串即可<br>
+    content="新的事实"<br>
+)<br>
+<br>
+<h1>删除：同样使用子串匹配</h1><br>
+memory(<br>
+    target="user",<br>
+    action="remove",<br>
+    old_text="不需要的记忆"<br>
+)</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>4.4 字符限制与安全</h2><br>
+<br>
+<h3>4.4.1 为什么需要字符限制？</h3><br>
+<br>
+记忆内容会被注入到<strong>系统提示</strong>中。系统提示的大小直接影响：<br>
+<br>
+<ul><li>AI 模型的上下文窗口占用</li><li>API 调用的 token 消耗</li><li>响应速度</li></ul><br>
+<br>
+Hermes Agent 为两种记忆设置了硬性限制：<br>
+<br>
+<tr><td>存储</td><td>默认限制</td><td>说明</td></tr><br>
+<br>
+<tr><td>MEMORY.md</td><td>2,200 字符</td><td>Agent 对环境的认知</td></tr><br>
+<tr><td>USER.md</td><td>1,375 字符</td><td>Agent 对用户的认知</td></tr><br>
+<br>
+<blockquote><p><strong>⚠️ 注意</strong>：这是<strong>字符数</strong>而非 token 数。因为不同模型的 tokenization 方式不同，使用字符数更公平。</p></blockquote><br>
+<br>
+<h3>4.4.2 超出限制怎么办？</h3><br>
+<br>
+当添加新记忆会超出限制时，Agent 需要<strong>清理旧记忆</strong>：<br>
+<br>
+<pre><code>用户：记一下 ABC 公司成立于 2015 年<br>
+<br>
+Agent：<br>
+┌─────────────────────────────────────────────────────────┐<br>
+│ ⚠️ 记忆存储已接近上限（2180/2200 字符）                  │<br>
+│                                                         │<br>
+│ 需要先清理一些过时记忆才能添加新内容。                    │<br>
+│                                                         │<br>
+│ 当前记忆：                                              │<br>
+│ 1. 项目使用 FastAPI 框架                                │<br>
+│ 2. 数据库连接需要先启动 PostgreSQL                       │<br>
+│ 3. API 路由在 app/api/ 目录下                           │<br>
+│ 4. 用户配置在 config.yaml                                │<br>
+│ 5. 常用测试命令：pytest tests/                           │<br>
+│ ...                                                     │<br>
+└─────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<h3>4.4.3 注入安全防护</h3><br>
+<br>
+记忆内容最终会被注入到系统提示中，这带来了<strong>提示注入攻击</strong>的风险。Hermes Agent 做了以下防护：<br>
+<br>
+<pre><code class="language-python"># memory_tool.py 中的威胁扫描<br>
+_MEMORY_THREAT_PATTERNS = [<br>
+    # 提示注入<br>
+    r'ignore\s+(previous|all|above|prior)\s+instructions',<br>
+    r'you\s+are\s+now\s+',<br>
+    r'do\s+not\s+tell\s+the\s+user',<br>
+    # 敏感数据外泄<br>
+    r'curl\s+[^\n]*\$\{?\w*(KEY|TOKEN|SECRET',<br>
+    r'wget\s+[^\n]*\$\{?\w*(KEY|TOKEN|SECRET',<br>
+    # SSH 后门<br>
+    r'authorized_keys',<br>
+]<br>
+<br>
+<h1>不可见字符检测（防止隐藏注入）</h1><br>
+_INVISIBLE_CHARS = {'\u200b', '\u200c', '\u200d', '\ufeff', ...}</code></pre><br>
+<br>
+<blockquote><p><strong>💡 提示</strong>：如果用户试图通过 <code>memory</code> 工具注入恶意内容，系统会直接拒绝。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>4.5 记忆的"生前"与"死后"</h2><br>
+<br>
+<h3>4.5.1 会话生命周期</h3><br>
+<br>
+<pre><code>┌────────────────────────────────────────────────────────────────┐<br>
+│                      会话生命周期                                │<br>
+├────────────────────────────────────────────────────────────────┤<br>
+│                                                                │<br>
+│  【会话开始】                                                    │<br>
+│  │                                                              │<br>
+│  ├─→ 读取 MEMORY.md ──→ 生成快照                                │<br>
+│  ├─→ 读取 USER.md ───→ 生成快照                                 │<br>
+│  │                                                              │<br>
+│  │  ↓                                                            │<br>
+│  │  系统提示 = 基础提示 + 记忆快照                                │<br>
+│  │                                                              │<br>
+│  ├─→ 用户消息 ──→ AI 响应 ──→ 记忆同步（可选）                    │<br>
+│  ├─→ 用户消息 ──→ AI 响应 ──→ 记忆同步（可选）                    │<br>
+│  ├─→ ...                                                        │<br>
+│  │                                                              │<br>
+│  【会话结束】                                                    │<br>
+│  │                                                              │<br>
+│  └─→ 文件中的记忆持久化保存（会话间共享）                         │<br>
+│                                                                │<br>
+└────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<h3>4.5.2 对比：记忆 vs 上下文</h3><br>
+<br>
+<tr><td>维度</td><td>记忆（Memory）</td><td>上下文（Context）</td></tr><br>
+<br>
+<tr><td>存储位置</td><td>磁盘文件</td><td>模型上下文窗口</td></tr><br>
+<tr><td>生命周期</td><td>永久（会话间共享）</td><td>单次会话</td></tr><br>
+<tr><td>内容来源</td><td>Agent 主动写入</td><td>自动包含对话历史</td></tr><br>
+<tr><td>大小限制</td><td>字符限制</td><td>token 限制</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>4.6 实践：让 Agent 记住你的偏好</h2><br>
+<br>
+<h3>4.6.1 场景</h3><br>
+<br>
+你希望 Agent：<br>
+<br>
+<ul><li>叫你"老板"而不是"先生/女士"</li><li>回答尽量简洁</li><li>代码示例使用中文注释</li></ul><br>
+<br>
+<h3>4.6.2 操作步骤</h3><br>
+<br>
+<strong>方法一：直接告诉 Agent</strong><br>
+<br>
+<pre><code>用户：请记住我的偏好：<br>
+<ul><li>叫我"老板"</li><li>回答要简洁</li><li>代码注释用中文</li></ul><br>
+<br>
+Agent：好的，老板！我已经记住了：<br>
+<ul><li>称呼：老板</li><li>风格：简洁</li><li>注释：中文</li></ul><br>
+<br>
+（Agent 会自动调用 memory 工具写入 USER.md）</code></pre><br>
+<br>
+<strong>方法二：手动编辑 USER.md</strong><br>
+<br>
+<pre><code class="language-bash"># 直接编辑记忆文件<br>
+$ vim ~/.hermes/memories/USER.md<br>
+<br>
+<h1>内容示例</h1><br>
+§ 用户称呼：老板<br>
+§ 回答风格：简洁明了，不废话<br>
+§ 代码注释：使用中文<br>
+§ 技术栈：Python + React</code></pre><br>
+<br>
+<h3>4.6.3 验证</h3><br>
+<br>
+开启新会话后：<br>
+<br>
+<pre><code>用户：你好<br>
+<br>
+Agent：老板好！有什么需要我帮忙的？</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li>Hermes Agent 使用<strong>文件持久化</strong>方案，记忆存储在 <code>MEMORY.md</code> 和 <code>USER.md</code></li><li><strong>双状态设计</strong>：快照层用于系统提示（固定），实时层用于工具操作</li><li><code>memory</code> 工具支持 <code>add</code>、<code>replace</code>、<code>remove</code> 三种操作</li><li>字符限制防止记忆膨胀（MEMORY.md: 2200，USER.md: 1375）</li><li>内置注入防护，阻止恶意内容混入系统提示</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>为什么 Session 期间要保持快照不变？改变会有什么后果？</li><li>如果你需要在多个 Agent 之间共享"项目知识"，内置记忆系统能满足吗？</li><li>记忆的字符限制如果设置得太小，会发生什么问题？太大呢？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>记忆存储实现：<code>tools/memory_tool.py</code></li><li>记忆管理器：<code>agent/memory_manager.py</code></li><li>记忆提供者接口：<code>agent/memory_provider.py</code></li><li>配置文件位置：<code>~/.hermes/memories/MEMORY.md</code> 和 <code>USER.md</code></li></ul><br>
+
+<div class="chapter-nav"><a href="ch03.html">← 第 3 章 · 工具系统与函数调用</a><span></span><a href="ch05.html">第 5 章 · 记忆插件生态 →</a></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>

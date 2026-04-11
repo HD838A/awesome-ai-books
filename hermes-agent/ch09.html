@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 9 章 · 轨迹监控与 Event Hooks — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html" class="active">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 9 章 · 轨迹追踪与监控</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>理解 <strong>轨迹（Trajectory）</strong> 的概念和格式</li><li>掌握 <strong>Event Hooks</strong> 的使用方法</li><li>学会构建<strong>自定义监控和日志系统</strong></li><li>了解 <strong>调试和追踪</strong>的最佳实践</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>9.1 什么是轨迹？</h2><br>
+<br>
+<h3>9.1.1 定义</h3><br>
+<br>
+<strong>轨迹（Trajectory）</strong> 是 Agent 执行过程的结构化记录，类似于飞机黑匣子：<br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐<br>
+│                      Agent 轨迹示例                              │<br>
+├─────────────────────────────────────────────────────────────────┤<br>
+│                                                                 │<br>
+│  {                                                             │<br>
+│    "task_id": "abc123",                                        │<br>
+│    "turns": [                                                  │<br>
+│      {                                                        │<br>
+│        "turn_number": 1,                                       │<br>
+│        "user_message": "帮我写一个 hello world",               │<br>
+│        "assistant_response": "好的，这是 Python 代码：...",      │<br>
+│        "tools_used": ["write_file"],                           │<br>
+│        "tokens_used": 1500                                     │<br>
+│      },                                                        │<br>
+│      {                                                        │<br>
+│        "turn_number": 2,                                       │<br>
+│        "user_message": "运行一下",                             │<br>
+│        "assistant_response": "运行结果：Hello, World!",         │<br>
+│        "tools_used": ["terminal"],                            │<br>
+│        "tokens_used": 800                                      │<br>
+│      }                                                        │<br>
+│    ]                                                          │<br>
+│  }                                                            │<br>
+│                                                                 │<br>
+└─────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<h3>9.1.2 轨迹的作用</h3><br>
+<br>
+<tr><td>用途</td><td>说明</td></tr><br>
+<br>
+<tr><td><strong>调试</strong></td><td>复现问题，分析 Agent 决策</td></tr><br>
+<tr><td><strong>优化</strong></td><td>发现 Token 消耗瓶颈</td></tr><br>
+<tr><td><strong>审计</strong></td><td>记录 Agent 的所有操作</td></tr><br>
+<tr><td><strong>学习</strong></td><td>收集高质量轨迹用于训练</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>9.2 Event Hooks 概览</h2><br>
+<br>
+<h3>9.2.1 两套 Hook 系统</h3><br>
+<br>
+<tr><td>系统</td><td>注册方式</td><td>运行环境</td></tr><br>
+<br>
+<tr><td><strong>Gateway Hooks</strong></td><td><code>~/.hermes/hooks/</code> 目录</td><td>仅 Gateway</td></tr><br>
+<tr><td><strong>Plugin Hooks</strong></td><td><code>ctx.register_hook()</code></td><td>CLI + Gateway</td></tr><br>
+<br>
+<h3>9.2.2 Hook 目录结构</h3><br>
+<br>
+<pre><code>~/.hermes/<br>
+├── hooks/<br>
+│   └── my-hook/           # 自定义 Hook<br>
+│       ├── HOOK.yaml      # 配置文件<br>
+│       └── handler.py     # 处理函数<br>
+└── BOOT.md               # 启动检查清单</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>9.3 Gateway Event Hooks</h2><br>
+<br>
+<h3>9.3.1 HOOK.yaml 格式</h3><br>
+<br>
+<pre><code class="language-yaml">name: my-logger<br>
+description: "记录所有 Agent 活动"<br>
+events:<br>
+  - agent:start      # Agent 开始处理<br>
+  - agent:step      # 每个工具调用<br>
+  - agent:end       # Agent 结束处理<br>
+  - session:start   # 会话开始<br>
+  - session:end     # 会话结束</code></pre><br>
+<br>
+<h3>9.3.2 handler.py 实现</h3><br>
+<br>
+<pre><code class="language-python">import json<br>
+from datetime import datetime<br>
+from pathlib import Path<br>
+<br>
+LOG_FILE = Path.home() / ".hermes" / "activity.log"<br>
+<br>
+async def handle(event_type: str, context: dict):<br>
+    """处理每个事件"""<br>
+    entry = {<br>
+        "timestamp": datetime.now().isoformat(),<br>
+        "event": event_type,<br>
+        **context<br>
+    }<br>
+    <br>
+    with open(LOG_FILE, "a") as f:<br>
+        f.write(json.dumps(entry) + "\n")</code></pre><br>
+<br>
+<h3>9.3.3 可用事件</h3><br>
+<br>
+<tr><td>事件</td><td>触发时机</td><td>上下文键</td></tr><br>
+<br>
+<tr><td><code>gateway:startup</code></td><td>Gateway 进程启动</td><td><code>platforms</code></td></tr><br>
+<tr><td><code>session:start</code></td><td>新会话创建</td><td><code>platform</code>, <code>user_id</code>, <code>session_id</code></td></tr><br>
+<tr><td><code>session:end</code></td><td>会话结束</td><td><code>platform</code>, <code>user_id</code></td></tr><br>
+<tr><td><code>session:reset</code></td><td>用户执行 <code>/new</code></td><td><code>platform</code>, <code>user_id</code></td></tr><br>
+<tr><td><code>agent:start</code></td><td>Agent 开始处理消息</td><td><code>platform</code>, <code>user_id</code>, <code>message</code></td></tr><br>
+<tr><td><code>agent:step</code></td><td>每个工具调用循环</td><td><code>platform</code>, <code>user_id</code>, <code>iteration</code>, <code>tool_names</code></td></tr><br>
+<tr><td><code>agent:end</code></td><td>Agent 完成处理</td><td><code>platform</code>, <code>user_id</code>, <code>response</code></td></tr><br>
+<tr><td><code>command:*</code></td><td>任意命令执行</td><td><code>command</code>, <code>args</code></td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>9.4 实战：构建日志系统</h2><br>
+<br>
+<h3>9.4.1 场景</h3><br>
+<br>
+构建一个记录所有 Agent 活动的日志系统：<br>
+<br>
+<pre><code>用户: 请帮我写一个 Python 脚本<br>
+     ↓<br>
+Agent: 开始处理<br>
+     ↓<br>
+Hook: 记录 agent:start 事件<br>
+     ↓<br>
+Agent: 调用 write_file 工具<br>
+     ↓<br>
+Hook: 记录 agent:step 事件<br>
+     ↓<br>
+Agent: 完成<br>
+     ↓<br>
+Hook: 记录 agent:end 事件</code></pre><br>
+<br>
+<h3>9.4.2 实现</h3><br>
+<br>
+<strong>Step 1：创建 Hook 目录</strong><br>
+<br>
+<pre><code class="language-bash">mkdir -p ~/.hermes/hooks/activity-logger</code></pre><br>
+<br>
+<strong>Step 2：创建 HOOK.yaml</strong><br>
+<br>
+<pre><code class="language-yaml">name: activity-logger<br>
+description: "记录所有 Agent 活动到日志文件"<br>
+events:<br>
+  - agent:start<br>
+  - agent:step<br>
+  - agent:end<br>
+  - session:start<br>
+  - session:end</code></pre><br>
+<br>
+<strong>Step 3：创建 handler.py</strong><br>
+<br>
+<pre><code class="language-python">import json<br>
+from datetime import datetime<br>
+from pathlib import Path<br>
+from typing import Any<br>
+<br>
+LOG_DIR = Path.home() / ".hermes" / "logs"<br>
+ACTIVITY_LOG = LOG_DIR / "activity.jsonl"<br>
+<br>
+class ActivityLogger:<br>
+    def __init__(self):<br>
+        LOG_DIR.mkdir(parents=True, exist_ok=True)<br>
+        self.session_start: dict = {}<br>
+    <br>
+    def log(self, event: str, context: dict):<br>
+        entry = {<br>
+            "timestamp": datetime.now().isoformat(),<br>
+            "event": event,<br>
+            **context<br>
+        }<br>
+        with open(ACTIVITY_LOG, "a") as f:<br>
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")<br>
+<br>
+_logger = ActivityLogger()<br>
+<br>
+async def handle(event_type: str, context: dict):<br>
+    _logger.log(event_type, context)<br>
+<br>
+def handle(event_type: str, context: dict):<br>
+    _logger.log(event_type, context)</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>9.5 实战：构建告警系统</h2><br>
+<br>
+<h3>9.5.1 场景</h3><br>
+<br>
+当 Agent 执行敏感操作时，发送告警通知：<br>
+<br>
+<pre><code>敏感操作包括：<br>
+<ul><li>删除文件</li><li>执行 rm 命令</li><li>修改配置</code></pre></li></ul><br>
+<br>
+<h3>9.5.2 实现</h3><br>
+<br>
+<strong>Step 1：创建 Hook 目录</strong><br>
+<br>
+<pre><code class="language-bash">mkdir -p ~/.hermes/hooks/security-alert</code></pre><br>
+<br>
+<strong>Step 2：创建 HOOK.yaml</strong><br>
+<br>
+<pre><code class="language-yaml">name: security-alert<br>
+description: "敏感操作告警"<br>
+events:<br>
+  - agent:step</code></pre><br>
+<br>
+<strong>Step 3：创建 handler.py</strong><br>
+<br>
+<pre><code class="language-python">import json<br>
+import os<br>
+from datetime import datetime<br>
+from pathlib import Path<br>
+<br>
+WEBHOOK_URL = os.getenv("ALERT_WEBHOOK_URL")<br>
+SENSITIVE_PATTERNS = [<br>
+    "rm -rf",<br>
+    "delete_file",<br>
+    "remove_file",<br>
+    "sudo",<br>
+    "chmod 777",<br>
+]<br>
+<br>
+async def handle(event_type: str, context: dict):<br>
+    tool_names = context.get("tool_names", [])<br>
+    <br>
+    for tool in tool_names:<br>
+        for pattern in SENSITIVE_PATTERNS:<br>
+            if pattern.lower() in tool.lower():<br>
+                await send_alert(context)<br>
+                break<br>
+<br>
+async def send_alert(context: dict):<br>
+    if not WEBHOOK_URL:<br>
+        return<br>
+    <br>
+    payload = {<br>
+        "text": f"⚠️ 敏感操作检测",<br>
+        "blocks": [<br>
+            {<br>
+                "type": "section",<br>
+                "text": {<br>
+                    "type": "mrkdwn",<br>
+                    "text": f"*敏感操作告警*\n\n工具：<code>{context.get('tool_names')}</code>"<br>
+                }<br>
+            }<br>
+        ]<br>
+    }<br>
+    # 发送 webhook 请求<br>
+    import httpx<br>
+    async with httpx.AsyncClient() as client:<br>
+        await client.post(WEBHOOK_URL, json=payload)</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>9.6 实战：启动检查清单</h2><br>
+<br>
+<h3>9.6.1 场景</h3><br>
+<br>
+在 Agent 启动时自动执行检查清单：<br>
+<br>
+<pre><code>启动检查：<br>
+<ul><li>检查 cron jobs 是否失败</li><li>检查内存使用情况</li><li>检查网络连接</code></pre></li></ul><br>
+<br>
+<h3>9.6.2 实现</h3><br>
+<br>
+<strong>创建 BOOT.md</strong><br>
+<br>
+<pre><code class="language-markdown"># Hermes Agent 启动检查清单<br>
+<br>
+<h2>1. Cron 任务状态</h2><br>
+检查是否有 cron 任务失败：</code></pre>bash<br>
+hermes cron list<br>
+<pre><code>## 2. 内存使用<br>
+检查当前内存使用情况：</code></pre>bash<br>
+free -h<br>
+<pre><code>## 3. 网络连接<br>
+测试关键服务是否可达：</code></pre>bash<br>
+<h1>测试 API 连接</h1><br>
+curl -s --max-time 5 https://api.anthropic.com/health || echo "API 连接失败"<br>
+<br>
+<h1>测试网络连通性</h1><br>
+ping -c 1 8.8.8.8 || echo "网络连接异常"<br>
+<pre><code>## 4. 待处理任务<br>
+检查是否有待处理的任务或提醒。<br>
+<br>
+<h2>5. 环境变量</h2><br>
+确认关键环境变量已设置：<br>
+<ul><li>ANTHROPIC_API_KEY</li><li>HONCHO_API_KEY</li></ul><br>
+<br>
+如果任何检查失败，请在回复中说明。</code></pre><br>
+<br>
+<blockquote><p><strong>💡 提示</strong>：<code>BOOT.md</code> 是 Hermes 内置的启动检查功能，不需要额外配置。只要在 <code>~/.hermes/</code> 目录创建这个文件，每次 Gateway 启动时都会自动执行。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>9.7 轨迹格式规范</h2><br>
+<br>
+<h3>9.7.1 标准轨迹 JSON</h3><br>
+<br>
+<pre><code class="language-json">{<br>
+  "version": "1.0",<br>
+  "task_id": "abc123",<br>
+  "agent_id": "hermes-primary",<br>
+  "started_at": "2025-01-15T10:30:00Z",<br>
+  "ended_at": "2025-01-15T10:35:00Z",<br>
+  "duration_seconds": 300,<br>
+  "turns": [<br>
+    {<br>
+      "turn_number": 1,<br>
+      "user_message": "帮我分析这段代码",<br>
+      "assistant_response": "好的，让我先看一下代码...",<br>
+      "tool_calls": [<br>
+        {<br>
+          "tool": "read_file",<br>
+          "args": {"path": "src/main.py"},<br>
+          "result": "文件内容...",<br>
+          "duration_ms": 150<br>
+        }<br>
+      ],<br>
+      "tokens_used": 1500,<br>
+      "error": null<br>
+    }<br>
+  ],<br>
+  "metadata": {<br>
+    "model": "claude-sonnet-4",<br>
+    "platform": "cli"<br>
+  }<br>
+}</code></pre><br>
+<br>
+<h3>9.7.2 字段说明</h3><br>
+<br>
+<tr><td>字段</td><td>类型</td><td>说明</td></tr><br>
+<br>
+<tr><td><code>task_id</code></td><td>string</td><td>唯一任务标识</td></tr><br>
+<tr><td><code>turns</code></td><td>array</td><td>所有对话轮次</td></tr><br>
+<tr><td><code>tokens_used</code></td><td>number</td><td>Token 消耗</td></tr><br>
+<tr><td><code>duration_ms</code></td><td>number</td><td>耗时（毫秒）</td></tr><br>
+<tr><td><code>error</code></td><td>string/null</td><td>错误信息</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>9.8 调试技巧</h2><br>
+<br>
+<h3>9.8.1 查看最近日志</h3><br>
+<br>
+<pre><code class="language-bash"># 查看最后 50 条活动<br>
+tail -n 50 ~/.hermes/logs/activity.jsonl | jq<br>
+<br>
+<h1>实时监控</h1><br>
+tail -f ~/.hermes/logs/activity.jsonl | jq</code></pre><br>
+<br>
+<h3>9.8.2 分析 Token 消耗</h3><br>
+<br>
+<pre><code class="language-python">import json<br>
+<br>
+with open("~/.hermes/logs/activity.jsonl") as f:<br>
+    total_tokens = 0<br>
+    for line in f:<br>
+        entry = json.loads(line)<br>
+        if "tokens_used" in entry:<br>
+            total_tokens += entry["tokens_used"]<br>
+<br>
+print(f"总 Token 消耗: {total_tokens}")</code></pre><br>
+<br>
+<h3>9.8.3 统计工具使用</h3><br>
+<br>
+<pre><code class="language-python">from collections import Counter<br>
+<br>
+with open("~/.hermes/logs/activity.jsonl") as f:<br>
+    tools = Counter()<br>
+    for line in f:<br>
+        entry = json.loads(line)<br>
+        for tool in entry.get("tool_names", []):<br>
+            tools[tool] += 1<br>
+<br>
+print(tools.most_common(10))</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li><strong>轨迹（Trajectory）</strong> 是 Agent 执行过程的完整记录</li><li><strong>Event Hooks</strong> 允许在关键生命周期点执行自定义代码</li><li><strong>Gateway Hooks</strong> 通过 <code>~/.hermes/hooks/</code> 目录注册</li><li>可用事件包括：<code>agent:start/step/end</code>、<code>session:start/end</code>、命令执行等</li><li><strong>BOOT.md</strong> 是内置的启动检查功能，无需额外配置</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>如何用 Hooks 构建一个"每次会话自动总结"的功能？</li><li>如果你需要记录 Agent 修改的所有文件，你会监听哪个事件？</li><li>轨迹记录和用户隐私如何平衡？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>Event Hooks 文档：<code>website/docs/user-guide/features/hooks.md</code></li><li>轨迹格式文档：<code>website/docs/developer-guide/trajectory-format.md</code></li><li>Hook 目录：<code>~/.hermes/hooks/</code></li><li>启动检查：<code>BOOT.md</code></li></ul><br>
+
+<div class="chapter-nav"><a href="ch08.html">← 第 8 章 · 上下文工程与 Soul.md</a><span></span><a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统 →</a></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>

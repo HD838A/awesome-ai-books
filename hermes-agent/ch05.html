@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 5 章 · 记忆插件生态 — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html" class="active">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 5 章 · 记忆插件生态</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>理解 <strong>MemoryProvider 接口</strong>的设计理念</li><li>了解 Hermes Agent 的 8 个记忆插件及其适用场景</li><li>掌握如何选择合适的记忆插件</li><li>学会安装和配置记忆插件</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>5.1 为什么需要记忆插件？</h2><br>
+<br>
+<h3>5.1.1 内置记忆的局限</h3><br>
+<br>
+在第 4 章中，我们学习了 Hermes Agent 的内置记忆系统（MEMORY.md / USER.md）。它有以下特点：<br>
+<br>
+<tr><td>优点</td><td>局限</td></tr><br>
+<br>
+<tr><td>✅ 零依赖，简单可靠</td><td>❌ 仅支持手动写入</td></tr><br>
+<tr><td>✅ 无需网络请求</td><td>❌ 无法自动从对话中提取信息</td></tr><br>
+<tr><td>✅ 存储在本地文件</td><td>❌ 不支持语义搜索</td></tr><br>
+<tr><td>✅ 字符限制防止膨胀</td><td>❌ 无法跨会话自动关联信息</td></tr><br>
+<br>
+<h3>5.1.2 插件化解决方案</h3><br>
+<br>
+Hermes Agent 引入了<strong>插件化记忆系统</strong>：<br>
+<br>
+<pre><code>┌────────────────────────────────────────────────────────────────┐<br>
+│                      MemoryManager                             │<br>
+│                   （记忆管理器，中心协调）                       │<br>
+├────────────────────────────────────────────────────────────────┤<br>
+│                                                                │<br>
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │<br>
+│  │ Builtin     │    │ Honcho       │    │ Hindsight    │ ...  │<br>
+│  │ Memory      │ +  │ Memory       │ +  │ Memory       │       │<br>
+│  │ (内置)       │    │ (插件)        │    │ (插件)        │       │<br>
+│  └──────────────┘    └──────────────┘    └──────────────┘       │<br>
+│                                                                │<br>
+│  【规则】Built-in 永远启用，只允许一个外部插件同时运行            │<br>
+└────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<blockquote><p><strong>💡 关键设计</strong>：外部插件只能<strong>添加</strong>功能，不能<strong>替换</strong>内置记忆。两种记忆可以同时生效。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>5.2 MemoryProvider 接口</h2><br>
+<br>
+<h3>5.2.1 接口概述</h3><br>
+<br>
+所有记忆插件都需要实现 <code>MemoryProvider</code> 抽象基类：<br>
+<br>
+<pre><code class="language-python"># agent/memory_provider.py（简化版）<br>
+class MemoryProvider(ABC):<br>
+    """记忆提供者抽象基类"""<br>
+    <br>
+    @property<br>
+    @abstractmethod<br>
+    def name(self) -&gt; str:<br>
+        """插件名称，如 'honcho'、'mem0'、'hindsight'"""<br>
+    <br>
+    @abstractmethod<br>
+    def is_available(self) -&gt; bool:<br>
+        """检查插件是否可用（如是否配置了 API Key）"""<br>
+    <br>
+    @abstractmethod<br>
+    def initialize(self, session_id: str, <strong>kwargs) -&gt; None:<br>
+        """初始化插件（如连接数据库、建立会话）"""<br>
+    <br>
+    @abstractmethod<br>
+    def get_tool_schemas(self) -&gt; List[Dict]:<br>
+        """返回该插件暴露给 AI 的工具"""</code></pre><br>
+<br>
+<h3>5.2.2 核心生命周期方法</h3><br>
+<br>
+<tr><td>方法</td><td>调用时机</td><td>作用</td></tr><br>
+<br>
+<tr><td><code>is_available()</code></td><td>Agent 启动时</td><td>检查是否满足使用条件</td></tr><br>
+<tr><td><code>initialize()</code></td><td>Agent 初始化</td><td>建立连接、创建资源</td></tr><br>
+<tr><td><code>system_prompt_block()</code></td><td>组装系统提示时</td><td>返回静态提示文本</td></tr><br>
+<tr><td><code>prefetch()</code></td><td>每次 API 调用前</td><td>拉取相关记忆上下文</td></tr><br>
+<tr><td><code>sync_turn()</code></td><td>每次对话轮次后</td><td>同步对话到后端</td></tr><br>
+<tr><td><code>shutdown()</code></td><td>Agent 关闭时</td><td>清理资源</td></tr><br>
+<br>
+<h3>5.2.3 可选钩子</h3><br>
+<br>
+<tr><td>钩子</td><td>触发时机</td><td>用途</td></tr><br>
+<br>
+<tr><td><code>on_turn_start()</code></td><td>每轮对话开始</td><td>统计、作用域管理</td></tr><br>
+<tr><td><code>on_session_end()</code></td><td>会话结束时</td><td>提取总结性记忆</td></tr><br>
+<tr><td><code>on_pre_compress()</code></td><td>上下文压缩前</td><td>提取关键信息</td></tr><br>
+<tr><td><code>on_delegation()</code></td><td>委派任务时</td><td>观察子 Agent 工作</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>5.3 插件全景图</h2><br>
+<br>
+Hermes Agent 官方提供 8 个记忆插件：<br>
+<br>
+<tr><td>插件</td><td>存储后端</td><td>检索方式</td><td>特点</td></tr><br>
+<br>
+<tr><td></strong>Honcho<strong></td><td>Honcho 云服务</td><td>语义搜索 + Dialectic Q&A</td><td>AI-native、用户画像</td></tr><br>
+<tr><td></strong>Mem0<strong></td><td>Mem0 云服务</td><td>语义搜索 + Reranking</td><td>自动事实提取</td></tr><br>
+<tr><td></strong>Hindsight<strong></td><td>知识图谱</td><td>多策略检索</td><td>实体关联分析</td></tr><br>
+<tr><td></strong>Holographic<strong></td><td>本地 SQLite</td><td>FTS5 + HRR</td><td>完全本地、隐私优先</td></tr><br>
+<tr><td></strong>Supermemory<strong></td><td>Supermemory 云</td><td>语义搜索</td><td>轻量级</td></tr><br>
+<tr><td></strong>OpenViking<strong></td><td>Viking 服务</td><td>语义搜索</td><td>欧洲隐私合规</td></tr><br>
+<tr><td></strong>RetainDB<strong></td><td>PostgreSQL</td><td>结构化查询</td><td>企业级、数据可控</td></tr><br>
+<tr><td></strong>Byterover<strong></td><td>Byterover 云</td><td>语义搜索</td><td>专注代码记忆</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>5.4 插件详解</h2><br>
+<br>
+<h3>5.4.1 Honcho — AI-native 用户建模</h3><br>
+<br>
+<strong>一句话介绍</strong>：像朋友一样了解你的用户。<br>
+<br>
+<strong>核心能力</strong>：<br>
+<br>
+<tr><td>工具</td><td>作用</td><td>成本</td></tr><br>
+<br>
+<tr><td><code>honcho_profile</code></td><td>获取用户核心画像（事实列表）</td><td>低</td></tr><br>
+<tr><td><code>honcho_search</code></td><td>语义搜索用户记忆</td><td>中</td></tr><br>
+<tr><td><code>honcho_context</code></td><td>问答式查询（LLM 推理）</td><td>高</td></tr><br>
+<tr><td><code>honcho_conclude</code></td><td>写入结论性记忆</td><td>中</td></tr><br>
+<br>
+<strong>使用场景</strong>：<br>
+<br>
+<pre><code>用户：我在上海工作，经常加班到很晚<br>
+<br>
+Agent：明白，我会记住你是在上海的"夜猫子"。<br>
+<br>
+（自动调用 honcho_conclude 写入：<br>
+"用户在上海工作，经常加班到很晚"）</code></pre><br>
+<br>
+<strong>配置</strong>：<br>
+<br>
+<pre><code class="language-yaml"># ~/.hermes/config.yaml<br>
+memory:<br>
+  provider: honcho<br>
+<br>
+honcho:<br>
+  api_key: ${HONCHO_API_KEY}  # 从环境变量读取</code></pre><br>
+<br>
+<h3>5.4.2 Mem0 — 智能事实提取</h3><br>
+<br>
+<strong>一句话介绍</strong>：让 AI 自动记住重要的事情。<br>
+<br>
+<strong>核心特点</strong>：<br>
+<br>
+<ul><li></strong>自动提取<strong>：不需要手动调用工具，AI 自动识别并存储重要信息</li><li></strong>语义搜索<strong>：用自然语言搜索记忆，如"用户上次提到的项目叫什么？"</li><li></strong>自动去重<strong>：相同事实不会重复存储</li></ul><br>
+<br>
+<strong>工作原理</strong>：<br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────┐<br>
+│  用户：我的公司叫 XYZ，主要做 SaaS 产品                       │<br>
+└─────────────────────────────────────────────────────────────┘<br>
+                            │<br>
+                            ▼<br>
+┌─────────────────────────────────────────────────────────────┐<br>
+│                    Mem0 Provider                           │<br>
+│  1. 识别实体："XYZ公司"、"SaaS产品"                         │<br>
+│  2. 提取关系：用户 → 所属 → XYZ公司                          │<br>
+│  3. 存储到向量数据库                                        │<br>
+└─────────────────────────────────────────────────────────────┘<br>
+                            │<br>
+                            ▼<br>
+┌─────────────────────────────────────────────────────────────┐<br>
+│  后续搜索："用户在哪工作？"                                  │<br>
+│  → 找到：XYZ公司（相关度 0.95）                              │<br>
+│  → 返回：用户在 XYZ 公司工作                                │<br>
+└─────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<strong>配置</strong>：<br>
+<br>
+<pre><code class="language-yaml"># ~/.hermes/config.yaml<br>
+memory:<br>
+  provider: mem0<br>
+<br>
+mem0:<br>
+  api_key: ${MEM0_API_KEY}</code></pre><br>
+<br>
+<h3>5.4.3 Hindsight — 知识图谱记忆</h3><br>
+<br>
+<strong>一句话介绍</strong>：像大脑一样用关系网络记住知识。<br>
+<br>
+<strong>核心特点</strong>：<br>
+<br>
+<ul><li></strong>知识图谱<strong>：不是简单的列表存储，而是实体和关系构成的网络</li><li></strong>实体解析<strong>：识别"苹果"是水果还是公司</li><li></strong>多策略检索<strong>：结合关键词、向量、时间等多维度检索</li></ul><br>
+<br>
+<strong>知识图谱示例</strong>：<br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────┐<br>
+│                    知识图谱                                  │<br>
+│                                                             │<br>
+│    [用户] ──→ 属于 ──→ [XYZ公司]                             │<br>
+│      │                  │                                  │<br>
+│      │ 担任             从事                                │<br>
+│      ▼                  ▼                                  │<br>
+│  [李明]            [SaaS产品开发]                            │<br>
+│      │                                                       │<br>
+│      │ 使用                                                         │<br>
+│      ▼                                                       │<br>
+│  [Python] ──→ 擅长 ──→ [Web开发]                             │<br>
+└─────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<strong>配置</strong>：<br>
+<br>
+<pre><code class="language-yaml"># ~/.hermes/config.yaml<br>
+memory:<br>
+  provider: hindsight<br>
+<br>
+hindsight:<br>
+  api_key: ${HINDSIGHT_API_KEY}</code></pre><br>
+<br>
+<h3>5.4.4 Holographic — 本地隐私优先</h3><br>
+<br>
+<strong>一句话介绍</strong>：数据不出本地的记忆系统。<br>
+<br>
+<strong>核心特点</strong>：<br>
+<br>
+<ul><li></strong>完全本地<strong>：使用 SQLite 存储，无需网络</li><li></strong>FTS5 搜索<strong>：基于 SQLite 的全文搜索</li><li></strong>信任评分<strong>：每个事实都有可信度评分</li><li></strong>HRR 检索<strong>：Holographic Representation，组合式记忆检索</li></ul><br>
+<br>
+<strong>适用场景</strong>：<br>
+<br>
+<ul><li>🚫 无法使用外部服务的数据敏感环境</li><li>🏢 企业内网环境</li><li>🔒 对数据隐私有严格要求</li></ul><br>
+<br>
+<strong>配置</strong>：<br>
+<br>
+<pre><code class="language-yaml"># ~/.hermes/config.yaml<br>
+memory:<br>
+  provider: holographic<br>
+<br>
+<h1>无需额外配置，数据存在本地 SQLite</code></pre></h1><br>
+<br>
+<hr><br>
+<br>
+<h2>5.5 如何选择记忆插件？</h2><br>
+<br>
+<h3>5.5.1 选择决策树</h3><br>
+<br>
+<pre><code>┌─────────────────────┐<br>
+                    │ 你的使用场景？        │<br>
+                    └──────────┬──────────┘<br>
+                               │<br>
+           ┌───────────────────┼───────────────────┐<br>
+           │                   │                   │<br>
+           ▼                   ▼                   ▼<br>
+    ┌─────────────┐     ┌─────────────┐     ┌─────────────┐<br>
+    │ 数据必须     │     │ 需要自动    │     │ 需要深度    │<br>
+    │ 本地存储     │     │ 提取记忆    │     │ 问答能力    │<br>
+    └──────┬──────┘     └──────┬──────┘     └──────┬──────┘<br>
+           │                   │                   │<br>
+           ▼                   ▼                   ▼<br>
+    ┌─────────────┐     ┌─────────────┐     ┌─────────────┐<br>
+    │ Holographic │     │ Mem0        │     │ Honcho      │<br>
+    │ (本地 SQLite)│     │ (自动提取)   │     │ (Dialectic) │<br>
+    └─────────────┘     └─────────────┘     └─────────────┘</code></pre><br>
+<br>
+<h3>5.5.2 对比表格</h3><br>
+<br>
+<tr><td>维度</td><td>Honcho</td><td>Mem0</td><td>Hindsight</td><td>Holographic</td></tr><br>
+<br>
+<tr><td></strong>存储位置<strong></td><td>云服务</td><td>云服务</td><td>云服务</td><td>本地</td></tr><br>
+<tr><td></strong>数据隐私<strong></td><td>⚠️ 云端</td><td>⚠️ 云端</td><td>⚠️ 云端</td><td>✅ 完全本地</td></tr><br>
+<tr><td></strong>自动提取<strong></td><td>❌ 手动</td><td>✅ 自动</td><td>✅ 自动</td><td>❌ 手动</td></tr><br>
+<tr><td></strong>问答能力<strong></td><td>✅ Dialectic Q&A</td><td>❌ 仅搜索</td><td>❌ 仅搜索</td><td>❌ 仅搜索</td></tr><br>
+<tr><td></strong>知识图谱<strong></td><td>❌</td><td>❌</td><td>✅</td><td>❌</td></tr><br>
+<tr><td></strong>成本<strong></td><td>按调用计费</td><td>按调用计费</td><td>按调用计费</td><td>免费</td></tr><br>
+<tr><td></strong>配置复杂度<strong></td><td>中</td><td>中</td><td>中</td><td>低</td></tr><br>
+<br>
+<h3>5.5.3 场景推荐</h3><br>
+<br>
+<tr><td>场景</td><td>推荐插件</td><td>原因</td></tr><br>
+<br>
+<tr><td>个人助手</td><td>Honcho</td><td>强大的用户理解能力</td></tr><br>
+<tr><td>客服机器人</td><td>Mem0</td><td>自动提取客户信息</td></tr><br>
+<tr><td>企业知识库</td><td>Hindsight</td><td>知识图谱支持复杂查询</td></tr><br>
+<tr><td>敏感数据环境</td><td>Holographic</td><td>完全本地，数据不出门</td></tr><br>
+<tr><td>开发者工具</td><td>Honcho</td><td>理解开发习惯和项目上下文</td></tr><br>
+<br>
+<hr><br>
+<br>
+<h2>5.6 安装与配置</h2><br>
+<br>
+<h3>5.6.1 安装步骤</h3><br>
+<br>
+<strong>Step 1：安装插件</strong><br>
+<br>
+<pre><code class="language-bash"># 通过 hermes CLI 安装<br>
+hermes plugins install memory honcho<br>
+<br>
+<h1>或手动安装依赖</h1><br>
+pip install honcho-ai</code></pre><br>
+<br>
+<strong>Step 2：配置插件</strong><br>
+<br>
+<pre><code class="language-bash"># 交互式配置向导<br>
+hermes memory setup<br>
+<br>
+<h1>或手动编辑配置</h1><br>
+vim ~/.hermes/config.yaml</code></pre><br>
+<br>
+<strong>Step 3：验证安装</strong><br>
+<br>
+<pre><code class="language-bash">hermes doctor --check memory</code></pre><br>
+<br>
+<h3>5.6.2 完整配置示例</h3><br>
+<br>
+<pre><code class="language-yaml"># ~/.hermes/config.yaml<br>
+<br>
+memory:<br>
+  # 选择一个外部插件（只能选一个）<br>
+  provider: honcho<br>
+  <br>
+  # 内置记忆仍然启用<br>
+  builtin:<br>
+    enabled: true<br>
+    memory_char_limit: 2200<br>
+    user_char_limit: 1375<br>
+<br>
+<h1>Honcho 配置</h1><br>
+honcho:<br>
+  api_key: ${HONCHO_API_KEY}<br>
+  # 或使用自托管<br>
+  baseUrl: http://localhost:8080<br>
+  <br>
+  # 检索模式<br>
+  recall_mode: hybrid  # context | tools | hybrid<br>
+  <br>
+  # 上下文注入频率<br>
+  injection_frequency: every-turn</code></pre><br>
+<br>
+<h3>5.6.3 切换插件</h3><br>
+<br>
+如果想换插件，只需要修改配置：<br>
+<br>
+<pre><code class="language-yaml">memory:<br>
+  provider: mem0  # 从 honcho 切换到 mem0</code></pre><br>
+<br>
+<blockquote><p></strong>⚠️ 注意<strong>：切换插件后，之前存储的记忆不会自动迁移。如果需要迁移，请参考各插件的迁移文档。</p></blockquote><br>
+<br>
+<hr><br>
+<br>
+<h2>5.7 插件开发入门</h2><br>
+<br>
+<h3>5.7.1 创建插件结构</h3><br>
+<br>
+<pre><code>plugins/memory/my_memory/<br>
+├── __init__.py       # 插件入口<br>
+├── plugin.yaml       # 插件元数据<br>
+└── README.md         # 文档</code></pre><br>
+<br>
+<h3>5.7.2 plugin.yaml 示例</h3><br>
+<br>
+<pre><code class="language-yaml">name: my_memory<br>
+version: 1.0.0<br>
+description: "我的自定义记忆插件"<br>
+<br>
+<h1>依赖的 Python 包</h1><br>
+pip_dependencies:<br>
+  - my-memory-sdk<br>
+<br>
+<h1>生命周期钩子</h1><br>
+hooks:<br>
+  - on_session_end    # 会话结束时触发</code></pre><br>
+<br>
+<h3>5.7.3 实现 MemoryProvider</h3><br>
+<br>
+<pre><code class="language-python"># __init__.py<br>
+from agent.memory_provider import MemoryProvider<br>
+<br>
+class MyMemoryProvider(MemoryProvider):<br>
+    <br>
+    @property<br>
+    def name(self) -&gt; str:<br>
+        return "my_memory"<br>
+    <br>
+    def is_available(self) -&gt; bool:<br>
+        import os<br>
+        return bool(os.getenv("MY_MEMORY_API_KEY"))<br>
+    <br>
+    def initialize(self, session_id: str, </strong>kwargs) -&gt; None:<br>
+        # 连接你的记忆服务<br>
+        self.client = MyMemoryClient()<br>
+    <br>
+    def get_tool_schemas(self) -&gt; List[Dict]:<br>
+        return [<br>
+            {<br>
+                "name": "my_memory_search",<br>
+                "description": "Search memory...",<br>
+                "parameters": {...}<br>
+            }<br>
+        ]<br>
+    <br>
+    # ... 其他方法</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li><strong>MemoryProvider 接口</strong>定义了所有记忆插件的规范，包括生命周期方法和工具暴露</li><li>Hermes Agent 提供 <strong>8 个官方记忆插件</strong>，覆盖云端、本地、自动、手动等不同需求</li><li><strong>Honcho</strong> 擅长用户建模和 Dialectic Q&A，<strong>Mem0</strong> 擅长自动提取，<strong>Holographic</strong> 擅长本地隐私</li><li><strong>内置记忆永远启用</strong>，外部插件是补充而非替代</li><li>只能同时使用<strong>一个外部插件</strong>，通过 <code>memory.provider</code> 配置切换</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>如果你需要在银行客服场景使用，应该选择哪个插件？为什么？</li><li>为什么限制只能同时使用一个外部插件？如果放开会有什么后果？</li><li>Holographic 的"完全本地"方案有什么优缺点？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>记忆提供者接口：<code>agent/memory_provider.py</code></li><li>记忆管理器：<code>agent/memory_manager.py</code></li><li>Honcho 插件：<code>plugins/memory/honcho/</code></li><li>Mem0 插件：<code>plugins/memory/mem0/</code></li><li>Holographic 插件：<code>plugins/memory/holographic/</code></li><li>Hindsight 插件：<code>plugins/memory/hindsight/</code></li></ul><br>
+
+<div class="chapter-nav"><a href="ch04.html">← 第 4 章 · 记忆系统入门</a><span></span><a href="ch06.html">第 6 章 · Skill 机制深度剖析 →</a></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>

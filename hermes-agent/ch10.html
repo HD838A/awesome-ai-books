@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 10 章 · 实战项目：AI 代码审查系统 — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html" class="active">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 10 章 · 实战项目：构建多 Agent 协作系统</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>综合运用本书所学知识</li><li>构建一个完整的多 Agent 协作系统</li><li>解决实际问题（代码审查 + 自动化测试）</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>10.1 项目概述</h2><br>
+<br>
+<h3>10.1.1 项目目标</h3><br>
+<br>
+构建一个<strong>自动化代码质量检查系统</strong>：<br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐<br>
+│                      项目架构                                     │<br>
+├─────────────────────────────────────────────────────────────────┤<br>
+│                                                                 │<br>
+│    【主编 Agent】                                                │<br>
+│    协调整个审查流程，汇总结果                                    │<br>
+│                                                                 │<br>
+│    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐       │<br>
+│    │ 安全审查    │    │ 性能审查    │    │ 代码规范    │       │<br>
+│    │ Agent       │    │ Agent       │    │ Agent       │       │<br>
+│    │             │    │             │    │             │       │<br>
+│    │ SQL注入     │    │ 循环优化    │    │ 命名规范    │       │<br>
+│    │ XSS攻击     │    │ 缓存策略    │    │ 注释完整    │       │<br>
+│    │ 认证绕过    │    │ 索引使用    │    │ 格式一致    │       │<br>
+│    └─────────────┘    └─────────────┘    └─────────────┘       │<br>
+│                                                                 │<br>
+│    【测试生成 Agent】                                            │<br>
+│    根据审查结果生成自动化测试                                     │<br>
+│                                                                 │<br>
+└─────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<h3>10.1.2 工具链</h3><br>
+<br>
+<ul><li><strong>Hermes Agent</strong> — 多 Agent 协作框架</li><li><strong>浏览器工具</strong> — 读取 GitHub 代码</li><li><strong>记忆系统</strong> — 存储审查规则</li><li><strong>委派机制</strong> — 并行审查</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>10.2 系统设计</h2><br>
+<br>
+<h3>10.2.1 主编 Agent 系统提示</h3><br>
+<br>
+<pre><code class="language-markdown"># 代码审查主编系统提示<br>
+<br>
+你是一个专业的代码审查主编，负责协调多个子 Agent 进行全面的代码审查。<br>
+<br>
+<h2>你的职责</h2><br>
+<br>
+<ul><li>接收代码审查请求（GitHub 链接或代码内容）</li><li>分析代码，确定审查重点</li><li>委派子 Agent 进行专项审查</li><li>汇总审查结果，生成报告</li></ul><br>
+<br>
+<h2>子 Agent 类型</h2><br>
+<br>
+<tr><td>类型</td><td>职责</td><td>工具集</td></tr><br>
+<br>
+<tr><td>安全审查</td><td>SQL注入、XSS、认证漏洞</td><td>web, terminal</td></tr><br>
+<tr><td>性能审查</td><td>算法复杂度、数据库查询</td><td>web, terminal</td></tr><br>
+<tr><td>代码规范</td><td>命名、注释、格式</td><td>web, terminal</td></tr><br>
+<tr><td>测试生成</td><td>生成自动化测试</td><td>web, terminal, file</td></tr><br>
+<br>
+<h2>输出格式</h2><br>
+<br>
+请生成以下格式的审查报告：</code></pre>markdown<br>
+<h1>代码审查报告</h1><br>
+<br>
+<h2>执行摘要</h2><br>
+[总问题数，严重/高/中/低]<br>
+<br>
+<h2>详细问题</h2><br>
+<br>
+<h3>🔴 严重问题</h3><br>
+<br>
+<tr><td>#</td><td>位置</td><td>问题</td><td>建议</td></tr><br>
+<br>
+<tr><td>1</td><td>file:line</td><td>[描述]</td><td>[修复建议]</td></tr><br>
+<br>
+<h3>🟡 中等问题</h3><br>
+...<br>
+<br>
+<h3>🟢 建议</h3><br>
+...<br>
+<br>
+<h2>自动化测试</h2><br>
+[生成的测试代码]<br>
+<br>
+<h3>10.2.2 子 Agent 系统提示</h3><br>
+<br>
+<strong>安全审查 Agent</strong>：<br>
+<br>
+<pre><code class="language-markdown"># 安全审查 Agent 系统提示<br>
+<br>
+你是一个专业的安全工程师，负责审查代码中的安全漏洞。<br>
+<br>
+<h2>审查重点</h2><br>
+<br>
+<h3>SQL 注入</h3><br>
+<ul><li>检查所有 SQL 查询是否使用参数化查询</li><li>检查 ORM 使用是否正确</li><li>检查用户输入是否经过验证</li></ul><br>
+<br>
+<h3>XSS 攻击</h3><br>
+<ul><li>检查输出是否经过转义</li><li>检查 Content-Type 设置</li><li>检查 CSP 策略</li></ul><br>
+<br>
+<h3>认证和授权</h3><br>
+<ul><li>检查密码存储是否使用哈希</li><li>检查 Session 管理</li><li>检查权限检查逻辑</li></ul><br>
+<br>
+<h2>工具使用</h2><br>
+<br>
+使用以下工具获取代码：<br>
+<ul><li><code>web_search</code>: 搜索已知漏洞模式</li><li><code>terminal</code>: 运行安全扫描工具</li></ul><br>
+<br>
+<h2>输出</h2><br>
+<br>
+对于每个发现的问题，提供：<br>
+<ul><li>文件和行号</li><li>问题描述</li><li>严重程度（Critical/High/Medium/Low）</li><li>修复建议</li><li>参考资料（CVE 或 CWE）</code></pre></li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>10.3 实现代码</h2><br>
+<br>
+<h3>10.3.1 主审查流程</h3><br>
+<br>
+<pre><code class="language-python">from typing import Dict, List, Optional<br>
+from dataclasses import dataclass<br>
+from enum import Enum<br>
+<br>
+class Severity(Enum):<br>
+    CRITICAL = "Critical"<br>
+    HIGH = "High"<br>
+    MEDIUM = "Medium"<br>
+    LOW = "Low"<br>
+<br>
+@dataclass<br>
+class ReviewIssue:<br>
+    location: str<br>
+    description: str<br>
+    severity: Severity<br>
+    fix: str<br>
+    category: str<br>
+<br>
+@dataclass<br>
+class ReviewResult:<br>
+    category: str<br>
+    agent_name: str<br>
+    issues: List[ReviewIssue]<br>
+    summary: str<br>
+<br>
+def fetch_code(code_or_url: str) -&gt; Dict[str, str]:<br>
+    """<br>
+    获取代码内容，支持直接代码或 URL<br>
+    """<br>
+    if code_or_url.startswith("http"):<br>
+        # 从 URL 获取代码<br>
+        import httpx<br>
+        response = httpx.get(code_or_url)<br>
+        return {"content": response.text, "source": "url"}<br>
+    else:<br>
+        # 直接代码内容<br>
+        return {"content": code_or_url, "source": "direct"}<br>
+<br>
+def code_review_system(code_or_url: str, language: str = "python") -&gt; str:<br>
+    """<br>
+    主审查流程：<br>
+    1. 获取代码<br>
+    2. 并行委派审查<br>
+    3. 汇总结果<br>
+    """<br>
+    <br>
+    # Step 1: 获取代码<br>
+    code_data = fetch_code(code_or_url)<br>
+    code = code_data["content"]<br>
+    <br>
+    # Step 2: 定义审查任务<br>
+    tasks = [<br>
+        {<br>
+            "goal": f"安全审查：检查 {language} 代码中的安全漏洞",<br>
+            "context": f"""代码：</code></pre>{language}<br>
+{code}<br>
+<pre><code>审查重点：<br>
+<ul><li>SQL 注入</li><li>XSS 攻击</li><li>认证和授权</li><li>输入验证</li></ul><br>
+<br>
+请以 JSON 格式返回审查结果：<br>
+{{<br>
+  "issues": [<br>
+    {{"location": "文件:行号", "description": "问题描述", "severity": "Critical/High/Medium/Low", "fix": "修复建议"}}<br>
+  ],<br>
+  "summary": "审查总结"<br>
+}}""",<br>
+            "toolsets": ["web", "terminal"]<br>
+        },<br>
+        {<br>
+            "goal": f"性能审查：检查 {language} 代码中的性能问题",<br>
+            "context": f"""代码：</code></pre>{language}<br>
+{code}<br>
+<pre><code>审查重点：<br>
+<ul><li>算法复杂度</li><li>数据库查询（N+1 问题）</li><li>缓存使用</li><li>循环优化</li></ul><br>
+<br>
+请以 JSON 格式返回审查结果：<br>
+{{<br>
+  "issues": [<br>
+    {{"location": "文件:行号", "description": "问题描述", "severity": "Critical/High/Medium/Low", "fix": "修复建议"}}<br>
+  ],<br>
+  "summary": "审查总结"<br>
+}}""",<br>
+            "toolsets": ["web", "terminal"]<br>
+        },<br>
+        {<br>
+            "goal": f"代码规范审查：检查 {language} 代码的规范问题",<br>
+            "context": f"""代码：</code></pre>{language}<br>
+{code}<br>
+<pre><code>审查重点：<br>
+<ul><li>命名规范</li><li>注释完整性</li><li>代码格式</li><li>模块组织</li></ul><br>
+<br>
+请以 JSON 格式返回审查结果：<br>
+{{<br>
+  "issues": [<br>
+    {{"location": "文件:行号", "description": "问题描述", "severity": "Critical/High/Medium/Low", "fix": "修复建议"}}<br>
+  ],<br>
+  "summary": "审查总结"<br>
+}}""",<br>
+            "toolsets": ["web", "terminal"]<br>
+        }<br>
+    ]<br>
+    <br>
+    # Step 3: 并行委派审查<br>
+    import json<br>
+    results = []<br>
+    for task in tasks:<br>
+        result = delegate_task(<br>
+            goal=task["goal"],<br>
+            context=task["context"],<br>
+            toolsets=task["toolsets"]<br>
+        )<br>
+        try:<br>
+            parsed = json.loads(result)<br>
+            results.append(parsed)<br>
+        except json.JSONDecodeError:<br>
+            results.append({"issues": [], "summary": result})<br>
+    <br>
+    # Step 4: 汇总结果<br>
+    report = generate_report(results)<br>
+    <br>
+    return report<br>
+<br>
+def generate_report(results: List[Dict]) -&gt; str:<br>
+    """汇总子 Agent 结果，生成统一报告"""<br>
+    <br>
+    report = "# 代码审查报告\n\n"<br>
+    <br>
+    # 执行摘要<br>
+    all_issues = []<br>
+    for result in results:<br>
+        for issue in result.get("issues", []):<br>
+            all_issues.append(issue)<br>
+    <br>
+    total_issues = len(all_issues)<br>
+    report += "## 执行摘要\n\n"<br>
+    report += f"- 总问题数：{total_issues}\n"<br>
+    report += f"- 审查范围：{len(results)} 个领域\n\n"<br>
+    <br>
+    # 分类统计<br>
+    by_severity = {"Critical": [], "High": [], "Medium": [], "Low": []}<br>
+    for issue in all_issues:<br>
+        severity = issue.get("severity", "Low")<br>
+        if severity in by_severity:<br>
+            by_severity[severity].append(issue)<br>
+    <br>
+    # 详细问题<br>
+    for severity in ["Critical", "High", "Medium", "Low"]:<br>
+        issues = by_severity[severity]<br>
+        if issues:<br>
+            emoji = {"Critical": "🔴", "High": "🟠", "Medium": "🟡", "Low": "🟢"}[severity]<br>
+            report += f"## {emoji} {severity} 问题\n\n"<br>
+            report += "| # | 位置 | 问题 | 建议 |\n"<br>
+            report += "|---|------|------|------|\n"<br>
+            for i, issue in enumerate(issues, 1):<br>
+                report += f"| {i} | {issue.get('location', 'N/A')} | {issue.get('description', '')} | {issue.get('fix', '')} |\n"<br>
+            report += "\n"<br>
+    <br>
+    # 添加各领域总结<br>
+    report += "## 审查总结\n\n"<br>
+    for i, result in enumerate(results):<br>
+        summary = result.get("summary", "无总结")<br>
+        report += f"- 领域 {i+1}：{summary}\n"<br>
+    <br>
+    return report</code></pre><br>
+<br>
+<h3>10.3.2 使用示例</h3><br>
+<br>
+<hr><br>
+<br>
+<h2>10.4 使用示例</h2><br>
+<br>
+<h3>10.4.1 完整调用</h3><br>
+<br>
+<pre><code class="language-python"># 输入：GitHub 代码链接<br>
+review_request = """<br>
+请审查这个 Python 项目的认证模块：<br>
+https://github.com/example/webapp/blob/main/src/auth/login.py<br>
+"""<br>
+<br>
+<h1>执行审查</h1><br>
+report = code_review_system(<br>
+    code_or_url=review_request,<br>
+    language="python"<br>
+)<br>
+<br>
+<h1>输出报告</h1><br>
+print(report)</code></pre><br>
+<br>
+<h3>10.4.2 输出示例</h3><br>
+<br>
+<pre><code class="language-markdown"># 代码审查报告<br>
+<br>
+<h2>执行摘要</h2><br>
+<br>
+<ul><li>总问题数：5</li><li>审查范围：3 个领域</li></ul><br>
+<br>
+<h2>🔴 Critical 问题</h2><br>
+<br>
+<tr><td>#</td><td>位置</td><td>问题</td><td>建议</td></tr><br>
+<br>
+<tr><td>1</td><td>login.py:42</td><td>SQL 注入漏洞：用户输入直接拼接</td><td>使用参数化查询</td></tr><br>
+<br>
+<h2>🟡 Medium 问题</h2><br>
+<br>
+<tr><td>#</td><td>位置</td><td>问题</td><td>建议</td></tr><br>
+<br>
+<tr><td>1</td><td>login.py:55</td><td>密码以明文传输</td><td>使用 HTTPS</td></tr><br>
+<tr><td>2</td><td>auth.py:23</td><td>Session 未设置过期时间</td><td>设置合理的过期时间</td></tr><br>
+<br>
+<h2>🟢 Low 问题</h2><br>
+<br>
+<tr><td>#</td><td>位置</td><td>问题</td><td>建议</td></tr><br>
+<br>
+<tr><td>1</td><td>login.py:10</td><td>缺少注释</td><td>添加函数文档字符串</td></tr><br>
+<br>
+<h2>自动化测试</h2><br>
+<br>
+已生成安全测试用例，建议添加到测试套件：</code></pre>python<br>
+def test_sql_injection():<br>
+    """测试 SQL 注入防护"""<br>
+    response = client.post("/login", data={<br>
+        "username": "' OR '1'='1",<br>
+        "password": "anything"<br>
+    })<br>
+    assert response.status_code == 401<br>
+<pre><code>## 总结<br>
+<br>
+发现 1 个严重问题需要立即修复，建议优先处理 SQL 注入漏洞。</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>10.5 进阶扩展</h2><br>
+<br>
+<h3>10.5.1 添加更多审查维度</h3><br>
+<br>
+<pre><code class="language-python"># 扩展审查任务<br>
+tasks = [<br>
+    {"goal": "安全审查", "context": ..., "toolsets": ["web"]},<br>
+    {"goal": "性能审查", "context": ..., "toolsets": ["web", "terminal"]},<br>
+    {"goal": "代码规范", "context": ..., "toolsets": ["web"]},<br>
+    {"goal": "可访问性", "context": ..., "toolsets": ["browser"]},  # 新增<br>
+    {"goal": "国际化", "context": ..., "toolsets": ["web"]},        # 新增<br>
+]</code></pre><br>
+<br>
+<h3>10.5.2 添加持续集成</h3><br>
+<br>
+<pre><code class="language-yaml"># .github/workflows/code-review.yml<br>
+name: Auto Code Review<br>
+<br>
+on:<br>
+  pull_request:<br>
+    paths:<br>
+      - '<strong>.py'<br>
+      - '</strong>.js'<br>
+      - '<strong>.ts'<br>
+<br>
+jobs:<br>
+  review:<br>
+    runs-on: ubuntu-latest<br>
+    steps:<br>
+      - uses: actions/checkout@v3<br>
+      <br>
+      - name: Run Code Review<br>
+        run: |<br>
+          hermes review --files ${{ github.event.pull_request.changed_files }}<br>
+      <br>
+      - name: Post Review<br>
+        uses: actions/github-script@v6<br>
+        with:<br>
+          script: |<br>
+            // 将审查结果发布为 PR 评论</code></pre><br>
+<br>
+<h3>10.5.3 自定义 Skill</h3><br>
+<br>
+创建一个 <code>code-review-skill</code> Skill，保存最佳实践：<br>
+<br>
+<pre><code class="language-markdown">---<br>
+name: code-review<br>
+description: "专业代码审查 Skill，支持安全、性能、规范等多维度审查"<br>
+version: 1.0.0<br>
+<hr><br>
+<br>
+<h1>Code Review Skill</h1><br>
+<br>
+<h2>Overview</h2><br>
+这个 Skill 指导进行全面的代码审查...<br>
+<br>
+<h2>Workflow</h2><br>
+<h3>Phase 1: 代码获取</h3><br>
+<ul><li>确定代码位置</li><li>获取完整代码上下文</li><li>分析代码结构</li></ul><br>
+<br>
+<h3>Phase 2: 多维度审查</h3><br>
+<ul><li>安全审查</li><li>性能审查</li><li>代码规范</li><li>最佳实践</li></ul><br>
+<br>
+<h3>Phase 3: 报告生成</h3><br>
+...</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>10.6 部署与运维</h2><br>
+<br>
+<h3>10.6.1 环境准备</h3><br>
+<br>
+<pre><code class="language-bash"># 安装 Hermes Agent<br>
+pip install hermes-agent<br>
+<br>
+<h1>配置 API 密钥</h1><br>
+export ANTHROPIC_API_KEY="sk-..."<br>
+<br>
+<h1>创建审查 Skill</h1><br>
+mkdir -p ~/.hermes/skills/code-review<br>
+cp code-review-skill.md ~/.hermes/skills/code-review/SKILL.md</code></pre><br>
+<br>
+<h3>10.6.2 快捷命令</h3><br>
+<br>
+<pre><code class="language-bash"># ~/.hermes/skills/code-review/review.sh<br>
+#!/bin/bash<br>
+<br>
+<h1>代码审查快捷脚本</h1><br>
+hermes "请审查以下代码：$1"</code></pre><br>
+<br>
+<h3>10.6.3 监控配置</h3><br>
+<br>
+<pre><code class="language-yaml"># ~/.hermes/hooks/code-review-metrics/HOOK.yaml<br>
+name: code-review-metrics<br>
+events:<br>
+  - agent:end</code></pre><br>
+<br>
+<pre><code class="language-python"># ~/.hermes/hooks/code-review-metrics/handler.py<br>
+async def handle(event_type: str, context: dict):<br>
+    if "code review" in context.get("message", "").lower():<br>
+        log_metric("code_review_requests", 1)</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li></strong>多 Agent 协作<strong>可以并行处理多个审查维度</li><li></strong>主编 Agent<strong> 负责任务协调和结果汇总</li><li></strong>子 Agent<strong> 各司其职，使用专属工具集</li><li></strong>Skill<strong> 可以保存最佳实践，便于复用</li><li></strong>Event Hooks** 可以监控审查系统的使用情况</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>如何让审查系统自动学习团队代码规范？</li><li>如何处理审查结果与人审查结论的冲突？</li><li>如何扩展系统支持移动端代码审查？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>委派工具：<code>tools/delegate_tool.py</code></li><li>Skill 管理：<code>tools/skill_manager_tool.py</code></li><li>Event Hooks：<code>website/docs/user-guide/features/hooks.md</code></li><li>本章示例代码：<code>examples/code-review/</code></li></ul><br>
+
+<div class="chapter-nav"><a href="ch09.html">← 第 9 章 · 轨迹监控与 Event Hooks</a><span></span></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 8 章 · 上下文工程与 Soul.md — Hermes Agent 实战：构建多智能体协作系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #FEFCF8; color: #2C2C2C; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.85; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 0%; height: 3px; background: #C7553A; z-index: 2000; transition: width 0.08s linear; }
+#layout { display: flex; min-height: 100vh; }
+#sidebar { position: fixed; top: 3px; left: 0; width: 260px; height: calc(100vh - 3px); background: #F8F4EE; border-right: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; }
+.sidebar-header { padding: 22px 18px 14px; border-bottom: 1px solid #E8E2D8; }
+.sidebar-title { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; font-size: 1em; font-weight: 700; color: #1A1A1A; line-height: 1.4; margin-bottom: 5px; }
+.sidebar-subtitle { font-size: 0.7em; color: #999; line-height: 1.4; }
+.sidebar-nav { padding: 10px 8px 24px; }
+.sidebar-nav a { display: block; padding: 6px 12px; border-radius: 5px; color: #444; font-size: 0.82em; text-decoration: none; line-height: 1.45; margin-bottom: 2px; word-break: break-all; transition: background 0.15s, color 0.15s; }
+.sidebar-nav a.active { background: #E8E2D8; color: #C7553A; font-weight: 600; }
+#main { margin-left: 260px; margin-right: 224px; padding: 48px 52px 80px; min-height: 100vh; }
+#toc-right { position: fixed; top: 3px; right: 0; width: 224px; height: calc(100vh - 3px); background: #F8F4EE; border-left: 1px solid #E8E2D8; overflow-y: auto; z-index: 100; padding: 22px 14px; }
+.toc-title { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 3px; }
+.toc-list li a { display: block; padding: 3px 8px; font-size: 0.77em; color: #666; text-decoration: none; border-left: 2px solid transparent; line-height: 1.4; word-break: break-all; transition: color 0.15s, border-color 0.15s; }
+.toc-list li a.active { color: #C7553A; border-left-color: #C7553A; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-family: "Noto Serif SC", "STSong", "SimSun", Georgia, serif; color: #1A1A1A; line-height: 1.4; margin-top: 1.8em; margin-bottom: 0.55em; }
+h1 { font-size: 2.1em; margin-top: 0; padding-bottom: 0.35em; border-bottom: 2px solid #C7553A; }
+h2 { font-size: 1.55em; padding-bottom: 0.28em; border-bottom: 1px solid #E8E2D8; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1.08em; }
+p { margin-bottom: 1em; }
+strong { color: #1A1A1A; font-weight: 700; }
+a { color: #4A7C9B; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Courier New", monospace; font-size: 0.875em; background: #F5F2ED; padding: 0.15em 0.38em; border-radius: 3px; border: 1px solid #E0D9CF; word-break: break-all; }
+pre { background: #F5F2ED; padding: 18px 22px; border-radius: 8px; overflow-x: auto; margin: 1.4em 0; border: 1px solid #E0D9CF; line-height: 1.6; }
+pre code { background: none; padding: 0; border: none; border-radius: 0; font-size: 0.84em; word-break: normal; }
+blockquote { margin: 1.4em 0; padding: 14px 20px; border-left: 4px solid #C7553A; background: linear-gradient(to right, #FFF9F5, #FEFCF8); border-radius: 0 6px 6px 0; }
+blockquote p { margin: 0; color: #555; font-style: italic; }
+ul, ol { padding-left: 1.8em; margin-bottom: 1em; }
+li { margin-bottom: 0.38em; }
+.table-wrap { overflow-x: auto; margin: 1.4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th, td { padding: 9px 13px; border: 1px solid #E8E2D8; text-align: left; vertical-align: top; }
+th { background: #F5F2ED; font-weight: 600; color: #1A1A1A; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #E8E2D8; margin: 2.2em 0; }
+.chapter-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 4em; padding-top: 1.8em; border-top: 2px solid #E8E2D8; gap: 12px; }
+.chapter-nav a { display: inline-flex; align-items: center; padding: 10px 16px; background: #F5F2ED; border: 1px solid #E0D9CF; border-radius: 6px; color: #4A7C9B; font-size: 0.85em; text-decoration: none; max-width: 46%; line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.chapter-nav a:hover { border-color: #C7553A; color: #C7553A; text-decoration: none; }
+.chapter-nav span { flex: 1; }
+#back-to-top { position: fixed; bottom: 28px; right: 240px; width: 42px; height: 42px; background: #C7553A; color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: none; align-items: center; justify-content: center; z-index: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); transition: transform 0.2s; }
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { transform: translateY(-2px); }
+.index-hero { text-align: center; padding: 44px 0 52px; border-bottom: 1px solid #E8E2D8; margin-bottom: 52px; }
+.index-hero h1 { font-size: 2.6em; border: none; margin-bottom: 14px; padding: 0; }
+.index-hero .subtitle { font-size: 1.08em; color: #666; font-style: italic; }
+.chapter-list { padding-left: 0; list-style: none; }
+.chapter-list li { margin-bottom: 10px; padding: 13px 20px; background: #F8F4EE; border-radius: 8px; border: 1px solid #E8E2D8; transition: background 0.15s, border-color 0.15s; }
+.chapter-list li:hover { border-color: #C7553A; }
+.chapter-list li a { color: #1A1A1A; font-size: 1em; font-weight: 500; text-decoration: none; }
+.chapter-list li a:hover { color: #C7553A; }
+@media (max-width: 900px) { #sidebar { display: none; } #toc-right { display: none; } #main { margin: 0; padding: 24px 20px 60px; } #back-to-top { right: 20px; } }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Home" style="position:fixed;bottom:16px;left:16px;z-index:9999;width:32px;height:32px;border-radius:7px;background:#FEFCF8;color:#ccc;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#ccc"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></svg></a>
+<div id="progress-bar"></div>
+<div id="layout">
+<div id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-title">Hermes Agent 实战：构建多智能体协作系统</div>
+<div class="sidebar-subtitle">深入理解 Nous Research 开源 Agent 框架</div>
+</div>
+<nav class="sidebar-nav">
+<a href="ch01.html">第 1 章 · 初识 Hermes Agent</a>
+<a href="ch02.html">第 2 章 · Agent 核心架构解析</a>
+<a href="ch03.html">第 3 章 · 工具系统与函数调用</a>
+<a href="ch04.html">第 4 章 · 记忆系统入门</a>
+<a href="ch05.html">第 5 章 · 记忆插件生态</a>
+<a href="ch06.html">第 6 章 · Skill 机制深度剖析</a>
+<a href="ch07.html">第 7 章 · 多 Agent 协作与 ACP 协议</a>
+<a href="ch08.html" class="active">第 8 章 · 上下文工程与 Soul.md</a>
+<a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks</a>
+<a href="ch10.html">第 10 章 · 实战项目：AI 代码审查系统</a>
+</nav>
+</div>
+<div id="main">
+<h1>第 8 章 · 上下文工程与提示词构建</h1><br>
+<br>
+<h2>本章目标</h2><br>
+<br>
+学完这章，你将能够：<br>
+<br>
+<ul><li>理解 <strong>系统提示（System Prompt）</strong> 的组成结构</li><li>掌握 <strong>上下文注入（Context Injection）</strong> 的时机和方式</li><li>了解 <strong>上下文压缩（Context Compression）</strong> 的策略</li><li>学会优化 Agent 的提示词效果</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>8.1 什么是上下文工程？</h2><br>
+<br>
+<h3>8.1.1 定义</h3><br>
+<br>
+<strong>上下文工程（Context Engineering）</strong> 是设计和优化 AI 模型输入上下文的技术，包括：<br>
+<br>
+<ul><li><strong>系统提示</strong> — AI 的角色定义和行为指导</li><li><strong>上下文注入</strong> — 动态插入的实时信息</li><li><strong>历史对话</strong> — 多轮对话的上下文</li><li><strong>工具定义</strong> — 可用工具的描述</li></ul><br>
+<br>
+<h3>8.1.2 类比</h3><br>
+<br>
+把 AI 模型想象成一个<strong>新员工</strong>：<br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐<br>
+│                        新员工入职                                 │<br>
+├─────────────────────────────────────────────────────────────────┤<br>
+│                                                                 │<br>
+│  【系统提示】= 入职培训                                          │<br>
+│  - 你是谁（Hermes Agent）                                       │<br>
+│  - 你的职责是什么                                                │<br>
+│  - 公司规章制度                                                  │<br>
+│                                                                 │<br>
+│  【上下文注入】= 工作中的实时信息                                 │<br>
+│  - 今天的任务清单                                                │<br>
+│  - 用户的具体需求                                                │<br>
+│  - 相关文档和资料                                                │<br>
+│                                                                 │<br>
+│  【记忆】= 员工的个人笔记                                         │<br>
+│  - 用户偏好                                                      │<br>
+│  - 项目约定                                                      │<br>
+│                                                                 │<br>
+│  【工具】= 员工可用的工具                                        │<br>
+│  - 电脑、网络                                                    │<br>
+│  - 具体软件                                                      │<br>
+│                                                                 │<br>
+└─────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>8.2 系统提示的组成</h2><br>
+<br>
+<h3>8.2.1 PromptBuilder 架构</h3><br>
+<br>
+Hermes Agent 的系统提示由多个模块组装：<br>
+<br>
+<pre><code class="language-python"># agent/prompt_builder.py<br>
+def build_system_prompt():<br>
+    parts = [<br>
+        # 1. 基础身份定义<br>
+        DEFAULT_AGENT_IDENTITY,<br>
+        <br>
+        # 2. 记忆快照<br>
+        memory_system_prompt,<br>
+        user_system_prompt,<br>
+        <br>
+        # 3. 平台提示<br>
+        platform_hints,<br>
+        <br>
+        # 4. Skill 索引<br>
+        skills_index,<br>
+        <br>
+        # 5. 上下文文件<br>
+        .hermes.md 或 HERMES.md,<br>
+        <br>
+        # 6. 工具定义<br>
+        tool_definitions,<br>
+    ]<br>
+    return "\n\n".join(filter(None, parts))</code></pre><br>
+<br>
+<h3>8.2.2 基础身份定义</h3><br>
+<br>
+<pre><code class="language-python">DEFAULT_AGENT_IDENTITY = """<br>
+You are Hermes Agent, an intelligent AI assistant created by Nous Research.<br>
+You are helpful, knowledgeable, and direct. You assist users with a wide<br>
+range of tasks including answering questions, writing and editing code,<br>
+analyzing information, creative work, and executing actions via your tools.<br>
+You communicate clearly, admit uncertainty when appropriate, and prioritize<br>
+being genuinely useful over being verbose unless otherwise directed below.<br>
+"""</code></pre><br>
+<br>
+<h3>8.2.3 记忆快照</h3><br>
+<br>
+<pre><code class="language-python">MEMORY_GUIDANCE = """<br>
+You have persistent memory across sessions. Save durable facts using the memory<br>
+tool: user preferences, environment details, tool quirks, and stable conventions.<br>
+Memory is injected into every turn, so keep it compact and focused on facts that<br>
+will still matter later.<br>
+"""</code></pre><br>
+<br>
+<h3>8.2.4 Skill 索引</h3><br>
+<br>
+<pre><code class="language-python"># 自动收集所有 Skill 的 description<br>
+skills_index = ""<br>
+for skill_dir in get_all_skills_dirs():<br>
+    for skill_md in iter_skill_index_files(skill_dir):<br>
+        desc = extract_skill_description(skill_md)<br>
+        skills_index += f"- {skill.name}: {desc}\n"</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>8.3 上下文文件注入</h2><br>
+<br>
+<h3>8.3.1 .hermes.md / HERMES.md</h3><br>
+<br>
+在项目根目录创建 <code>.hermes.md</code>，会自动注入到系统提示：<br>
+<br>
+<pre><code class="language-markdown"># 项目约定<br>
+<br>
+<h2>技术栈</h2><br>
+<ul><li>Python 3.11+</li><li>FastAPI 框架</li><li>PostgreSQL 数据库</li></ul><br>
+<br>
+<h2>代码规范</h2><br>
+<ul><li>使用 Black 格式化</li><li>类型注解必须完整</li><li>docstring 使用 Google 风格</li></ul><br>
+<br>
+<h2>命令</h2><br>
+<ul><li>启动服务：<code>uvicorn app.main:app --reload</code></li><li>运行测试：<code>pytest tests/ -v</code></code></pre></li></ul><br>
+<br>
+<h3>8.3.2 文件查找逻辑</h3><br>
+<br>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐<br>
+│                    .hermes.md 查找顺序                           │<br>
+├─────────────────────────────────────────────────────────────────┤<br>
+│                                                                 │<br>
+│  从当前工作目录向上搜索，直到 Git 仓库根目录：                     │<br>
+│                                                                 │<br>
+│  /project/                          ← Git 根目录（停止搜索）     │<br>
+│  ├── .hermes.md ←────────── 找到！使用这个                       │<br>
+│  ├── src/                                                       │<br>
+│  │   └── page.ts                                                │<br>
+│  └── tests/                                                     │<br>
+│                                                                 │<br>
+│  如果不在 Git 仓库中，搜索到文件系统根目录                        │<br>
+│                                                                 │<br>
+└─────────────────────────────────────────────────────────────────┘</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>8.4 上下文注入安全</h2><br>
+<br>
+<h3>8.4.1 威胁扫描</h3><br>
+<br>
+上下文文件在注入前会经过<strong>安全扫描</strong>：<br>
+<br>
+<pre><code class="language-python">_CONTEXT_THREAT_PATTERNS = [<br>
+    # 提示注入<br>
+    r'ignore\s+(previous|all|above|prior)\s+instructions',<br>
+    r'do\s+not\s+tell\s+the\s+user',<br>
+    r'system\s+prompt\s+override',<br>
+    <br>
+    # 可执行内容<br>
+    r'translate\s+.*\s+into\s+.*\s+and\s+(execute|run|eval)',<br>
+    <br>
+    # 数据外泄<br>
+    r'curl\s+[^\n]*\$\{?\w*(KEY|TOKEN|SECRET',<br>
+]</code></pre><br>
+<br>
+<h3>8.4.2 不可见字符检测</h3><br>
+<br>
+<pre><code class="language-python">_INVISIBLE_CHARS = {<br>
+    '\u200b',  # 零宽空格<br>
+    '\u200c',  # 零宽非连接符<br>
+    '\u200d',  # 零宽连接符<br>
+    '\ufeff',  # BOM<br>
+    '\u202a',  # 左到右嵌入<br>
+    # ...<br>
+}</code></pre><br>
+<br>
+<h3>8.4.3 注入失败处理</h3><br>
+<br>
+<pre><code>如果 .hermes.md 包含威胁内容：<br>
+<br>
+[BLOCKED: .hermes.md contained potential prompt injection <br>
+(prompt_injection). Content not loaded.]</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>8.5 上下文压缩</h2><br>
+<br>
+<h3>8.5.1 为什么需要压缩？</h3><br>
+<br>
+<tr><td>模型</td><td>最大上下文</td><td>成本</td></tr><br>
+<br>
+<tr><td>Claude 3.5</td><td>200K tokens</td><td>随上下文增长</td></tr><br>
+<tr><td>GPT-4o</td><td>128K tokens</td><td>随上下文增长</td></tr><br>
+<br>
+上下文越长：<br>
+<ul><li>✅ 记忆越多</li><li>❌ 成本越高</li><li>❌ 延迟越高</li><li>❌ 效果可能下降（中间丢失问题）</li></ul><br>
+<br>
+<h3>8.5.2 压缩策略</h3><br>
+<br>
+<pre><code class="language-python"># 记忆插件的生命周期钩子<br>
+def on_pre_compress(messages):<br>
+    """在压缩前提取关键信息"""<br>
+    return extract_key_facts(messages)</code></pre><br>
+<br>
+<tr><td>策略</td><td>说明</td><td>示例</td></tr><br>
+<br>
+<tr><td><strong>摘要</strong></td><td>压缩为摘要</td><td>"用户讨论了 A、B、C"</td></tr><br>
+<tr><td><strong>提取</strong></td><td>只保留关键实体</td><td>"项目：X，技术：Y"</td></tr><br>
+<tr><td><strong>剪枝</strong></td><td>删除低价值消息</td><td>删除简单问候</td></tr><br>
+<br>
+<h3>8.5.3 记忆的快照模式</h3><br>
+<br>
+如第 4 章所述，Hermes Agent 使用<strong>快照模式</strong>避免上下文膨胀：<br>
+<br>
+<pre><code>会话开始时：<br>
+  MEMORY.md → 快照 → 注入系统提示（固定不变）<br>
+<br>
+会话期间：<br>
+  工具写入 → 更新磁盘文件<br>
+           → 不更新快照（保持稳定）</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>8.6 上下文注入时机</h2><br>
+<br>
+<h3>8.6.1 三种注入时机</h3><br>
+<br>
+<tr><td>时机</td><td>内容</td><td>方式</td></tr><br>
+<br>
+<tr><td><strong>会话开始</strong></td><td>身份、记忆快照、Skill 索引</td><td>系统提示</td></tr><br>
+<tr><td><strong>每轮之前</strong></td><td>召回的记忆上下文</td><td>prefetch</td></tr><br>
+<tr><td><strong>每轮之后</strong></td><td>需要持久化的信息</td><td>sync_turn</td></tr><br>
+<br>
+<h3>8.6.2 Prefetch 模式</h3><br>
+<br>
+<pre><code class="language-python">def prefetch(self, query: str, session_id: str) -&gt; str:<br>
+    """在 API 调用前拉取相关记忆"""<br>
+    <br>
+    # 1. 根据当前查询检索相关记忆<br>
+    results = semantic_search(query, memory_store)<br>
+    <br>
+    # 2. 格式化结果<br>
+    context = "\n".join(results)<br>
+    <br>
+    # 3. 包装后返回<br>
+    return build_memory_context_block(context)</code></pre><br>
+<br>
+<h3>8.6.3 Sync Turn 模式</h3><br>
+<br>
+<pre><code class="language-python">def sync_turn(self, user_content: str, assistant_content: str) -&gt; None:<br>
+    """在对话轮次后同步到记忆后端"""<br>
+    <br>
+    # 1. 分析是否需要存储<br>
+    if should_remember(user_content, assistant_content):<br>
+        # 2. 异步写入<br>
+        queue_write(user_content, assistant_content)</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>8.7 优化提示词效果</h2><br>
+<br>
+<h3>8.7.1 清晰的角色定义</h3><br>
+<br>
+❌ <strong>模糊</strong>：<br>
+<br>
+<pre><code>你是 AI。</code></pre><br>
+<br>
+✅ <strong>具体</strong>：<br>
+<br>
+<pre><code>You are Hermes Agent, an intelligent AI assistant created by Nous Research.<br>
+You specialize in helping developers with:<br>
+<ul><li>Code writing and debugging</li><li>Technical research</li><li>File operations and project management</code></pre></li></ul><br>
+<br>
+<h3>8.7.2 明确的输出格式</h3><br>
+<br>
+❌ <strong>自由格式</strong>：<br>
+<br>
+<pre><code>帮我写一段代码。</code></pre><br>
+<br>
+✅ <strong>指定格式</strong>：<br>
+<br>
+<pre><code>请用以下 JSON 格式返回结果：<br>
+{<br>
+  "filename": "...",<br>
+  "language": "...",<br>
+  "code": "...",<br>
+  "explanation": "..."<br>
+}</code></pre><br>
+<br>
+<h3>8.7.3 条件触发</h3><br>
+<br>
+<pre><code class="language-markdown"># .hermes.md<br>
+<br>
+<h2>前端项目约定</h2><br>
+[当检测到 package.json 或 src/ 目录时自动生效]<br>
+<br>
+<h2>后端项目约定</h2><br>
+[当检测到 requirements.txt 或 app/ 目录时自动生效]</code></pre><br>
+<br>
+<hr><br>
+<br>
+<h2>⭐ 重点回顾</h2><br>
+<br>
+<ul><li><strong>系统提示</strong>由多个模块组装：身份定义、记忆快照、Skill 索引、上下文文件</li><li><strong>.hermes.md</strong> 文件会被自动注入到系统提示，用于项目级约定</li><li>所有上下文文件都经过<strong>安全扫描</strong>，防止提示注入攻击</li><li><strong>上下文压缩</strong>是控制成本和延迟的关键策略</li><li><strong>快照模式</strong>让记忆在会话期间保持稳定，避免重复注入</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>思考题</h2><br>
+<br>
+<ul><li>如果你在 <code>.hermes.md</code> 中写了"忽略上面的指示"，会发生什么？</li><li>快照模式和实时注入各有什么优缺点？</li><li>如何设计一个"项目问答助手"的系统提示？</li></ul><br>
+<br>
+<hr><br>
+<br>
+<h2>🔗 源码参考</h2><br>
+<br>
+<ul><li>提示构建器：<code>agent/prompt_builder.py</code></li><li>上下文安全扫描：<code>agent/prompt_builder.py</code> 中的 <code>_scan_context_content</code></li><li>记忆提供者接口：<code>agent/memory_provider.py</code></li><li>.hermes.md 查找逻辑：<code>agent/prompt_builder.py</code> 中的 <code>_find_hermes_md</code></li></ul><br>
+
+<div class="chapter-nav"><a href="ch07.html">← 第 7 章 · 多 Agent 协作与 ACP 协议</a><span></span><a href="ch09.html">第 9 章 · 轨迹监控与 Event Hooks →</a></div>
+</div>
+<div id="toc-right">
+<div class="toc-title">本章目录</div><ul class="toc-list"></ul>
+</div>
+</div>
+<button id="back-to-top">↑</button>
+<script>
+(function() {
+  var progressBar = document.getElementById('progress-bar');
+  var backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = progress + '%';
+    if (backToTop) backToTop.classList.toggle('visible', scrollTop > 400);
+  });
+  if (backToTop) backToTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  var tocLinks = document.querySelectorAll('#toc-right a');
+  var headings = document.querySelectorAll('#main h1, #main h2, #main h3');
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var current = null;
+    headings.forEach(function(h) {
+      if (h.offsetTop <= scrollPos) current = h;
+    });
+    tocLinks.forEach(function(a) { a.classList.remove('active'); });
+    if (current) {
+      var id = current.id || current.textContent.trim();
+      tocLinks.forEach(function(a) {
+        if (a.textContent.trim() === current.textContent.trim() || (current.id && a.getAttribute('href') === '#' + current.id)) {
+          a.classList.add('active');
+        }
+      });
+    }
+  }
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>
